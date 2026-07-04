@@ -130,7 +130,8 @@ parsu-efeedback/
 │   │   ├── resend.ts                        # Resend client
 │   │   ├── rate-limit.ts                    # Upstash Redis rate limiter
 │   │   ├── logger.ts
-│   │   └── constants.ts
+│   │   ├── constants.ts
+│   │   └── env.ts                           # added in Phase 4 — validated env access
 │   │
 │   ├── models/                              # Mongoose schemas
 │   │   ├── User.ts
@@ -144,7 +145,10 @@ parsu-efeedback/
 │   │   ├── SLARule.ts
 │   │   ├── Notification.ts
 │   │   ├── AuditLog.ts
-│   │   └── Feedback.ts
+│   │   ├── Feedback.ts
+│   │   ├── Assignment.ts                    # added in Phase 5 reconciliation (BR-047..052)
+│   │   ├── GeneratedReport.ts                # added in Phase 5 reconciliation (BR-078..082)
+│   │   └── index.ts                         # barrel export
 │   │
 │   ├── types/                                # shared TS types/interfaces
 │   ├── hooks/                                 # global reusable hooks
@@ -216,23 +220,30 @@ parsu-efeedback/
 
 MongoDB is document-oriented, so "3NF" here means: **no duplicated mutable data, references instead of embedding where data is reused or grows unboundedly, embedding only for small/immutable/tightly-coupled sub-documents.**
 
+> **Reconciled in Phase 5** against the business rules doc (BR-001…BR-100)
+> provided after this document was first drafted. What's below is the final
+> schema; `docs/schema-reconciliation.md` is the changelog explaining every
+> delta from the original draft (two new collections, several renamed/added
+> fields) and why. The Mongoose source of truth is `src/models/*.ts` — this
+> section is kept in sync with it, not the other way around.
+
 ### Core Collections
 
 **users**
 ```
-_id, employeeOrStudentId, firstName, lastName, email (unique, indexed),
-passwordHash, role (enum: student|staff|dean|qa|admin),
+_id, employeeOrStudentId (unique), firstName, lastName, email (unique, indexed),
+passwordHash, role (enum: student|office_staff|college_dean|qa_office|administrator),
 officeRef (ref: offices, nullable — staff/dean only),
 collegeRef (ref: offices, nullable — student's college),
-isActive, createdAt, updatedAt
-Index: { email: 1 } unique, { role: 1, officeRef: 1 }
+isActive, lastLoginAt, failedLoginAttempts, lockedUntil, createdAt, updatedAt
+Index: { email: 1 } unique, { role: 1, officeRef: 1 }, { collegeRef: 1 }
 ```
 
 **offices** (colleges + service offices, unified hierarchy)
 ```
-_id, name, type (enum: college|service_office), parentOffice (ref, nullable),
-headUserRef (ref: users), createdAt
-Index: { type: 1 }
+_id, name, type (enum: college|service_office), code (unique),
+parentOffice (ref, nullable), headUserRef (ref: users), isActive, createdAt
+Index: { type: 1 }, { parentOffice: 1 }
 ```
 
 **categories**
@@ -244,26 +255,30 @@ Index: { name: 1 } unique
 
 **complaints** (the aggregate root)
 ```
-_id, ticketNumber (unique, indexed, e.g. PSU-2026-000123),
+_id, ticketNumber (unique, indexed, e.g. PARSU-2026-000123),
 studentRef (ref: users), categoryRef (ref: categories),
 title, description, priority, status
-  (enum: submitted|routed|in_progress|pending_student|resolved|closed|escalated),
+  (enum: submitted|assigned|in_progress|pending_information|escalated|resolved|closed),
 assignedOfficeRef (ref: offices), assignedStaffRef (ref: users, nullable),
-slaDueAt (Date, computed at routing time), isOverdue (bool, updated by cron),
+slaResponseDueAt (Date), slaResolutionDueAt (Date), isOverdue (bool, updated by cron),
+lastWarningNotifiedAt (Date, nullable — SLA-warning idempotency guard),
 resolutionSummary, studentRating (1–5, nullable), studentRatingComment,
-createdAt, updatedAt
+reopenCount (int), isArchived (bool),
+submittedAt, resolvedAt (nullable), closedAt (nullable), createdAt, updatedAt
 Index: { ticketNumber: 1 } unique
 Index: { studentRef: 1, createdAt: -1 }
 Index: { assignedOfficeRef: 1, status: 1 }
-Index: { status: 1, slaDueAt: 1 }        ← used heavily by the hourly SLA cron
 Index: { assignedStaffRef: 1, status: 1 }
+Index: { status: 1, slaResolutionDueAt: 1 }   ← used heavily by the hourly SLA cron
+Index: { status: 1, slaResponseDueAt: 1 }
 ```
+Status names and the two SLA date fields were reconciled to BR-041/BR-030/BR-031 — see `docs/schema-reconciliation.md`.
 
 **complaint_timeline** (append-only event log per complaint — powers the "Complaint Timeline" UI)
 ```
 _id, complaintRef (ref: complaints), eventType
-  (enum: submitted|routed|reassigned|status_changed|note_added|
-         attachment_added|escalated|resolved|rated),
+  (enum: submitted|assigned|reassigned|status_changed|note_added|
+         attachment_added|escalated|resolved|reopened|closed|rated),
 actorRef (ref: users, nullable for system events), fromValue, toValue,
 message, createdAt
 Index: { complaintRef: 1, createdAt: 1 }
@@ -291,22 +306,23 @@ Index: { complaintRef: 1 }
 _id, categoryRef (ref: categories), conditions (embedded — small, static:
   e.g. { collegeRef, priority }), targetOfficeRef (ref: offices),
 priority (rule evaluation order), isActive
-Index: { categoryRef: 1, isActive: 1 }
+Index: { categoryRef: 1 } unique, partial (isActive: true)   ← BR-023: one active rule per category
 ```
 
 **sla_rules**
 ```
-_id, categoryRef (ref: categories, nullable = applies to all),
-priority (enum), resolutionHours (int), warningThresholdPercent (e.g. 80),
-escalateToOfficeRef (ref: offices), isActive
-Index: { categoryRef: 1, priority: 1 }
+_id, categoryRef (ref: categories, nullable = institution-wide default),
+priority (enum), responseHours (int), resolutionHours (int),
+warningThresholdPercent (e.g. 80), escalateToOfficeRef (ref: offices), isActive
+Index: { categoryRef: 1, priority: 1 } unique, partial (isActive: true)  ← BR-029
 ```
+`responseHours` added alongside the original `resolutionHours` so BR-030 (response deadline) and BR-031 (resolution deadline) each have a source.
 
 **notifications**
 ```
-_id, userRef (ref: users), type (enum: complaint_update|sla_warning|
-  escalation|resolution|system), title, body,
-relatedComplaintRef (ref: complaints, nullable), isRead, createdAt
+_id, userRef (ref: users), type (enum: complaint_submitted|complaint_assigned|
+  status_updated|sla_warning|escalation|complaint_resolved|report_generated),
+title, body, relatedComplaintRef (ref: complaints, nullable), isRead, createdAt
 Index: { userRef: 1, isRead: 1, createdAt: -1 }
 ```
 
@@ -323,10 +339,32 @@ Index: { entityType: 1, entityId: 1 }, { actorRef: 1, createdAt: -1 }
 _id, studentRef (ref: users), category, message, isAnonymous, createdAt
 ```
 
+**assignments** — *added in Phase 5 reconciliation, BR-047…052*
+```
+_id, complaintRef (ref: complaints),
+assignedByRef (ref: users, nullable — null = system/initial routing),
+assignedToRef (ref: users, nullable — null = office-level, unclaimed),
+sourceOfficeRef (ref: offices, nullable), destinationOfficeRef (ref: offices),
+createdAt
+Index: { complaintRef: 1, createdAt: 1 }
+```
+The append-only assignment history BR-047–052 require. `complaints.assignedOfficeRef/assignedStaffRef` stay as cheap current-state pointers; this collection is the immutable audit trail behind them — never updated/deleted, only inserted.
+
+**generated_reports** — *added in Phase 5 reconciliation, BR-078…082*
+```
+_id, creatorRef (ref: users), reportType, fileFormat (enum: pdf|excel|csv),
+filters (embedded: officeRef, collegeRef, categoryRef, dateFrom, dateTo, status, slaOnly),
+status (enum: pending|generating|ready|failed), downloadUrl (nullable),
+createdAt, updatedAt
+Index: { creatorRef: 1, createdAt: -1 }
+```
+Replaces the originally-stateless export design in section 11 below, which conflicted with BR-078/082's requirement that reports be persisted records, not just streamed responses.
+
 ### Design notes
-- Embedding is used only for small, bounded, rarely-independently-queried data (`routing_rules.conditions`, `audit_logs.beforeState/afterState`).
-- Referencing is used everywhere data is reused across documents (users↔offices) or grows unboundedly (timeline, notes, attachments, audit logs) — this is the Mongo equivalent of avoiding update/insert/delete anomalies, i.e. your 3NF requirement.
+- Embedding is used only for small, bounded, rarely-independently-queried data (`routing_rules.conditions`, `audit_logs.beforeState/afterState`, `generated_reports.filters`).
+- Referencing is used everywhere data is reused across documents (users↔offices) or grows unboundedly (timeline, notes, attachments, audit logs, assignments) — this is the Mongo equivalent of avoiding update/insert/delete anomalies, i.e. your 3NF requirement.
 - Every collection that the SLA cron or dashboards query heavily has a compound index matching that access pattern — this is the single biggest cost/performance lever on a free M0 tier (512MB, shared vCPU).
+- Partial unique indexes (`routing_rules`, `sla_rules`) enforce BR-023/029's "exactly one active configuration" at the database level rather than trusting application code alone.
 
 ---
 
@@ -439,27 +477,37 @@ Inside handlers (defense in depth — never rely on middleware alone):
 
 ## 7. Complaint Workflow (status lifecycle)
 
+> Status names reconciled to BR-041 in Phase 5 — `routed`/`pending_student`
+> from the original draft are now `assigned`/`pending_information`; a
+> reopen path was added (BR-043/044). See `docs/schema-reconciliation.md`.
+
 ```
 submitted
-   │  (Routing Engine evaluates routing_rules by category/college/priority)
+   │  (Routing Engine evaluates routing_rules by category/college/priority;
+   │   writes an `assignments` record — BR-047)
    ▼
-routed ──────────────► assignedOfficeRef set, slaDueAt computed from sla_rules
-   │
+assigned ─────────────► assignedOfficeRef set, slaResponseDueAt/
+   │                     slaResolutionDueAt computed from sla_rules
    ▼
-in_progress ◄────────── staff picks up / self-assigns
-   │        │
-   │        ├──► pending_student  (staff needs more info from student)
+in_progress ◄────────── staff picks up / self-assigns (new `assignments`
+   │        │            record if reassigned — BR-051)
+   │        ├──► pending_information  (staff needs more info from student)
    │        │        │
    │        │        └──► in_progress (student responds)
    │        │
    │        ├──► escalated  (SLA breach OR manual escalation by dean/qa)
-   │        │        └──► in_progress (re-assigned to escalation office)
+   │        │        └──► in_progress (re-assigned to escalation office,
+   │        │             new `assignments` record)
    │        │
    ▼        ▼
 resolved ────────────► student notified, rating window opens
-   │
+   │             │
+   │             └──► in_progress  (reopened by authorized personnel —
+   │                  BR-043; reopenCount += 1 — BR-044)
    ▼
 closed  (auto-closed after N days with no dispute, or student confirms)
+   │
+   └──► in_progress  (reopened after closure — BR-041; reopenCount += 1)
 
 Every transition:
   - Written to complaint_timeline (immutable)
@@ -471,21 +519,31 @@ Every transition:
 
 ## 8. SLA Workflow
 
+> Reconciled in Phase 5: BR-030 (response deadline) and BR-031 (resolution
+> deadline) are two different clocks, so the single `slaDueAt` from the
+> original draft is now `slaResponseDueAt` + `slaResolutionDueAt` on
+> `Complaint`. `lastWarningNotifiedAt` lives on `Complaint` too (not a
+> separate collection) — see `docs/schema-reconciliation.md`.
+
 ```
-At routing time:
-  slaDueAt = routedAt + sla_rules[category/priority].resolutionHours
+At routing time (assigned status, BR-030/031):
+  slaResponseDueAt   = assignedAt + sla_rules[category/priority].responseHours
+  slaResolutionDueAt = assignedAt + sla_rules[category/priority].resolutionHours
 
 Hourly (Vercel Cron / Upstash Workflow → POST /api/cron/sla-check, header-secret protected):
   1. Query: complaints where status NOT IN (resolved, closed)
-              AND slaDueAt <= now + warningThreshold  (uses the compound index
-              { status: 1, slaDueAt: 1 } — critical on a shared M0 cluster)
+              AND slaResolutionDueAt <= now + warningThreshold  (uses the
+              compound index { status: 1, slaResolutionDueAt: 1 } — critical
+              on a shared M0 cluster); a second pass does the same against
+              slaResponseDueAt for first-response breaches
   2. For each:
-       a. now >= slaDueAt                → mark isOverdue = true, status → escalated,
+       a. now >= slaResolutionDueAt      → mark isOverdue = true, status → escalated,
                                             reassign per sla_rules.escalateToOfficeRef,
+                                            new `assignments` record (BR-047),
                                             send "Escalation" email + notification
        b. now within warning window       → send "SLA Warning" email + notification
-                                            (idempotent — check a `lastWarningNotifiedAt`
-                                            field so we don't resend every hour)
+                                            (idempotent — checks Complaint.lastWarningNotifiedAt
+                                            so we don't resend every hour)
   3. Write one audit_logs entry per escalation
 ```
 
@@ -691,7 +749,7 @@ Phase 7   User management                   admin CRUD for users/offices/categor
 Phase 8   Complaint module                  submission, tracking, timeline, notes,
                                             status lifecycle (core MVP feature)
 Phase 9   Routing engine                    routing_rules evaluation on submit
-Phase 10  SLA monitoring                    sla_rules, slaDueAt computation, cron endpoint
+Phase 10  SLA monitoring                    sla_rules, slaResponseDueAt/slaResolutionDueAt computation, cron endpoint
 Phase 11  Notifications                     in-app + Resend email templates
 Phase 12  File uploads                      R2 presign flow, attachments
 Phase 13  Analytics                         aggregation pipelines, dashboards per role
@@ -712,8 +770,6 @@ system described in your spec.
 
 ## Open Questions Before We Start Building
 
-1. **Hosting platform:** Cloudflare Pages or Vercel Hobby? This affects how the SLA cron is triggered (Upstash Workflow vs native Vercel Cron) and is worth locking in early even though Phase 15 is deployment, since it shapes the cron endpoint's design from Phase 10 onward.
-2. **ERD/Business Rules/Data Dictionary:** You mentioned you'll provide these as source of truth. If they differ from the schema above (e.g., different status names, additional roles, different SLA logic), send them now and I'll reconcile before Phase 5, rather than reworking models mid-build.
-3. **Auth.js version:** Auth.js v5 (beta but stable, Next.js 15-native) vs NextAuth v4 (mature, but awkward with App Router). I'd recommend v5 — confirm you're fine with that before Phase 6.
-
-Let me know your adjustments (or approval), and any ERD/business rules you have — then we start Phase 1.
+1. **Hosting platform:** Cloudflare Pages or Vercel Hobby? This affects how the SLA cron is triggered (Upstash Workflow vs native Vercel Cron) and is worth locking in early even though Phase 15 is deployment, since it shapes the cron endpoint's design from Phase 10 onward. *Still open — needed by Phase 10 at the latest.*
+2. ~~**ERD/Business Rules/Data Dictionary**~~ — **Resolved in Phase 5.** BR-001…BR-100 were provided and reconciled into the schema above; see `docs/schema-reconciliation.md` for the full diff (two new collections, several renamed/added fields).
+3. **Auth.js version:** Auth.js v5 (beta but stable, Next.js 15-native) vs NextAuth v4 (mature, but awkward with App Router). I'd recommend v5 — confirm you're fine with that before Phase 6. *Still open — needed by Phase 6.* (`package.json` already has `next-auth@beta`, i.e. v5, pinned from Phase 3, so this is really just a confirm-or-object checkpoint.)

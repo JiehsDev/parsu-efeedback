@@ -2,7 +2,7 @@
 
 Integrated Student Complaint and Feedback Management System with Institutional Analytics — Partido State University.
 
-Status: Phase 4 (Environment Variables) complete. See `docs/architecture.md` for the full architecture blueprint.
+Status: Phase 5 (Database Connection) complete. See `docs/architecture.md` for the full architecture blueprint and `docs/schema-reconciliation.md` for how the business rules doc (BR-001…BR-100) was reconciled into the schema.
 
 ## Stack
 
