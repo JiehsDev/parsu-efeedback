@@ -42,6 +42,18 @@ const userSchema = new Schema(
     // src/lib/env.ts; the counting/locking logic itself is Phase 6)
     failedLoginAttempts: { type: Number, required: true, default: 0 },
     lockedUntil: { type: Date, default: null },
+
+    // Phase 6: bumped whenever an admin needs to force-invalidate every JWT
+    // already issued to this user (compromised account, role change, forced
+    // logout) without waiting for natural expiry. Checked against the
+    // `tokenVersion` embedded in the JWT at sign-in time — see
+    // docs/architecture.md section 5 ("Why JWT, not database sessions").
+    tokenVersion: { type: Number, required: true, default: 0 },
+
+    // Phase 6: timestamp of the last completed password change/reset, for
+    // auditing/support purposes. The reset token itself is never stored
+    // here — see PasswordResetToken.
+    passwordChangedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

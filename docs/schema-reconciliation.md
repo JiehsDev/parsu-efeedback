@@ -105,3 +105,40 @@ persistence/shape with no business logic:
   BR-024 ("inactive categories cannot be selected") — read by the
   submission/routing handlers, Phase 8/9; the models just expose the
   `isActive` flags they check.
+
+## Phase 6 additions (Authentication)
+
+These weren't numbered in BR-001…BR-100 (there's no explicit "password
+reset" or "force logout" rule) but are required by the auth flow
+`docs/architecture.md` section 5 already committed to before the business
+rules doc existed:
+
+### `users` — added `tokenVersion`, `passwordChangedAt`
+`tokenVersion` is the mechanism section 5's closing paragraph calls out
+("we'll implement `tokenVersion` so admins can force-logout a compromised
+account") — bumped on a completed password reset or an admin-triggered
+force-logout, and compared against the value embedded in each JWT at
+sign-in (`src/features/auth/services/session.service.ts`). `passwordChangedAt`
+is just an audit/support timestamp, not read by any business logic.
+
+### New collection: `password_reset_tokens`
+Single-use, hashed (SHA-256) reset tokens with a Mongo TTL index on
+`expiresAt` for automatic cleanup — see `src/models/PasswordResetToken.ts`.
+Not embedded on `User` since it's disposable/short-lived data unrelated to
+the user's steady-state shape, and a TTL index only works at the
+collection level.
+
+### Scope decision: public `/register` is student-only
+BR-011 ("only administrators may create, update, deactivate, or delete
+user accounts") reads, on its face, like it forbids any self-service
+registration at all — but the architecture blueprint's folder structure
+already specifies a public, unauthenticated `/register` page, section 5's
+auth flow describes it as a normal credentials flow, and BR-008/015
+("a student belongs to exactly one college") only make sense as something
+a student supplies about themselves at signup. Reconciled as: BR-011
+governs staff/college_dean/qa_office/administrator accounts, which are
+provisioned by an admin from `/admin/users` (Phase 7); `/register` creates
+`role: "student"` accounts only, and the Credentials provider/register
+service never accept a role from the request body. Flag this explicitly if
+that's not the intended reading — it's the one place this phase had to
+infer intent rather than follow an explicit rule.

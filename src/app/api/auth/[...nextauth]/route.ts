@@ -1,2 +1,3 @@
-// Auth.js handler — configured in Phase 6 (Authentication)
-export {};
+import { handlers } from "@/lib/auth";
+
+export const { GET, POST } = handlers;

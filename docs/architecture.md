@@ -744,7 +744,7 @@ Phase 4   Environment variables             .env.example, document every var, lo
 Phase 5   Database connection               lib/db.ts singleton, connect to Atlas M0,
                                             create Mongoose models (no business logic yet)
 Phase 6   Authentication                    Auth.js credentials + JWT, role in token,
-                                            login/register/reset-password pages
+                                            login/register/reset-password pages          [done]
 Phase 7   User management                   admin CRUD for users/offices/categories
 Phase 8   Complaint module                  submission, tracking, timeline, notes,
                                             status lifecycle (core MVP feature)
@@ -772,4 +772,4 @@ system described in your spec.
 
 1. **Hosting platform:** Cloudflare Pages or Vercel Hobby? This affects how the SLA cron is triggered (Upstash Workflow vs native Vercel Cron) and is worth locking in early even though Phase 15 is deployment, since it shapes the cron endpoint's design from Phase 10 onward. *Still open — needed by Phase 10 at the latest.*
 2. ~~**ERD/Business Rules/Data Dictionary**~~ — **Resolved in Phase 5.** BR-001…BR-100 were provided and reconciled into the schema above; see `docs/schema-reconciliation.md` for the full diff (two new collections, several renamed/added fields).
-3. **Auth.js version:** Auth.js v5 (beta but stable, Next.js 15-native) vs NextAuth v4 (mature, but awkward with App Router). I'd recommend v5 — confirm you're fine with that before Phase 6. *Still open — needed by Phase 6.* (`package.json` already has `next-auth@beta`, i.e. v5, pinned from Phase 3, so this is really just a confirm-or-object checkpoint.)
+3. ~~**Auth.js version:**~~ **Resolved in Phase 6.** Auth.js v5 (`next-auth@beta`) confirmed and implemented. Config is split into `src/lib/auth.config.ts` (edge-safe: session/jwt callbacks, pages, no providers) and `src/lib/auth.ts` (adds the Credentials provider, which needs mongoose + bcrypt and therefore only runs in the Node runtime) — `middleware.ts` imports the former, everything else imports the latter. See `docs/schema-reconciliation.md` for the two schema additions this phase needed (`User.tokenVersion`, `PasswordResetToken`) and the register-page scope decision (self-registration is student-only; BR-011 governs staff/dean/qa/admin accounts via Phase 7's admin/users).

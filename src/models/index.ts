@@ -14,3 +14,4 @@ export { AuditLog } from "./AuditLog";
 export { Feedback } from "./Feedback";
 export { Assignment } from "./Assignment";
 export { GeneratedReport } from "./GeneratedReport";
+export { PasswordResetToken } from "./PasswordResetToken"; // added Phase 6 (Authentication)
