@@ -1,26 +1,89 @@
 @import "tailwindcss";
 
+/*
+ * ParSU e-Feedback — Tech Blue & Silver theme
+ * Fixed dark theme (not tied to prefers-color-scheme) per the project spec:
+ * enterprise, modern, minimal, academic, high contrast.
+ *
+ * Values here map 1:1 to shadcn/ui's expected CSS variable names, so
+ * `npx shadcn add <component>` (run somewhere with internet access to
+ * ui.shadcn.com — blocked in this sandbox) will drop components in that
+ * already match this palette with zero extra theming work.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09101d;
+  --foreground: #ffffff;
+
+  --card: #0d1830;
+  --card-foreground: #ffffff;
+
+  --popover: #0d1830;
+  --popover-foreground: #ffffff;
+
+  /* Primary accent (#00a2ff) is bright — pair with a near-black foreground
+     for AA contrast on buttons/badges rather than white-on-bright-blue. */
+  --primary: #00a2ff;
+  --primary-foreground: #04121f;
+
+  --secondary: #0a50d8;
+  --secondary-foreground: #ffffff;
+
+  --muted: #101c33;
+  --muted-foreground: #a3c8f7;
+
+  --accent: #00a2ff;
+  --accent-foreground: #04121f;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #1c2a44;
+  --input: #1c2a44;
+  --ring: #00a2ff;
+
+  --radius: 0.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
