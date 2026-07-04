@@ -8,7 +8,7 @@
 // `.findOneAndUpdate`/`.deleteOne` — intentionally not a schema-level hook,
 // to keep this file pure persistence/shape, no business logic.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { TIMELINE_EVENT_TYPES } from "@/lib/constants";
 
 const complaintTimelineSchema = new Schema(
@@ -33,7 +33,7 @@ complaintTimelineSchema.index({ complaintRef: 1, createdAt: 1 });
 export type ComplaintTimelineDocument = InferSchemaType<
   typeof complaintTimelineSchema
 >;
-export const ComplaintTimeline =
-  models.ComplaintTimeline ??
-  model("ComplaintTimeline", complaintTimelineSchema, "complaint_timeline");
+export const ComplaintTimeline: Model<ComplaintTimelineDocument> =
+  (models.ComplaintTimeline as Model<ComplaintTimelineDocument> | undefined) ??
+  model<ComplaintTimelineDocument>("ComplaintTimeline", complaintTimelineSchema, "complaint_timeline");
 export default ComplaintTimeline;

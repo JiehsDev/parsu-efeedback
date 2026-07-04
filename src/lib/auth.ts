@@ -27,16 +27,16 @@ import { loginRateLimit, checkRateLimit, getRequestIp } from "@/lib/rate-limit";
 // returned from next-auth's signIn({ redirect: false }) — the login page
 // maps these to specific copy instead of one generic "invalid" message.
 class InvalidCredentialsSignin extends CredentialsSignin {
-  code = "invalid_credentials";
+  override code = "invalid_credentials";
 }
 class AccountLockedSignin extends CredentialsSignin {
-  code = "account_locked";
+  override code = "account_locked";
 }
 class AccountInactiveSignin extends CredentialsSignin {
-  code = "account_inactive";
+  override code = "account_inactive";
 }
 class RateLimitedSignin extends CredentialsSignin {
-  code = "rate_limited";
+  override code = "rate_limited";
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

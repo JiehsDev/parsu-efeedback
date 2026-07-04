@@ -4,7 +4,7 @@
 // keeping one collection avoids duplicating the same shape twice and lets
 // routing/SLA rules target either kind uniformly.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { OFFICE_TYPES } from "@/lib/constants";
 
 const officeSchema = new Schema(
@@ -32,5 +32,7 @@ officeSchema.index({ type: 1 });
 officeSchema.index({ parentOffice: 1 });
 
 export type OfficeDocument = InferSchemaType<typeof officeSchema>;
-export const Office = models.Office ?? model("Office", officeSchema, "offices");
+export const Office: Model<OfficeDocument> =
+  (models.Office as Model<OfficeDocument> | undefined) ??
+  model<OfficeDocument>("Office", officeSchema, "offices");
 export default Office;

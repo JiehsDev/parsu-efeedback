@@ -24,15 +24,17 @@
 
 import { z } from "zod";
 
-const commaSeparatedList = z
-  .string()
-  .min(1, "must be a non-empty comma-separated list")
-  .transform((value) =>
-    value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-  );
+const commaSeparatedList = (defaultValue: string) =>
+  z
+    .string()
+    .min(1, "must be a non-empty comma-separated list")
+    .default(defaultValue)
+    .transform((value) =>
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    );
 
 const positiveInt = z.coerce
   .number()
@@ -74,7 +76,7 @@ const envSchema = z.object({
   AUTH_LOCKOUT_DURATION_MINUTES: positiveInt.default(15), // BR-013
   AUTH_SESSION_MAX_AGE_MINUTES: positiveInt.default(60), // BR-087
   UPLOAD_MAX_FILE_SIZE_MB: positiveInt.default(10), // BR-061
-  UPLOAD_ALLOWED_MIME_TYPES: commaSeparatedList.default(
+  UPLOAD_ALLOWED_MIME_TYPES: commaSeparatedList(
     "image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ), // BR-060
   TICKET_NUMBER_PREFIX: z.string().min(1).default("PARSU"), // BR-036 / BR-100

@@ -14,7 +14,7 @@
 //   - TTL: MongoDB's TTL index on `expiresAt` garbage-collects expired,
 //     unused tokens automatically — no cron needed for cleanup.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 
 const passwordResetTokenSchema = new Schema(
   {
@@ -40,7 +40,7 @@ passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export type PasswordResetTokenDocument = InferSchemaType<
   typeof passwordResetTokenSchema
 >;
-export const PasswordResetToken =
-  models.PasswordResetToken ??
-  model("PasswordResetToken", passwordResetTokenSchema, "password_reset_tokens");
+export const PasswordResetToken: Model<PasswordResetTokenDocument> =
+  (models.PasswordResetToken as Model<PasswordResetTokenDocument> | undefined) ??
+  model<PasswordResetTokenDocument>("PasswordResetToken", passwordResetTokenSchema, "password_reset_tokens");
 export default PasswordResetToken;

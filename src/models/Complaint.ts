@@ -15,7 +15,7 @@
 //   - split the single slaDueAt into slaResponseDueAt (BR-030) and
 //     slaResolutionDueAt (BR-031), since those are two different clocks
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { COMPLAINT_STATUSES, PRIORITY_LEVELS } from "@/lib/constants";
 
 const complaintSchema = new Schema(
@@ -92,6 +92,7 @@ complaintSchema.index({ status: 1, slaResolutionDueAt: 1 });
 complaintSchema.index({ status: 1, slaResponseDueAt: 1 });
 
 export type ComplaintDocument = InferSchemaType<typeof complaintSchema>;
-export const Complaint =
-  models.Complaint ?? model("Complaint", complaintSchema, "complaints");
+export const Complaint: Model<ComplaintDocument> =
+  (models.Complaint as Model<ComplaintDocument> | undefined) ??
+  model<ComplaintDocument>("Complaint", complaintSchema, "complaints");
 export default Complaint;

@@ -4,7 +4,7 @@
 // UPLOAD_ALLOWED_MIME_TYPES / UPLOAD_MAX_FILE_SIZE_MB (see src/lib/env.ts);
 // enforced by the upload handler (Phase 12), not this schema.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 
 const attachmentSchema = new Schema(
   {
@@ -23,6 +23,7 @@ const attachmentSchema = new Schema(
 attachmentSchema.index({ complaintRef: 1 });
 
 export type AttachmentDocument = InferSchemaType<typeof attachmentSchema>;
-export const Attachment =
-  models.Attachment ?? model("Attachment", attachmentSchema, "attachments");
+export const Attachment: Model<AttachmentDocument> =
+  (models.Attachment as Model<AttachmentDocument> | undefined) ??
+  model<AttachmentDocument>("Attachment", attachmentSchema, "attachments");
 export default Attachment;

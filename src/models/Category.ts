@@ -1,7 +1,7 @@
 // Mongoose model: Category (collection: categories)
 // BR-021..BR-024.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { PRIORITY_LEVELS } from "@/lib/constants";
 
 const categorySchema = new Schema(
@@ -23,6 +23,7 @@ const categorySchema = new Schema(
 );
 
 export type CategoryDocument = InferSchemaType<typeof categorySchema>;
-export const Category =
-  models.Category ?? model("Category", categorySchema, "categories");
+export const Category: Model<CategoryDocument> =
+  (models.Category as Model<CategoryDocument> | undefined) ??
+  model<CategoryDocument>("Category", categorySchema, "categories");
 export default Category;

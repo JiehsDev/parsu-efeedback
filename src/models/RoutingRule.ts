@@ -4,7 +4,7 @@
 // BR-028 (must not reference inactive offices): cross-collection integrity
 // check, enforced by the routing-engine service (Phase 9), not here.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 
 const routingRuleSchema = new Schema(
   {
@@ -34,6 +34,7 @@ routingRuleSchema.index(
 );
 
 export type RoutingRuleDocument = InferSchemaType<typeof routingRuleSchema>;
-export const RoutingRule =
-  models.RoutingRule ?? model("RoutingRule", routingRuleSchema, "routing_rules");
+export const RoutingRule: Model<RoutingRuleDocument> =
+  (models.RoutingRule as Model<RoutingRuleDocument> | undefined) ??
+  model<RoutingRuleDocument>("RoutingRule", routingRuleSchema, "routing_rules");
 export default RoutingRule;

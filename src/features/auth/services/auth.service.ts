@@ -9,6 +9,7 @@
 import { connectToDatabase } from "@/lib/db";
 import { env } from "@/lib/env";
 import { User } from "@/models/User";
+import type { UserRole } from "@/lib/constants";
 import { verifyPassword } from "./password.service";
 
 export class AccountInactiveError extends Error {
@@ -39,7 +40,7 @@ export interface AuthenticatedUser {
   email: string;
   firstName: string;
   lastName: string;
-  role: string;
+  role: UserRole;
   officeRef: string | null;
   collegeRef: string | null;
   tokenVersion: number;

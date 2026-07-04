@@ -2,7 +2,7 @@
 // Standalone suggestions/feedback not tied to any specific complaint
 // (distinct from a complaint's satisfaction rating, BR-067..BR-070).
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 
 const feedbackSchema = new Schema(
   {
@@ -19,6 +19,7 @@ const feedbackSchema = new Schema(
 feedbackSchema.index({ studentRef: 1, createdAt: -1 });
 
 export type FeedbackDocument = InferSchemaType<typeof feedbackSchema>;
-export const Feedback =
-  models.Feedback ?? model("Feedback", feedbackSchema, "feedback");
+export const Feedback: Model<FeedbackDocument> =
+  (models.Feedback as Model<FeedbackDocument> | undefined) ??
+  model<FeedbackDocument>("Feedback", feedbackSchema, "feedback");
 export default Feedback;

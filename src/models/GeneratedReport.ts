@@ -9,7 +9,7 @@
 // updated to ready/failed with a downloadUrl once complete (Phase 14).
 // See docs/schema-reconciliation.md.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { REPORT_FORMATS, REPORT_STATUSES } from "@/lib/constants";
 
 const generatedReportSchema = new Schema(
@@ -42,7 +42,7 @@ const generatedReportSchema = new Schema(
 generatedReportSchema.index({ creatorRef: 1, createdAt: -1 });
 
 export type GeneratedReportDocument = InferSchemaType<typeof generatedReportSchema>;
-export const GeneratedReport =
-  models.GeneratedReport ??
-  model("GeneratedReport", generatedReportSchema, "generated_reports");
+export const GeneratedReport: Model<GeneratedReportDocument> =
+  (models.GeneratedReport as Model<GeneratedReportDocument> | undefined) ??
+  model<GeneratedReportDocument>("GeneratedReport", generatedReportSchema, "generated_reports");
 export default GeneratedReport;

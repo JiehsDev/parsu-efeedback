@@ -16,7 +16,7 @@
 // BR-052 (previous records never modified): enforced at the repository
 // layer (Phase 8) by only ever calling `.create()` here.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 
 const assignmentSchema = new Schema(
   {
@@ -37,6 +37,7 @@ const assignmentSchema = new Schema(
 assignmentSchema.index({ complaintRef: 1, createdAt: 1 });
 
 export type AssignmentDocument = InferSchemaType<typeof assignmentSchema>;
-export const Assignment =
-  models.Assignment ?? model("Assignment", assignmentSchema, "assignments");
+export const Assignment: Model<AssignmentDocument> =
+  (models.Assignment as Model<AssignmentDocument> | undefined) ??
+  model<AssignmentDocument>("Assignment", assignmentSchema, "assignments");
 export default Assignment;

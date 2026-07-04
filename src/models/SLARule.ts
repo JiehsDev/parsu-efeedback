@@ -10,7 +10,7 @@
 // nullable = institution-wide default, applied when no category-specific
 // active rule matches.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { PRIORITY_LEVELS } from "@/lib/constants";
 
 const slaRuleSchema = new Schema(
@@ -40,5 +40,7 @@ slaRuleSchema.index(
 );
 
 export type SLARuleDocument = InferSchemaType<typeof slaRuleSchema>;
-export const SLARule = models.SLARule ?? model("SLARule", slaRuleSchema, "sla_rules");
+export const SLARule: Model<SLARuleDocument> =
+  (models.SLARule as Model<SLARuleDocument> | undefined) ??
+  model<SLARuleDocument>("SLARule", slaRuleSchema, "sla_rules");
 export default SLARule;

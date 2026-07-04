@@ -1,7 +1,7 @@
 // Mongoose model: Notification (collection: notifications)
 // BR-071..BR-074.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { NOTIFICATION_TYPES } from "@/lib/constants";
 
 const notificationSchema = new Schema(
@@ -23,6 +23,7 @@ const notificationSchema = new Schema(
 notificationSchema.index({ userRef: 1, isRead: 1, createdAt: -1 });
 
 export type NotificationDocument = InferSchemaType<typeof notificationSchema>;
-export const Notification =
-  models.Notification ?? model("Notification", notificationSchema, "notifications");
+export const Notification: Model<NotificationDocument> =
+  (models.Notification as Model<NotificationDocument> | undefined) ??
+  model<NotificationDocument>("Notification", notificationSchema, "notifications");
 export default Notification;

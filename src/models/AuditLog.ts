@@ -4,7 +4,7 @@
 // calling update/delete against this model. Not a schema-level hook, to
 // keep this file pure persistence/shape.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 
 const auditLogSchema = new Schema(
   {
@@ -30,6 +30,7 @@ auditLogSchema.index({ entityType: 1, entityId: 1 });
 auditLogSchema.index({ actorRef: 1, createdAt: -1 });
 
 export type AuditLogDocument = InferSchemaType<typeof auditLogSchema>;
-export const AuditLog =
-  models.AuditLog ?? model("AuditLog", auditLogSchema, "audit_logs");
+export const AuditLog: Model<AuditLogDocument> =
+  (models.AuditLog as Model<AuditLogDocument> | undefined) ??
+  model<AuditLogDocument>("AuditLog", auditLogSchema, "audit_logs");
 export default AuditLog;

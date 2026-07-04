@@ -41,7 +41,13 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
+// Augmenting "next-auth/jwt" doesn't work in this next-auth version — that
+// module file is just `export * from "@auth/core/jwt"`, not a module TS can
+// attach an augmentation to directly. @auth/core/jwt is where JWT is
+// actually declared, so that's the real augmentation target; next-auth/jwt
+// re-exports the same (now-augmented) interface, so importing from either
+// path still sees these fields.
+declare module "@auth/core/jwt" {
   interface JWT {
     id: string;
     role: UserRole;

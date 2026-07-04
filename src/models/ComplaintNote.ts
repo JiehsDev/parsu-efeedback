@@ -7,7 +7,7 @@
 // ever wired up for this model. Not a schema-level hook, to keep this file
 // pure persistence/shape.
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 
 const complaintNoteSchema = new Schema(
   {
@@ -29,7 +29,7 @@ const complaintNoteSchema = new Schema(
 complaintNoteSchema.index({ complaintRef: 1, createdAt: 1 });
 
 export type ComplaintNoteDocument = InferSchemaType<typeof complaintNoteSchema>;
-export const ComplaintNote =
-  models.ComplaintNote ??
-  model("ComplaintNote", complaintNoteSchema, "complaint_notes");
+export const ComplaintNote: Model<ComplaintNoteDocument> =
+  (models.ComplaintNote as Model<ComplaintNoteDocument> | undefined) ??
+  model<ComplaintNoteDocument>("ComplaintNote", complaintNoteSchema, "complaint_notes");
 export default ComplaintNote;

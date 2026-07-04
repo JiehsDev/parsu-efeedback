@@ -2,7 +2,7 @@
 // BR-001..BR-013. Schema only — no business logic (password hashing,
 // lockout counting, etc. happen in src/features/auth, starting Phase 6).
 
-import { Schema, model, models, type InferSchemaType } from "mongoose";
+import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { USER_ROLES } from "@/lib/constants";
 
 const userSchema = new Schema(
@@ -62,5 +62,7 @@ userSchema.index({ role: 1, officeRef: 1 });
 userSchema.index({ collegeRef: 1 });
 
 export type UserDocument = InferSchemaType<typeof userSchema>;
-export const User = models.User ?? model("User", userSchema, "users");
+export const User: Model<UserDocument> =
+  (models.User as Model<UserDocument> | undefined) ??
+  model<UserDocument>("User", userSchema, "users");
 export default User;
