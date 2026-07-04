@@ -649,7 +649,10 @@ UI
   shadcn/ui (CLI-installed components, not a single package)
 
 Email
-  resend  @react-email/components  @react-email/render
+  resend  react-email   (react-email v6 exports components, Tailwind, and
+                          render from one package; the older @react-email/components
+                          and @react-email/render are deprecated — import
+                          everything from "react-email")
 
 File Storage
   @aws-sdk/client-s3  @aws-sdk/s3-request-presigner    (R2 is S3-compatible)
