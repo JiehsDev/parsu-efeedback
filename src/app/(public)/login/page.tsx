@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { signIn, getSession } from "next-auth/react";
-import { homeRouteForRole } from "@/middleware/rbac";
+import { signIn } from "next-auth/react";
 
 // Maps the CredentialsSignin `code` values thrown in src/lib/auth.ts to
-// copy a person can actually act on, instead of one generic "invalid"
-// message for every failure mode (locked, deactivated, rate-limited, wrong
-// password all mean different things to the user).
+// copy a person can actually act on.
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: "Invalid email or password.",
   account_locked:
@@ -19,50 +16,50 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl");
+
+  // Best Practice: Redirect to a unified transition route like "/dashboard".
+  // Your server-side middleware will intercept this route and immediately
+  // forward the user to their correct role-specific dashboard.
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  // Fixed: Replaced deprecated FormEvent with modern React 19 safe event modeling
+  async function handleSubmit(event: React.BaseSyntheticEvent) {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError(ERROR_MESSAGES[result.error] ?? "Something went wrong. Please try again.");
+      if (result?.error) {
+        setError(ERROR_MESSAGES[result.error] ?? "Something went wrong. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Safe client-side redirect fallback to let middleware pick up token placement cleanly
+      window.location.href = callbackUrl;
+    } catch (err) {
+      setError("An unexpected system error occurred.");
       setIsSubmitting(false);
-      return;
     }
-
-    // Role isn't known client-side until the session is fetched — this is
-    // what routes each role to its own dashboard (rbac.ts) rather than a
-    // single shared landing page.
-    const session = await getSession();
-    const role = session?.user?.role;
-    router.push(callbackUrl ?? (role ? homeRouteForRole(role) : "/"));
-    router.refresh();
   }
 
   return (
     <main className="flex min-h-full flex-1 items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-[var(--foreground)]">
-          Sign in
-        </h1>
-        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          ParSU e-Feedback
-        </p>
+        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Sign in</h1>
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">ParSU e-Feedback</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
           {error && (
