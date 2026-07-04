@@ -25,7 +25,8 @@ parsu-efeedback/
 │   │   │   ├── forgot-password/page.tsx
 │   │   │   └── reset-password/[token]/page.tsx
 │   │   │
-│   │   ├── (student)/
+│   │   ├── student/
+│   │   │   ├── layout.tsx
 │   │   │   ├── dashboard/page.tsx
 │   │   │   ├── complaints/
 │   │   │   │   ├── page.tsx                # list/track
@@ -34,25 +35,29 @@ parsu-efeedback/
 │   │   │   ├── feedback/new/page.tsx
 │   │   │   └── profile/page.tsx
 │   │   │
-│   │   ├── (staff)/
+│   │   ├── staff/
+│   │   │   ├── layout.tsx
 │   │   │   ├── dashboard/page.tsx
 │   │   │   ├── complaints/
 │   │   │   │   ├── page.tsx                # assigned queue
 │   │   │   │   └── [id]/page.tsx            # notes, status, resolution docs
 │   │   │   └── sla/page.tsx
 │   │   │
-│   │   ├── (dean)/
+│   │   ├── dean/
+│   │   │   ├── layout.tsx
 │   │   │   ├── dashboard/page.tsx
 │   │   │   ├── complaints/page.tsx
 │   │   │   └── analytics/page.tsx
 │   │   │
-│   │   ├── (qa)/
+│   │   ├── qa/
+│   │   │   ├── layout.tsx
 │   │   │   ├── dashboard/page.tsx
 │   │   │   ├── analytics/page.tsx
 │   │   │   ├── reports/page.tsx
 │   │   │   └── sla-compliance/page.tsx
 │   │   │
-│   │   ├── (admin)/
+│   │   ├── admin/
+│   │   │   ├── layout.tsx
 │   │   │   ├── dashboard/page.tsx
 │   │   │   ├── users/page.tsx
 │   │   │   ├── offices/page.tsx
@@ -156,7 +161,7 @@ parsu-efeedback/
     └── architecture.md                        # this document, versioned
 ```
 
-**Rationale:** Route groups `(student)`, `(staff)`, `(dean)`, `(qa)`, `(admin)` isolate layouts/navigation per role without polluting URLs. `features/` holds business logic (services, repository, schemas, hooks) separate from `app/` (routing/presentation) and `models/` (persistence) — this is what prevents spaghetti code as the app grows past prototype size.
+**Rationale:** Role areas (`student/`, `staff/`, `dean/`, `qa/`, `admin/`) are real path segments, not route groups — each role has its own `/dashboard`, `/complaints`, `/analytics`, etc., and Next.js route groups (parenthesized folders) don't add a URL segment, so using them here would make e.g. every role's dashboard resolve to the same `/dashboard` URL and collide. `(public)` remains a true route group since its paths (`/login`, `/register`, ...) are already unique — it only exists to keep the public pages out of any role's layout tree. `features/` holds business logic (services, repository, schemas, hooks) separate from `app/` (routing/presentation) and `models/` (persistence) — this is what prevents spaghetti code as the app grows past prototype size.
 
 ---
 
@@ -409,12 +414,12 @@ Role hierarchy (not inheritance — explicit per-permission checks):
 
 Request → middleware.ts:
   1. Extract JWT → { role, officeRef, collegeRef }
-  2. Match request path against route-group access table:
-       /(student)/*   → role === 'student'
-       /(staff)/*     → role === 'office_staff'
-       /(dean)/*      → role === 'college_dean'
-       /(qa)/*        → role === 'qa_office'
-       /(admin)/*     → role === 'administrator'
+  2. Match request path against route access table:
+       /student/*     → role === 'student'
+       /staff/*       → role === 'office_staff'
+       /dean/*        → role === 'college_dean'
+       /qa/*          → role === 'qa_office'
+       /admin/*       → role === 'administrator'
        /api/admin/*   → role === 'administrator'
   3. No match → redirect to /login or return 403 JSON for API routes
 
