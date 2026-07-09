@@ -1,7 +1,14 @@
-export default function StaffLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  // Role-specific nav/sidebar for the Staff route group will be added
-  // once Authentication (Phase 6) and RBAC are wired up.
-  return <div className="min-h-screen">{children}</div>;
+// src/app/staff/layout.tsx
+import { auth } from "@/lib/auth";
+import { StaffNav } from "@/components/staff/StaffNav";
+
+export default async function StaffLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+
+  return (
+    <div className="min-h-screen bg-[var(--background)]">
+      <StaffNav userName={session?.user?.name ?? "Staff"} />
+      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+    </div>
+  );
 }

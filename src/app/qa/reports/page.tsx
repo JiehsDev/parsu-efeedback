@@ -1,10 +1,16 @@
-export default function Page() {
+// src/app/qa/reports/page.tsx
+import { ReportsPanel } from "@/components/reports/ReportsPanel";
+
+export default function QaReportsPage() {
   return (
-    <main className="p-8">
-      <h1 className="text-xl font-semibold text-[var(--foreground)]">Reports</h1>
-      <p className="mt-2 text-sm text-[var(--muted-foreground,#a3c8f7)]">
-        Placeholder — built in Phase 14 (Reports)
-      </p>
-    </main>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Reports</h1>
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          Generate institution-wide complaint reports.
+        </p>
+      </div>
+      <ReportsPanel showOfficeFilter showCollegeFilter={false} />
+    </div>
   );
 }

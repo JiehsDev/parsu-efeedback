@@ -36,16 +36,11 @@ const commaSeparatedList = (defaultValue: string) =>
         .filter(Boolean),
     );
 
-const positiveInt = z.coerce
-  .number()
-  .int()
-  .positive();
+const positiveInt = z.coerce.number().int().positive();
 
 const envSchema = z.object({
   // --- App ---
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   NEXT_PUBLIC_APP_URL: z.string().url(),
 
   // --- Database (MongoDB Atlas M0) ---
@@ -65,6 +60,7 @@ const envSchema = z.object({
   // --- Email (Resend) ---
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
+  RESEND_DEV_TEST_EMAIL: z.string().email(),
 
   // --- Rate limiting / Cron (Upstash) ---
   UPSTASH_REDIS_REST_URL: z.string().url(),

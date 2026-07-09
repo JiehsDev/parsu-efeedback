@@ -1,7 +1,14 @@
-export default function AdminLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  // Role-specific nav/sidebar for the Admin route group will be added
-  // once Authentication (Phase 6) and RBAC are wired up.
-  return <div className="min-h-screen">{children}</div>;
+// src/app/admin/layout.tsx
+import { auth } from "@/lib/auth";
+import { AdminNav } from "@/components/admin/AdminNav";
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+
+  return (
+    <div className="bg-background min-h-screen">
+      <AdminNav userName={session?.user?.name ?? "Admin"} />
+      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+    </div>
+  );
 }

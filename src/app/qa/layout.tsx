@@ -1,7 +1,14 @@
-export default function QAOfficeLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  // Role-specific nav/sidebar for the QAOffice route group will be added
-  // once Authentication (Phase 6) and RBAC are wired up.
-  return <div className="min-h-screen">{children}</div>;
+// src/app/qa/layout.tsx
+import { auth } from "@/lib/auth";
+import { QaNav } from "@/components/qa/QaNav";
+
+export default async function QaLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+
+  return (
+    <div className="min-h-screen bg-[var(--background)]">
+      <QaNav userName={session?.user?.name ?? "QA"} />
+      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+    </div>
+  );
 }

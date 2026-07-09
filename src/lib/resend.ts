@@ -1,2 +1,5 @@
-// Resend email client — implemented in Phase 11 (Notifications)
-export {};
+// src/lib/resend.ts
+import { Resend } from "resend";
+import { env } from "./env";
+
+export const resend = new Resend(env.RESEND_API_KEY);
