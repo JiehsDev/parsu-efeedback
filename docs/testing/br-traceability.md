@@ -45,16 +45,16 @@ Maps each business rule to its test type and location. Status: ✅ tested, 🟡 
 
 | BR         | Rule                                    | Test Type   | Location                             | Status |
 | ---------- | --------------------------------------- | ----------- | ------------------------------------ | ------ |
-| BR-035     | Students only submit                    | Integration | `complaints.test.ts`                 | ⬜     |
-| BR-036     | Unique ticket number                    | Unit        | `ticket-number.service.test.ts`      | ⬜     |
-| BR-037     | Required fields before submission       | Unit        | `complaint.schema.test.ts`           | ⬜     |
-| BR-038–039 | Complaint↔student relationship          | Integration | `complaints.test.ts`                 | ⬜     |
-| BR-040–041 | Single current status, lifecycle order  | Unit        | `status-transitions.service.test.ts` | ⬜     |
-| BR-042     | Closed complaints not student-editable  | Integration | `complaints.test.ts`                 | ⬜     |
-| BR-043     | Reopen allowed for authorized personnel | Unit        | `status-transitions.service.test.ts` | ⬜     |
-| BR-044     | Reopen count tracked                    | Integration | `complaints.test.ts`                 | ⬜     |
-| BR-045     | No deletion; admin-only archive         | Integration | `complaints.test.ts`                 | ⬜     |
-| BR-046     | Required timestamps present             | Integration | `complaints.test.ts`                 | ⬜     |
+| BR-035     | Students only submit                    | Integration | `complaints.integration.test.ts`     | 🟡     |
+| BR-036     | Unique ticket number                    | Unit        | `ticket-number.service.test.ts`      | ✅     |
+| BR-037     | Required fields before submission       | Integration | `complaints.integration.test.ts`     | ✅     |
+| BR-038–039 | Complaint↔student relationship          | Integration | `complaints.integration.test.ts`     | ✅     |
+| BR-040–041 | Single current status, lifecycle order  | Unit        | `status-transitions.service.test.ts` | ✅     |
+| BR-042     | Closed complaints not student-editable  | Integration | `complaints.integration.test.ts`     | 🟡     |
+| BR-043     | Reopen allowed for authorized personnel | Unit        | `status-transitions.service.test.ts` | ✅     |
+| BR-044     | Reopen count tracked                    | Integration | `complaints.integration.test.ts`     | ✅     |
+| BR-045     | No deletion; admin-only archive         | Integration | `complaints.integration.test.ts`     | ✅     |
+| BR-046     | Required timestamps present             | Integration | `complaints.integration.test.ts`     | ✅     |
 
 ## 8–10. Assignment / Timeline / Attachments
 

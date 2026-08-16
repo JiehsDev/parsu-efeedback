@@ -143,9 +143,23 @@ async function checkDeadline(
   return { escalated: false, warned: true };
 }
 
+// Vercel Cron Jobs (configured in vercel.json) trigger via GET; Upstash
+// QStash and manual/external triggers use POST. Both run the same check.
+export async function GET(req: NextRequest) {
+  return runSlaCheck(req);
+}
+
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
-  if (secret !== env.CRON_SECRET) {
+  return runSlaCheck(req);
+}
+
+async function runSlaCheck(req: NextRequest) {
+  // Accepts either a custom header (Upstash QStash, manual triggers) or a
+  // bearer token (Vercel Cron Jobs send `Authorization: Bearer $CRON_SECRET`
+  // automatically for schedules defined in vercel.json).
+  const headerSecret = req.headers.get("x-cron-secret");
+  const bearerSecret = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (headerSecret !== env.CRON_SECRET && bearerSecret !== env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
