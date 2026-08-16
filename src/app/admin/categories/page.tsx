@@ -3,8 +3,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AlertCircle, ChevronDown, ChevronRight, Loader2, Plus, Tag } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
+import { useToast } from "@/components/shared/Toast";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { ListRowsSkeleton } from "@/components/shared/Skeleton";
 
 interface CategoryRow {
   _id: string;
@@ -22,12 +26,14 @@ interface Office {
 const PRIORITIES = ["low", "medium", "high", "critical"];
 
 export default function AdminCategoriesPage() {
+  const { show: showToast } = useToast();
+  const confirm = useConfirm();
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activateError, setActivateError] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -38,7 +44,8 @@ export default function AdminCategoriesPage() {
   function refresh() {
     fetch("/api/admin/categories")
       .then((res) => res.json())
-      .then((data) => setCategories(data.categories ?? []));
+      .then((data) => setCategories(data.categories ?? []))
+      .finally(() => setIsLoading(false));
   }
 
   useEffect(() => {
@@ -73,7 +80,15 @@ export default function AdminCategoriesPage() {
   }
 
   async function toggleActive(category: CategoryRow) {
-    setActivateError((prev) => ({ ...prev, [category._id]: "" }));
+    if (category.isActive) {
+      const ok = await confirm({
+        title: "Deactivate this category?",
+        message: `"${category.name}" will stop appearing as a selectable category for new complaints.`,
+        confirmLabel: "Deactivate",
+        danger: true,
+      });
+      if (!ok) return;
+    }
 
     const res = await fetch(`/api/admin/categories/${category._id}`, {
       method: "PATCH",
@@ -83,73 +98,87 @@ export default function AdminCategoriesPage() {
     const data = await res.json();
 
     if (!res.ok) {
-      setActivateError((prev) => ({ ...prev, [category._id]: data.error ?? "Could not update." }));
+      showToast(data.error ?? "Could not update category.", "error");
       return;
     }
+    showToast(category.isActive ? "Category deactivated" : "Category activated");
     refresh();
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Categories</h1>
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+            <Tag className="h-5 w-5" />
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            Categories
+          </h1>
+        </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90"
+          className="flex items-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
         >
-          + Add Category
+          <Plus className="h-4 w-4" />
+          Add Category
         </button>
       </div>
 
-      <p className="rounded-[var(--radius)] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
-        New categories are created inactive. Add a routing rule and an SLA rule before activating,
-        or activation will be blocked.
-      </p>
-
-      <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)]">
-        <table className="w-full text-sm">
-          <thead className="bg-[var(--muted)] text-left text-[var(--muted-foreground)]">
-            <tr>
-              <th className="px-4 py-2 font-medium">Name</th>
-              <th className="px-4 py-2 font-medium">Priority</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {categories.map((c) => (
-              <tr key={c._id} className="bg-[var(--card)]">
-                <td className="px-4 py-3 text-[var(--foreground)]">{c.name}</td>
-                <td className="px-4 py-3 text-[var(--muted-foreground)] capitalize">
-                  {c.defaultPriority}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      c.isActive
-                        ? "bg-emerald-500/20 text-emerald-400"
-                        : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                    }`}
-                  >
-                    {c.isActive ? "Active" : "Inactive"}
-                  </span>
-                  {activateError[c._id] && (
-                    <p className="mt-1 text-xs text-[var(--destructive)]">{activateError[c._id]}</p>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => toggleActive(c)}
-                    className="text-xs font-medium text-[var(--primary)] hover:underline"
-                  >
-                    {c.isActive ? "Deactivate" : "Activate"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          New categories are created inactive. Add a routing rule and an SLA rule before
+          activating, or activation will be blocked.
+        </span>
       </div>
+
+      {isLoading ? (
+        <ListRowsSkeleton />
+      ) : (
+      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+        <ul className="divide-y divide-[var(--border)]">
+          {categories.map((c) => (
+            <li
+              key={c._id}
+              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
+            >
+              <Link
+                href={`/admin/categories/${c._id}`}
+                className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-[var(--foreground)]">
+                    {c.name}
+                  </span>
+                  <span className="mt-0.5 block text-xs capitalize text-[var(--muted-foreground)]">
+                    {c.defaultPriority} priority
+                  </span>
+                </span>
+                <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+              </Link>
+              <div className="flex items-center gap-2 sm:shrink-0">
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    c.isActive
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                  }`}
+                >
+                  {c.isActive ? "Active" : "Inactive"}
+                </span>
+                <button
+                  onClick={() => toggleActive(c)}
+                  className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                >
+                  {c.isActive ? "Deactivate" : "Activate"}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+      )}
 
       <p className="text-sm text-[var(--muted-foreground)]">
         Configure routing in{" "}
@@ -166,7 +195,12 @@ export default function AdminCategoriesPage() {
       {showCreate && (
         <Modal title="Add Category" onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
-            {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
+            {error && (
+              <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <FormField label="Name">
               <input
@@ -187,42 +221,49 @@ export default function AdminCategoriesPage() {
             </FormField>
 
             <FormField label="Default office">
-              <select
-                required
-                className={inputClass}
-                value={form.defaultOfficeRef}
-                onChange={(e) => setForm((p) => ({ ...p, defaultOfficeRef: e.target.value }))}
-              >
-                <option value="" disabled>
-                  Select office
-                </option>
-                {offices.map((o) => (
-                  <option key={o._id} value={o._id}>
-                    {o.name}
+              <div className="relative">
+                <select
+                  required
+                  className={`${inputClass} appearance-none pr-9`}
+                  value={form.defaultOfficeRef}
+                  onChange={(e) => setForm((p) => ({ ...p, defaultOfficeRef: e.target.value }))}
+                >
+                  <option value="" disabled>
+                    Select office
                   </option>
-                ))}
-              </select>
+                  {offices.map((o) => (
+                    <option key={o._id} value={o._id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              </div>
             </FormField>
 
             <FormField label="Default priority">
-              <select
-                className={inputClass}
-                value={form.defaultPriority}
-                onChange={(e) => setForm((p) => ({ ...p, defaultPriority: e.target.value }))}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  className={`${inputClass} appearance-none pr-9`}
+                  value={form.defaultPriority}
+                  onChange={(e) => setForm((p) => ({ ...p, defaultPriority: e.target.value }))}
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              </div>
             </FormField>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {isSubmitting ? "Creating…" : "Create Category"}
             </button>
           </form>

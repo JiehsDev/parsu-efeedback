@@ -2,8 +2,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertCircle, ChevronDown, Loader2, Plus, Route } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
+import { useToast } from "@/components/shared/Toast";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { ListRowsSkeleton } from "@/components/shared/Skeleton";
 
 interface RuleRow {
   _id: string;
@@ -23,18 +27,22 @@ interface Office {
 }
 
 export default function AdminRoutingRulesPage() {
+  const { show: showToast } = useToast();
+  const confirm = useConfirm();
   const [rules, setRules] = useState<RuleRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState({ categoryRef: "", targetOfficeRef: "" });
 
   function refresh() {
     fetch("/api/admin/routing-rules")
       .then((res) => res.json())
-      .then((data) => setRules(data.rules ?? []));
+      .then((data) => setRules(data.rules ?? []))
+      .finally(() => setIsLoading(false));
   }
 
   useEffect(() => {
@@ -79,123 +87,154 @@ export default function AdminRoutingRulesPage() {
   }
 
   async function deactivate(rule: RuleRow) {
-    await fetch(`/api/admin/routing-rules/${rule._id}`, {
+    const ok = await confirm({
+      title: "Deactivate this routing rule?",
+      message: `New complaints under "${categoryName(rule.categoryRef)}" will have nowhere to route until a replacement rule is added.`,
+      confirmLabel: "Deactivate",
+      danger: true,
+    });
+    if (!ok) return;
+
+    const res = await fetch(`/api/admin/routing-rules/${rule._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: false }),
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error ?? "Could not deactivate rule.", "error");
+      return;
+    }
+    showToast("Routing rule deactivated");
     refresh();
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Routing Rules</h1>
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+            <Route className="h-5 w-5" />
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            Routing Rules
+          </h1>
+        </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90"
+          className="flex items-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
         >
-          + Add Rule
+          <Plus className="h-4 w-4" />
+          Add Rule
         </button>
       </div>
 
       <p className="text-sm text-[var(--muted-foreground)]">
-        Each category can have at most one active routing rule. Deactivating clears the way to add a
-        replacement.
+        Each category can have at most one active routing rule. Deactivating clears the way to add
+        a replacement.
       </p>
 
-      <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)]">
-        <table className="w-full text-sm">
-          <thead className="bg-[var(--muted)] text-left text-[var(--muted-foreground)]">
-            <tr>
-              <th className="px-4 py-2 font-medium">Category</th>
-              <th className="px-4 py-2 font-medium">Target Office</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {rules.map((r) => (
-              <tr key={r._id} className="bg-[var(--card)]">
-                <td className="px-4 py-3 text-[var(--foreground)]">
+      {isLoading ? (
+        <ListRowsSkeleton />
+      ) : (
+      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+        <ul className="divide-y divide-[var(--border)]">
+          {rules.map((r) => (
+            <li
+              key={r._id}
+              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-[var(--foreground)]">
                   {categoryName(r.categoryRef)}
-                </td>
-                <td className="px-4 py-3 text-[var(--muted-foreground)]">
-                  {officeName(r.targetOfficeRef)}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      r.isActive
-                        ? "bg-emerald-500/20 text-emerald-400"
-                        : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                    }`}
+                </span>
+                <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                  → {officeName(r.targetOfficeRef)}
+                </span>
+              </span>
+              <div className="flex items-center gap-2 sm:shrink-0">
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    r.isActive
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                  }`}
+                >
+                  {r.isActive ? "Active" : "Inactive"}
+                </span>
+                {r.isActive && (
+                  <button
+                    onClick={() => deactivate(r)}
+                    className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
                   >
-                    {r.isActive ? "Active" : "Inactive"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {r.isActive && (
-                    <button
-                      onClick={() => deactivate(r)}
-                      className="text-xs font-medium text-[var(--destructive)] hover:underline"
-                    >
-                      Deactivate
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    Deactivate
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
+      )}
 
       {showCreate && (
         <Modal title="Add Routing Rule" onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
-            {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
+            {error && (
+              <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <FormField label="Category">
-              <select
-                required
-                className={inputClass}
-                value={form.categoryRef}
-                onChange={(e) => setForm((p) => ({ ...p, categoryRef: e.target.value }))}
-              >
-                <option value="" disabled>
-                  Select category
-                </option>
-                {categories.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
+              <div className="relative">
+                <select
+                  required
+                  className={`${inputClass} appearance-none pr-9`}
+                  value={form.categoryRef}
+                  onChange={(e) => setForm((p) => ({ ...p, categoryRef: e.target.value }))}
+                >
+                  <option value="" disabled>
+                    Select category
                   </option>
-                ))}
-              </select>
+                  {categories.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              </div>
             </FormField>
 
             <FormField label="Target office">
-              <select
-                required
-                className={inputClass}
-                value={form.targetOfficeRef}
-                onChange={(e) => setForm((p) => ({ ...p, targetOfficeRef: e.target.value }))}
-              >
-                <option value="" disabled>
-                  Select office
-                </option>
-                {offices.map((o) => (
-                  <option key={o._id} value={o._id}>
-                    {o.name}
+              <div className="relative">
+                <select
+                  required
+                  className={`${inputClass} appearance-none pr-9`}
+                  value={form.targetOfficeRef}
+                  onChange={(e) => setForm((p) => ({ ...p, targetOfficeRef: e.target.value }))}
+                >
+                  <option value="" disabled>
+                    Select office
                   </option>
-                ))}
-              </select>
+                  {offices.map((o) => (
+                    <option key={o._id} value={o._id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              </div>
             </FormField>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {isSubmitting ? "Creating…" : "Create Rule"}
             </button>
           </form>

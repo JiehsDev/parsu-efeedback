@@ -9,6 +9,7 @@ import { env } from "@/lib/env";
 import { Complaint } from "@/models/Complaint";
 import { presignUploadSchema } from "@/features/attachments/schemas/attachment.schema";
 import { User } from "@/models";
+import { getSettings } from "@/features/settings/services/settings.service";
 
 export async function POST(req: NextRequest) {
   if (!isR2Configured() || !r2Client) {
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   await connectToDatabase();
+  const settings = await getSettings();
 
   const body = await req.json();
   const parsed = presignUploadSchema.safeParse(body);
@@ -38,13 +40,13 @@ export async function POST(req: NextRequest) {
 
   // BR-060/061: validate against configured allow-list/max size before
   // issuing a presigned URL at all
-  if (!env.UPLOAD_ALLOWED_MIME_TYPES.includes(mimeType)) {
+  if (!settings.uploadAllowedMimeTypes.includes(mimeType)) {
     return NextResponse.json({ error: `File type ${mimeType} is not allowed` }, { status: 400 });
   }
-  const maxBytes = env.UPLOAD_MAX_FILE_SIZE_MB * 1024 * 1024;
+  const maxBytes = settings.uploadMaxFileSizeMb * 1024 * 1024;
   if (sizeBytes > maxBytes) {
     return NextResponse.json(
-      { error: `File exceeds maximum size of ${env.UPLOAD_MAX_FILE_SIZE_MB}MB` },
+      { error: `File exceeds maximum size of ${settings.uploadMaxFileSizeMb}MB` },
       { status: 400 },
     );
   }
@@ -68,7 +70,6 @@ export async function POST(req: NextRequest) {
     const student = await User.findById((complaint as any).studentRef).lean();
     canAccess = Boolean(student) && String((student as any).collegeRef) === collegeRef;
   }
-  console.log(canAccess);
   if (!canAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -85,5 +86,4 @@ export async function POST(req: NextRequest) {
   const fileUrl = `${env.R2_PUBLIC_URL}/${objectKey}`;
 
   return NextResponse.json({ uploadUrl, fileUrl, objectKey });
-  // src/app/api/uploads/presign/route.ts — temporary debug logging
 }

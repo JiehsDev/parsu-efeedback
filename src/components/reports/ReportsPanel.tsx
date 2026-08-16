@@ -2,7 +2,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  AlertCircle,
+  Download,
+  FileBarChart,
+  FileClock,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import { ReportStatusBadge } from "./ReportStatusBadge";
+import { ListRowsSkeleton } from "@/components/shared/Skeleton";
 
 interface Category {
   _id: string;
@@ -33,18 +42,16 @@ const STATUS_OPTIONS = [
   "closed",
 ];
 
-export function ReportsPanel({
-  showOfficeFilter = true,
-  showCollegeFilter = false,
-}: {
-  showOfficeFilter?: boolean;
-  showCollegeFilter?: boolean;
-}) {
+const selectClass =
+  "w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
+
+export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: boolean }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [reports, setReports] = useState<ReportRecord[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
 
   const [form, setForm] = useState({
     format: "csv" as "csv" | "excel" | "pdf",
@@ -59,7 +66,8 @@ export function ReportsPanel({
   function refreshReports() {
     fetch("/api/reports/export")
       .then((res) => res.json())
-      .then((data) => setReports(data.reports ?? []));
+      .then((data) => setReports(data.reports ?? []))
+      .finally(() => setIsLoadingReports(false));
   }
 
   useEffect(() => {
@@ -74,6 +82,7 @@ export function ReportsPanel({
           setOffices((data.offices ?? []).filter((o: Office) => o.type === "service_office")),
         );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleGenerate(event: React.FormEvent) {
@@ -112,25 +121,32 @@ export function ReportsPanel({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <form
         onSubmit={handleGenerate}
-        className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-6"
+        className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8"
       >
-        <h2 className="text-lg font-semibold text-[var(--foreground)]">Generate Report</h2>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
+            <Sparkles className="h-[18px] w-[18px]" />
+          </span>
+          <h2 className="text-base font-semibold text-[var(--foreground)]">Generate Report</h2>
+        </div>
+
         {error && (
-          <p className="mt-2 rounded-[var(--radius)] border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
-            {error}
-          </p>
+          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
         )}
 
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[var(--foreground)]">Format</label>
             <select
               value={form.format}
               onChange={(e) => setForm((p) => ({ ...p, format: e.target.value as any }))}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+              className={selectClass}
             >
               <option value="csv">CSV</option>
               <option value="excel">Excel</option>
@@ -143,7 +159,7 @@ export function ReportsPanel({
             <select
               value={form.categoryRef}
               onChange={(e) => setForm((p) => ({ ...p, categoryRef: e.target.value }))}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+              className={selectClass}
             >
               <option value="">All categories</option>
               {categories.map((c) => (
@@ -160,7 +176,7 @@ export function ReportsPanel({
               <select
                 value={form.officeRef}
                 onChange={(e) => setForm((p) => ({ ...p, officeRef: e.target.value }))}
-                className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+                className={selectClass}
               >
                 <option value="">All offices</option>
                 {offices.map((o) => (
@@ -177,7 +193,7 @@ export function ReportsPanel({
             <select
               value={form.status}
               onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+              className={selectClass}
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
@@ -193,7 +209,7 @@ export function ReportsPanel({
               type="date"
               value={form.dateFrom}
               onChange={(e) => setForm((p) => ({ ...p, dateFrom: e.target.value }))}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+              className={selectClass}
             />
           </div>
 
@@ -203,17 +219,17 @@ export function ReportsPanel({
               type="date"
               value={form.dateTo}
               onChange={(e) => setForm((p) => ({ ...p, dateTo: e.target.value }))}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+              className={selectClass}
             />
           </div>
         </div>
 
-        <label className="mt-4 flex items-center gap-2 text-sm text-[var(--foreground)]">
+        <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm text-[var(--foreground)]">
           <input
             type="checkbox"
             checked={form.slaOnly}
             onChange={(e) => setForm((p) => ({ ...p, slaOnly: e.target.checked }))}
-            className="rounded border-[var(--border)]"
+            className="h-4 w-4 rounded border-[var(--border)] accent-[var(--primary)]"
           />
           SLA breaches only
         </label>
@@ -221,61 +237,73 @@ export function ReportsPanel({
         <button
           type="submit"
           disabled={isGenerating}
-          className="mt-4 rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50"
+          className="mt-5 flex items-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
+          {isGenerating && <Loader2 className="h-4 w-4 animate-spin" />}
           {isGenerating ? "Generating…" : "Generate Report"}
         </button>
       </form>
 
       <div>
-        <h2 className="text-lg font-semibold text-[var(--foreground)]">Your Reports</h2>
-        <div className="mt-4 overflow-hidden rounded-[var(--radius)] border border-[var(--border)]">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--muted)] text-left text-[var(--muted-foreground)]">
-              <tr>
-                <th className="px-4 py-2 font-medium">Type</th>
-                <th className="px-4 py-2 font-medium">Format</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Generated</th>
-                <th className="px-4 py-2 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
-              {reports.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-[var(--muted-foreground)]">
-                    No reports generated yet.
-                  </td>
-                </tr>
-              ) : (
-                reports.map((r) => (
-                  <tr key={r._id} className="bg-[var(--card)]">
-                    <td className="px-4 py-3 text-[var(--foreground)]">{r.reportType}</td>
-                    <td className="px-4 py-3 text-[var(--muted-foreground)] uppercase">
-                      {r.format}
-                    </td>
-                    <td className="px-4 py-3">
-                      <ReportStatusBadge status={r.status} />
-                    </td>
-                    <td className="px-4 py-3 text-[var(--muted-foreground)]">
-                      {new Date(r.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {r.status === "ready" && (
-                        <a
-                          href={`/api/reports/${r._id}/download`}
-                          className="text-xs font-medium text-[var(--primary)] hover:underline"
-                        >
-                          Download
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2.5">
+          <FileClock className="h-4 w-4 text-[var(--muted-foreground)]" />
+          <h2 className="text-lg font-semibold tracking-tight text-[var(--foreground)]">
+            Your Reports
+          </h2>
         </div>
+
+        {isLoadingReports ? (
+          <div className="mt-4">
+            <ListRowsSkeleton rows={3} />
+          </div>
+        ) : reports.length === 0 ? (
+          <div className="mt-4 flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+              <FileBarChart className="h-6 w-6" />
+            </span>
+            <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
+              No reports generated yet.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+            <ul className="divide-y divide-[var(--border)]">
+              {reports.map((r) => (
+                <li
+                  key={r._id}
+                  className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[var(--muted)]/40"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
+                    <FileBarChart className="h-[18px] w-[18px]" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium capitalize text-[var(--foreground)]">
+                        {r.reportType.replace(/-/g, " ")}
+                      </span>
+                      <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                        {r.format}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                      {new Date(r.createdAt).toLocaleString()}
+                    </span>
+                  </span>
+                  <ReportStatusBadge status={r.status} />
+                  {r.status === "ready" && (
+                    <a
+                      href={`/api/reports/${r._id}/download`}
+                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

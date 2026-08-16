@@ -87,3 +87,36 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.18s ease-out;
+}
+
+/* iOS Safari auto-zooms the page on focus for any form control rendering
+   below 16px — every input/textarea/select in this app is styled at 14px
+   (text-sm). Force 16px on native controls below the desktop breakpoint so
+   focusing a field doesn't yank the viewport into a zoomed-in state; the
+   surrounding label/placeholder text keeps its normal 14px sizing since
+   this only touches the form elements themselves.
+   !important is necessary here: Tailwind's .text-sm class (specificity
+   0,1,0) otherwise always wins over a bare element selector (0,0,1)
+   regardless of source order, so a plain override rule is silently
+   ignored on every input styled via `text-sm`. */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

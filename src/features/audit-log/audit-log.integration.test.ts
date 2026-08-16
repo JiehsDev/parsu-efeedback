@@ -23,8 +23,8 @@ describe("Audit logs — BR-075/076/077", () => {
 
     const logs = await AuditLog.find({ actorRef: admin._id });
     expect(logs).toHaveLength(1);
-    expect(logs[0].action).toBe("user.create");
-    expect(logs[0].entityType).toBe("User");
+    expect(logs[0]!.action).toBe("user.create");
+    expect(logs[0]!.entityType).toBe("User");
     expect((logs[0] as any).createdAt).toBeInstanceOf(Date);
   });
 
@@ -54,6 +54,6 @@ describe("Audit logs — BR-075/076/077", () => {
 
     const logs = await AuditLog.find({ action: "complaint.sla_escalate" });
     expect(logs).toHaveLength(1);
-    expect(logs[0].actorRef).toBeNull();
+    expect(logs[0]!.actorRef).toBeNull();
   });
 });

@@ -11,7 +11,10 @@ const auditLogSchema = new Schema(
     actorRef: { type: Schema.Types.ObjectId, ref: "User", default: null }, // null = system action
     action: { type: String, required: true }, // free-form, e.g. "complaint.status_changed"
     entityType: { type: String, required: true }, // e.g. "Complaint"
-    entityId: { type: Schema.Types.ObjectId, required: true },
+    // Mixed, not ObjectId: almost every entity has a real ObjectId _id, but
+    // Settings is a fixed-string singleton ("global" — see src/models/
+    // Settings.ts), so this needs to accept both.
+    entityId: { type: Schema.Types.Mixed, required: true },
 
     // Small, bounded snapshots — embedding is appropriate here (see
     // docs/architecture.md section 3 embedding rationale)

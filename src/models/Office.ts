@@ -35,4 +35,5 @@ export type OfficeDocument = InferSchemaType<typeof officeSchema>;
 export const Office: Model<OfficeDocument> =
   (models.Office as Model<OfficeDocument> | undefined) ??
   model<OfficeDocument>("Office", officeSchema, "offices");
+
 export default Office;

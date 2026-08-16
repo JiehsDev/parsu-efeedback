@@ -1,6 +1,7 @@
 // src/app/dean/complaints/[id]/page.tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Calendar, Hash, History, User as UserIcon } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
@@ -10,6 +11,8 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { ReassignForm } from "@/components/dean/ReassignForm";
 import type { ComplaintStatus } from "@/lib/constants";
+import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
+import { CopyButton } from "@/components/shared/CopyButton";
 
 export default async function DeanComplaintDetailPage({
   params,
@@ -32,39 +35,95 @@ export default async function DeanComplaintDetailPage({
   const timeline = await ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean();
 
   return (
-    <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="space-y-6 lg:col-span-2">
-        <Link
-          href="/dean/complaints"
-          className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-        >
-          ← Back to complaints
-        </Link>
+    <div className="mx-auto max-w-5xl space-y-6">
+      <Link
+        href="/dean/complaints"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to complaints
+      </Link>
 
-        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-xs text-[var(--muted-foreground)]">{c.ticketNumber}</p>
-              <h1 className="mt-1 text-xl font-semibold text-[var(--foreground)]">{c.title}</h1>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {(student as any).firstName} {(student as any).lastName}
-              </p>
-            </div>
-            <StatusBadge status={c.status as ComplaintStatus} />
-          </div>
-
-          <p className="mt-4 text-sm text-[var(--foreground)]">{c.description}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="flex items-center gap-1 font-mono text-xs text-[var(--muted-foreground)]">
+            {c.ticketNumber}
+            <CopyButton value={c.ticketNumber} />
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            {c.title}
+          </h1>
         </div>
-
-        <ReassignForm complaintId={String(c._id)} currentOfficeRef={String(c.assignedOfficeRef)} />
+        <div className="shrink-0 lg:hidden">
+          <StatusBadge status={c.status as ComplaintStatus} />
+        </div>
       </div>
 
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-[var(--foreground)]">Timeline</h2>
-        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-6">
-          {timeline.map((event: any) => (
-            <TimelineEvent key={event._id} event={event} />
-          ))}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
+            <p className="text-sm font-semibold text-[var(--foreground)]">Description</p>
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[var(--foreground)]/90">
+              {c.description}
+            </p>
+          </div>
+
+          <AttachmentGallery complaintId={String(c._id)} />
+
+          <ReassignForm complaintId={String(c._id)} currentOfficeRef={String(c.assignedOfficeRef)} />
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+            <p className="text-sm font-semibold text-[var(--foreground)]">Details</p>
+            <dl className="mt-4 space-y-4 text-sm">
+              <div className="hidden lg:block">
+                <dt className="text-xs text-[var(--muted-foreground)]">Status</dt>
+                <dd className="mt-1.5">
+                  <StatusBadge status={c.status as ComplaintStatus} />
+                </dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                  <UserIcon className="h-3.5 w-3.5" />
+                  Student
+                </dt>
+                <dd className="mt-1.5 text-[var(--foreground)]">
+                  {(student as any).firstName} {(student as any).lastName}
+                </dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                  <Hash className="h-3.5 w-3.5" />
+                  Ticket
+                </dt>
+                <dd className="mt-1.5 font-mono text-xs text-[var(--foreground)]">
+                  {c.ticketNumber}
+                </dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Submitted
+                </dt>
+                <dd className="mt-1.5 text-[var(--foreground)]">
+                  {new Date(c.submittedAt).toLocaleString()}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+            <div className="flex items-center gap-2">
+              <History className="h-4 w-4 text-[var(--muted-foreground)]" />
+              <p className="text-sm font-semibold text-[var(--foreground)]">Timeline</p>
+            </div>
+            <div className="mt-4">
+              {timeline.map((event: any) => (
+                <TimelineEvent key={event._id} event={event} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

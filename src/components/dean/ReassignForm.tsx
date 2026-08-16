@@ -3,6 +3,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle, ArrowRightLeft, ChevronDown, Loader2, MessageSquare } from "lucide-react";
+import { useToast } from "@/components/shared/Toast";
 
 interface Office {
   _id: string;
@@ -24,6 +26,7 @@ export function ReassignForm({
   currentOfficeRef: string;
 }) {
   const router = useRouter();
+  const { show: showToast } = useToast();
   const [offices, setOffices] = useState<Office[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedOffice, setSelectedOffice] = useState(currentOfficeRef);
@@ -46,6 +49,7 @@ export function ReassignForm({
       .then((res) => res.json())
       .then((data) => setStaff(data.staff ?? []));
     setSelectedStaff("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedOffice]);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -72,62 +76,87 @@ export function ReassignForm({
 
     setIsSubmitting(false);
     setMessage("");
+    showToast("Complaint reassigned");
     router.refresh();
   }
+
+  const selectClass =
+    "mt-1 w-full appearance-none rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 pr-9 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] p-4"
+      className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5"
     >
-      <p className="text-sm font-medium text-[var(--foreground)]">Reassign / Escalate</p>
-      {error && <p className="mt-2 text-sm text-[var(--destructive)]">{error}</p>}
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
+          <ArrowRightLeft className="h-[18px] w-[18px]" />
+        </span>
+        <p className="text-sm font-semibold text-[var(--foreground)]">Reassign / Escalate</p>
+      </div>
+
+      {error && (
+        <div className="mt-3 flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <div className="mt-3 space-y-3">
         <div>
           <label className="text-xs text-[var(--muted-foreground)]">Office</label>
-          <select
-            value={selectedOffice}
-            onChange={(e) => setSelectedOffice(e.target.value)}
-            className="mt-1 w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-          >
-            {offices.map((o) => (
-              <option key={o._id} value={o._id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedOffice}
+              onChange={(e) => setSelectedOffice(e.target.value)}
+              className={selectClass}
+            >
+              {offices.map((o) => (
+                <option key={o._id} value={o._id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+          </div>
         </div>
 
         <div>
           <label className="text-xs text-[var(--muted-foreground)]">Staff (optional)</label>
-          <select
-            value={selectedStaff}
-            onChange={(e) => setSelectedStaff(e.target.value)}
-            className="mt-1 w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-          >
-            <option value="">— Unassigned —</option>
-            {staff.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.firstName} {s.lastName}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedStaff}
+              onChange={(e) => setSelectedStaff(e.target.value)}
+              className={selectClass}
+            >
+              <option value="">— Unassigned —</option>
+              {staff.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.firstName} {s.lastName}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+          </div>
         </div>
 
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Reason for reassignment (optional)"
-          rows={2}
-          className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-        />
+        <div className="relative">
+          <MessageSquare className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Reason for reassignment (optional)"
+            rows={2}
+            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+          />
+        </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {isSubmitting ? "Reassigning…" : "Reassign"}
         </button>
       </div>

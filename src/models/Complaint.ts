@@ -57,10 +57,13 @@ const complaintSchema = new Schema(
     // on every query
     isOverdue: { type: Boolean, required: true, default: false },
 
-    // Idempotency guard for the hourly SLA cron (Phase 10, docs/architecture.md
+    // Idempotency guards for the hourly SLA cron (Phase 10, docs/architecture.md
     // section 8) — so a warning isn't re-sent every hour once already sent
-    // for the current threshold breach.
+    // for the current threshold breach. Separate fields because
+    // slaResponseDueAt and slaResolutionDueAt are independent clocks; a
+    // single shared field would let one warning firing suppress the other.
     lastWarningNotifiedAt: { type: Date, default: null },
+    lastResponseWarningNotifiedAt: { type: Date, default: null },
 
     resolutionSummary: { type: String, default: "" },
 

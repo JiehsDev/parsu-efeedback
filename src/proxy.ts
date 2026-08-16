@@ -27,7 +27,13 @@ export const proxy = auth((req) => {
   const isGuestRoute = ["/login", "/register"].some((route) => currentPath.startsWith(route));
 
   // 2. Define completely public routes (unrestricted developer endpoints, assets, etc.)
-  const isPublicRoute = ["/api/dev/seed"].some((route) => currentPath.startsWith(route));
+  const isPublicRoute = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/api/dev/seed",
+  ].some((route) => currentPath.startsWith(route));
 
   // Handle Guest-Only Navigation
   if (isGuestRoute) {

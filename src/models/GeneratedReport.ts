@@ -16,7 +16,7 @@ const generatedReportSchema = new Schema(
   {
     creatorRef: { type: Schema.Types.ObjectId, ref: "User", required: true },
     reportType: { type: String, required: true }, // e.g. "sla-compliance", "complaint-volume"
-    fileFormat: { type: String, enum: REPORT_FORMATS, required: true },
+    format: { type: String, enum: REPORT_FORMATS, required: true },
 
     // BR-081: filters this report was generated with
     filters: {

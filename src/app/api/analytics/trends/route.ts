@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import {
   getMonthlyTrends,
   getCollegeComparison,
+  getCategoryBreakdown,
+  getPriorityBreakdown,
 } from "@/features/analytics/services/analytics.service";
 import { Types } from "mongoose";
 
@@ -30,6 +32,10 @@ export async function GET() {
     // Dean is college-scoped — needs the student join, same pattern used
     // elsewhere for dean-scoped queries. Since getMonthlyTrends takes a
     // flat $match, we pre-filter complaint IDs for this college first.
+    if (!session.user.collegeRef) {
+      return NextResponse.json({ error: "No college assigned to this account" }, { status: 422 });
+    }
+
     const { Complaint } = await import("@/models/Complaint");
     const collegeRef = new Types.ObjectId(session.user.collegeRef);
 
@@ -54,7 +60,11 @@ export async function GET() {
     collegeComparison = await getCollegeComparison();
   }
 
-  const trends = await getMonthlyTrends(scopeMatch);
+  const [trends, categoryBreakdown, priorityBreakdown] = await Promise.all([
+    getMonthlyTrends(scopeMatch),
+    getCategoryBreakdown(scopeMatch),
+    getPriorityBreakdown(scopeMatch),
+  ]);
 
-  return NextResponse.json({ trends, collegeComparison });
+  return NextResponse.json({ trends, collegeComparison, categoryBreakdown, priorityBreakdown });
 }

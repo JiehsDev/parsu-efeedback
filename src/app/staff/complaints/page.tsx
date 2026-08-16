@@ -1,111 +1,227 @@
 // src/app/staff/complaints/page.tsx
+import { Suspense } from "react";
 import Link from "next/link";
+import { AlertTriangle, ChevronRight, Inbox, ListChecks, UserCheck, UserX } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import type { ComplaintStatus } from "@/lib/constants";
+import { COMPLAINT_STATUSES, type ComplaintStatus } from "@/lib/constants";
+import { CopyButton } from "@/components/shared/CopyButton";
+import { ListSearchInput } from "@/components/shared/ListSearchInput";
+import { ListSortSelect } from "@/components/shared/ListSortSelect";
+import { escapeRegExp } from "@/lib/utils";
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+];
+
+const STATUS_FILTERS: Array<{ value: string; label: string }> = [
+  { value: "", label: "All" },
+  { value: "assigned", label: "Assigned" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "pending_information", label: "Pending Info" },
+  { value: "escalated", label: "Escalated" },
+  { value: "resolved", label: "Resolved" },
+];
 
 export default async function StaffComplaintsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; sort?: string }>;
 }) {
   const session = await auth();
   await connectToDatabase();
-  const { status } = await searchParams;
+  const { status: statusParam, q, sort } = await searchParams;
+  const status = COMPLAINT_STATUSES.find((s) => s === statusParam);
+  const search = q?.trim();
+  const sortOrder = sort === "oldest" ? 1 : -1;
 
-  const filter: Record<string, unknown> = {
-    assignedOfficeRef: session!.user.officeRef,
-    isArchived: false,
-  };
-  if (status) filter.status = status;
+  const baseFilter = { assignedOfficeRef: session!.user.officeRef, isArchived: false };
 
-  const complaints = await Complaint.find(filter).sort({ createdAt: -1 }).lean();
-
-  const STATUS_FILTERS: { value: string; label: string }[] = [
-    { value: "", label: "All" },
-    { value: "assigned", label: "Assigned" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "pending_information", label: "Pending Info" },
-    { value: "escalated", label: "Escalated" },
-    { value: "resolved", label: "Resolved" },
-  ];
+  const [complaints, unassignedCount, overdueCount, totalCount] = await Promise.all([
+    Complaint.find({
+      ...baseFilter,
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            $or: [
+              { title: { $regex: escapeRegExp(search), $options: "i" } },
+              { ticketNumber: { $regex: escapeRegExp(search), $options: "i" } },
+            ],
+          }
+        : {}),
+    })
+      .sort({ createdAt: sortOrder })
+      .lean(),
+    Complaint.countDocuments({
+      ...baseFilter,
+      assignedStaffRef: null,
+      status: { $nin: ["resolved", "closed"] },
+    }),
+    Complaint.countDocuments({ ...baseFilter, isOverdue: true }),
+    Complaint.countDocuments(baseFilter),
+  ]);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-[var(--foreground)]">Complaint Queue</h1>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
+          Complaint Queue
+        </h1>
+        <p className="mt-1.5 text-sm text-[var(--muted-foreground)]">
+          Everything routed to your office.
+        </p>
+      </div>
 
-      <div className="flex gap-2">
-        {STATUS_FILTERS.map((f) => (
-          <Link
-            key={f.value}
-            href={f.value ? `/staff/complaints?status=${f.value}` : "/staff/complaints"}
-            className={`rounded-[var(--radius)] px-3 py-1.5 text-sm font-medium transition-colors ${
-              (status ?? "") === f.value
-                ? "bg-[var(--primary)]/15 text-[var(--primary)]"
-                : "border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-            }`}
-          >
-            {f.label}
-          </Link>
-        ))}
+      <div className="grid grid-cols-3 divide-x divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] sm:hidden">
+        <div className="px-2 py-2.5 text-center">
+          <p className="text-lg font-bold leading-none tracking-tight text-[var(--foreground)]">
+            {unassignedCount}
+          </p>
+          <p className="mt-1 text-[11px] leading-none text-[var(--muted-foreground)]">
+            Unassigned
+          </p>
+        </div>
+        <div className="px-2 py-2.5 text-center">
+          <p className="text-lg font-bold leading-none tracking-tight text-[var(--foreground)]">
+            {overdueCount}
+          </p>
+          <p className="mt-1 text-[11px] leading-none text-[var(--muted-foreground)]">Overdue</p>
+        </div>
+        <div className="px-2 py-2.5 text-center">
+          <p className="text-lg font-bold leading-none tracking-tight text-[var(--foreground)]">
+            {totalCount}
+          </p>
+          <p className="mt-1 text-[11px] leading-none text-[var(--muted-foreground)]">Total</p>
+        </div>
+      </div>
+
+      <div className="hidden gap-4 sm:grid sm:grid-cols-3">
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400">
+            <UserX className="h-5 w-5" />
+          </span>
+          <p className="mt-3 text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            {unassignedCount}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">Unassigned</p>
+        </div>
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--destructive)]/15 text-[var(--destructive)]">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
+          <p className="mt-3 text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            {overdueCount}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">Overdue</p>
+        </div>
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
+            <ListChecks className="h-5 w-5" />
+          </span>
+          <p className="mt-3 text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            {totalCount}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">Total</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Suspense fallback={<div className="h-11 w-full max-w-xs" />}>
+          <ListSearchInput placeholder="Search by title or ticket number…" className="max-w-xs" />
+        </Suspense>
+        <Suspense fallback={<div className="h-11 w-40" />}>
+          <ListSortSelect options={SORT_OPTIONS} />
+        </Suspense>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-0.5 rounded-full bg-[var(--muted)]/50 p-1">
+        {STATUS_FILTERS.map((f) => {
+          const params = new URLSearchParams();
+          if (f.value) params.set("status", f.value);
+          if (search) params.set("q", search);
+          if (sort) params.set("sort", sort);
+          const href = params.toString() ? `/staff/complaints?${params}` : "/staff/complaints";
+
+          return (
+            <Link
+              key={f.value}
+              href={href}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                (status ?? "") === f.value
+                  ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {f.label}
+            </Link>
+          );
+        })}
       </div>
 
       {complaints.length === 0 ? (
-        <div className="rounded-[var(--radius)] border border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center">
-          <p className="text-sm text-[var(--muted-foreground)]">No complaints match this filter.</p>
+        <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+            <Inbox className="h-6 w-6" />
+          </span>
+          <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
+            No complaints match this filter.
+          </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)]">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--muted)] text-left text-[var(--muted-foreground)]">
-              <tr>
-                <th className="px-4 py-2 font-medium">Ticket</th>
-                <th className="px-4 py-2 font-medium">Title</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Priority</th>
-                <th className="px-4 py-2 font-medium">Assigned To</th>
-                <th className="px-4 py-2 font-medium">Overdue</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
-              {complaints.map((c: any) => (
-                <tr
-                  key={c._id}
-                  className="bg-[var(--card)] transition-colors hover:bg-[var(--muted)]/50"
+        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+          <ul className="divide-y divide-[var(--border)]">
+            {complaints.map((c: any) => (
+              <li key={c._id}>
+                <Link
+                  href={`/staff/complaints/${c._id}`}
+                  className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[var(--muted)]/40"
                 >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/staff/complaints/${c._id}`}
-                      className="font-mono text-xs text-[var(--primary)] hover:underline"
-                    >
-                      {c.ticketNumber}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-[var(--foreground)]">
-                    <Link href={`/staff/complaints/${c._id}`} className="hover:underline">
-                      {c.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={c.status as ComplaintStatus} />
-                  </td>
-                  <td className="px-4 py-3 text-[var(--muted-foreground)] capitalize">
-                    {c.priority}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--muted-foreground)]">
-                    {c.assignedStaffRef ? "Assigned" : "— Unassigned —"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {c.isOverdue && (
-                      <span className="text-xs font-medium text-[var(--destructive)]">Overdue</span>
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                      c.assignedStaffRef
+                        ? "bg-[var(--primary)]/15 text-[var(--primary)]"
+                        : "bg-amber-500/15 text-amber-400"
+                    }`}
+                  >
+                    {c.assignedStaffRef ? (
+                      <UserCheck className="h-[18px] w-[18px]" />
+                    ) : (
+                      <UserX className="h-[18px] w-[18px]" />
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium text-[var(--foreground)]">
+                        {c.title}
+                      </span>
+                      {c.isOverdue && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--destructive)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--destructive)]">
+                          Overdue
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                      <span className="inline-flex items-center gap-1 font-mono">
+                        {c.ticketNumber}
+                        <CopyButton value={c.ticketNumber} />
+                      </span>
+                      <span>·</span>
+                      <span className="capitalize">{c.priority}</span>
+                      <span>·</span>
+                      <span>{c.assignedStaffRef ? "Assigned" : "Unassigned"}</span>
+                    </span>
+                  </span>
+
+                  <StatusBadge status={c.status as ComplaintStatus} />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

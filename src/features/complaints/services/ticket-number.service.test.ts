@@ -4,7 +4,9 @@ import { generateTicketNumber } from "./ticket-number.service";
 import { Counter } from "@/models/Counter";
 
 vi.mock("@/models/Counter");
-vi.mock("@/lib/env", () => ({ env: { TICKET_NUMBER_PREFIX: "PARSU" } }));
+vi.mock("@/features/settings/services/settings.service", () => ({
+  getSettings: vi.fn().mockResolvedValue({ ticketNumberPrefix: "PARSU" }),
+}));
 
 describe("ticket-number.service — BR-036/BR-100", () => {
   it("BR-036: produces the documented format PREFIX-YYYY-NNNNNN", async () => {

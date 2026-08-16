@@ -1,4 +1,6 @@
 // src/components/shared/TimelineEvent.tsx
+import { RelativeTime } from "@/components/shared/RelativeTime";
+
 const EVENT_LABELS: Record<string, string> = {
   submitted: "Complaint submitted",
   assigned: "Assigned to office",
@@ -24,9 +26,10 @@ export function TimelineEvent({ event }: { event: any }) {
       {event.message && (
         <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">{event.message}</p>
       )}
-      <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-        {new Date(event.createdAt).toLocaleString()}
-      </p>
+      <RelativeTime
+        date={event.createdAt}
+        className="mt-0.5 block text-xs text-[var(--muted-foreground)]"
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ const attachmentSchema = new Schema(
     sizeBytes: { type: Number, required: true },
   },
   {
-    timestamps: { createdAt: "uploadedAt", updatedAt: false },
+    timestamps: { createdAt: "uploadedAt", updatedAt: false } as const,
   },
 );
 

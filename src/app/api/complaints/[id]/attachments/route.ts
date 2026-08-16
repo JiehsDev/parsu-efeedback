@@ -6,12 +6,18 @@ import { Complaint } from "@/models/Complaint";
 import { Attachment } from "@/models/Attachment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { createAttachmentSchema } from "@/features/attachments/schemas/attachment.schema";
+import { getSettings } from "@/features/settings/services/settings.service";
 
 async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
   const { role, id, officeRef, collegeRef } = session.user;
   if (role === "administrator" || role === "qa_office") return true;
   if (role === "student") return String(complaint.studentRef) === id;
   if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
+  if (role === "college_dean") {
+    const { User } = await import("@/models/User");
+    const student = await User.findById(complaint.studentRef).lean();
+    return String((student as any)?.collegeRef) === collegeRef;
+  }
   return false;
 }
 
@@ -35,6 +41,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = createAttachmentSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  // BR-060: re-enforce the same allow-list the presign step used — the
+  // client-declared mimeType here is untrusted and this is a separate,
+  // decoupled call, so a presign-only check can be bypassed by presigning
+  // as one type and then registering the attachment as another.
+  const settings = await getSettings();
+  if (!settings.uploadAllowedMimeTypes.includes(parsed.data.mimeType)) {
+    return NextResponse.json(
+      { error: `File type ${parsed.data.mimeType} is not allowed` },
+      { status: 400 },
+    );
   }
 
   const attachment = await Attachment.create({

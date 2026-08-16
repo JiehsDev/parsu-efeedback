@@ -1,0 +1,177 @@
+// src/app/admin/categories/[id]/page.tsx
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Types } from "mongoose";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Building2,
+  CheckCircle2,
+  Flag,
+  Route,
+  Tag,
+  Timer,
+  XCircle,
+} from "lucide-react";
+import { connectToDatabase } from "@/lib/db";
+import { Category } from "@/models/Category";
+import { Office } from "@/models/Office";
+import { RoutingRule } from "@/models/RoutingRule";
+import { SLARule } from "@/models/SLARule";
+import { CategoryStatusToggle } from "@/components/admin/CategoryStatusToggle";
+
+export default async function AdminCategoryDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  if (!Types.ObjectId.isValid(id)) notFound();
+
+  await connectToDatabase();
+  const category = await Category.findById(id).lean();
+  if (!category) notFound();
+
+  const c = category as any;
+
+  const [defaultOffice, routingRule, slaRules] = await Promise.all([
+    Office.findById(c.defaultOfficeRef).select("name code").lean(),
+    RoutingRule.findOne({ categoryRef: id, isActive: true })
+      .populate("targetOfficeRef", "name")
+      .lean(),
+    SLARule.find({ categoryRef: id, isActive: true }).sort({ priority: 1 }).lean(),
+  ]);
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      <Link
+        href="/admin/categories"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to categories
+      </Link>
+
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+            <Tag className="h-6 w-6" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
+              {c.name}
+            </h1>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                {c.defaultPriority} priority
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                  c.isActive
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                }`}
+              >
+                {c.isActive ? "Active" : "Inactive"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <CategoryStatusToggle categoryId={String(c._id)} categoryName={c.name} isActive={c.isActive} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
+              <Flag className="h-[18px] w-[18px]" />
+            </span>
+            <p className="text-sm font-semibold text-[var(--foreground)]">Details</p>
+          </div>
+          <dl className="mt-4 space-y-4 text-sm">
+            <div>
+              <dt className="text-xs text-[var(--muted-foreground)]">Description</dt>
+              <dd className="mt-1.5 text-[var(--foreground)]">{c.description || "—"}</dd>
+            </div>
+            <div>
+              <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                <Building2 className="h-3.5 w-3.5" />
+                Default office
+              </dt>
+              <dd className="mt-1.5 text-[var(--foreground)]">
+                {defaultOffice ? (
+                  <Link
+                    href={`/admin/offices/${(defaultOffice as any)._id}`}
+                    className="text-[var(--primary)] hover:underline"
+                  >
+                    {(defaultOffice as any).name}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
+              <AlertTriangle className="h-[18px] w-[18px]" />
+            </span>
+            <p className="text-sm font-semibold text-[var(--foreground)]">Configuration Status</p>
+          </div>
+          <div className="mt-4 space-y-4 text-sm">
+            <div className="flex items-start gap-2.5">
+              {routingRule ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              ) : (
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--destructive)]" />
+              )}
+              <div>
+                <p className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
+                  <Route className="h-3.5 w-3.5" />
+                  Routing rule
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {routingRule
+                    ? `Routes to ${(routingRule as any).targetOfficeRef?.name ?? "—"}`
+                    : "No active routing rule — this category can't be activated until one exists."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              {slaRules.length > 0 ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              ) : (
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--destructive)]" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
+                  <Timer className="h-3.5 w-3.5" />
+                  SLA rules
+                </p>
+                {slaRules.length === 0 ? (
+                  <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                    No category-specific SLA rules — falls back to the institution-wide default.
+                  </p>
+                ) : (
+                  <ul className="mt-1.5 space-y-1">
+                    {slaRules.map((r: any) => (
+                      <li key={r._id} className="text-xs text-[var(--muted-foreground)]">
+                        <span className="capitalize text-[var(--foreground)]">{r.priority}</span>{" "}
+                        — Response {r.responseHours}h · Resolution {r.resolutionHours}h
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -3,13 +3,14 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { connectTestDb, disconnectTestDb, clearTestDb } from "@/test/setup-db";
 import { Complaint } from "@/models/Complaint";
 import { createTestUser, createActivatableCategory } from "@/test/fixtures";
+import type { ComplaintStatus } from "@/lib/constants";
 
 beforeAll(connectTestDb);
 afterAll(disconnectTestDb);
 beforeEach(clearTestDb);
 
 describe("Complaint ratings — BR-067/068/069", () => {
-  async function createComplaint(status = "resolved") {
+  async function createComplaint(status: ComplaintStatus = "resolved") {
     const { category, office } = await createActivatableCategory();
     const student = await createTestUser({ role: "student" });
 

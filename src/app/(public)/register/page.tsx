@@ -4,12 +4,28 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  AlertCircle,
+  BookOpen,
+  ChevronDown,
+  Eye,
+  EyeOff,
+  Hash,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+} from "lucide-react";
 
 interface College {
   _id: string;
   name: string;
   code: string;
 }
+
+const inputClass =
+  "w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-base text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)] sm:text-sm";
+const labelClass = "text-sm font-medium text-[var(--foreground)]";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -24,6 +40,8 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -81,153 +99,204 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-full flex-1 items-center justify-center px-4 py-16">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Create an account</h1>
+    <main className="w-full max-w-md">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+          Create your account
+        </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          ParSU e-Feedback — Students only
+          ParSU e-Feedback — students only
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
           {error && (
             <div
               role="alert"
-              className="rounded-[var(--radius)] border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]"
+              className="flex items-start gap-2 rounded-[var(--radius)] border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
             >
-              {error}
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label htmlFor="firstName" className="text-sm font-medium text-[var(--foreground)]">
+              <label htmlFor="firstName" className={labelClass}>
                 First name
               </label>
-              <input
-                id="firstName"
-                required
-                value={form.firstName}
-                onChange={update("firstName")}
-                className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-              />
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <input
+                  id="firstName"
+                  autoComplete="given-name"
+                  required
+                  value={form.firstName}
+                  onChange={update("firstName")}
+                  className={inputClass}
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="lastName" className="text-sm font-medium text-[var(--foreground)]">
+              <label htmlFor="lastName" className={labelClass}>
                 Last name
               </label>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <input
+                  id="lastName"
+                  autoComplete="family-name"
+                  required
+                  value={form.lastName}
+                  onChange={update("lastName")}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="studentNumber" className={labelClass}>
+              Student number
+            </label>
+            <div className="relative">
+              <Hash className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <input
-                id="lastName"
+                id="studentNumber"
+                autoComplete="off"
                 required
-                value={form.lastName}
-                onChange={update("lastName")}
-                className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+                value={form.studentNumber}
+                onChange={update("studentNumber")}
+                placeholder="e.g. 2023-10492"
+                className={inputClass}
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="studentNumber" className="text-sm font-medium text-[var(--foreground)]">
-              Student number
-            </label>
-            <input
-              id="studentNumber"
-              required
-              value={form.studentNumber}
-              onChange={update("studentNumber")}
-              placeholder="e.g. 2023-10492"
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-[var(--foreground)]">
+            <label htmlFor="email" className={labelClass}>
               Email
             </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={update("email")}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            />
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                autoComplete="email"
+                required
+                value={form.email}
+                onChange={update("email")}
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="collegeId" className="text-sm font-medium text-[var(--foreground)]">
+            <label htmlFor="collegeId" className={labelClass}>
               College
             </label>
-            <select
-              id="collegeId"
-              required
-              value={form.collegeId}
-              onChange={update("collegeId")}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            >
-              <option value="" disabled>
-                Select your college
-              </option>
-              {colleges.map((college) => (
-                <option key={college._id} value={college._id}>
-                  {college.name}
+            <div className="relative">
+              <BookOpen className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <select
+                id="collegeId"
+                required
+                value={form.collegeId}
+                onChange={update("collegeId")}
+                className={`${inputClass} appearance-none pr-9`}
+              >
+                <option value="" disabled>
+                  Select your college
                 </option>
-              ))}
-            </select>
+                {colleges.map((college) => (
+                  <option key={college._id} value={college._id}>
+                    {college.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+            </div>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="password" className="text-sm font-medium text-[var(--foreground)]">
+            <label htmlFor="password" className={labelClass}>
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={form.password}
-              onChange={update("password")}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            />
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                required
+                value={form.password}
+                onChange={update("password")}
+                className={`${inputClass} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             <p className="text-xs text-[var(--muted-foreground)]">
               At least 8 characters, with at least one letter and one number.
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <label
-              htmlFor="confirmPassword"
-              className="text-sm font-medium text-[var(--foreground)]"
-            >
+            <label htmlFor="confirmPassword" className={labelClass}>
               Confirm password
             </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={form.confirmPassword}
-              onChange={update("confirmPassword")}
-              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            />
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                autoComplete="new-password"
+                required
+                value={form.confirmPassword}
+                onChange={update("confirmPassword")}
+                className={`${inputClass} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
           >
+            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {isSubmitting ? "Creating account…" : "Create account"}
           </button>
         </form>
-
-        <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
-          Already have an account?{" "}
-          <Link href="/login" className="text-[var(--primary)] hover:underline">
-            Sign in
-          </Link>
-        </p>
       </div>
+
+      <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-[var(--primary)] hover:underline">
+          Sign in
+        </Link>
+      </p>
     </main>
   );
 }

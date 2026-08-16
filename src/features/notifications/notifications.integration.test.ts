@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { connectTestDb, disconnectTestDb, clearTestDb } from "@/test/setup-db";
 import { Notification } from "@/models/Notification";
 import { createTestUser } from "@/test/fixtures";
+import type { NotificationType } from "@/lib/constants";
 
 beforeAll(connectTestDb);
 afterAll(disconnectTestDb);
@@ -52,7 +53,7 @@ describe("Notifications — BR-071/072/073/074", () => {
     await expect(
       Notification.create({
         userRef: user._id,
-        type: "not_a_real_type",
+        type: "not_a_real_type" as any,
         title: "Bad",
         body: "This should fail",
       }),
@@ -61,7 +62,7 @@ describe("Notifications — BR-071/072/073/074", () => {
 
   it("all six documented notification types are valid", async () => {
     const user = await createTestUser();
-    const types = [
+    const types: NotificationType[] = [
       "complaint_submitted",
       "complaint_assigned",
       "status_updated",

@@ -53,8 +53,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // distributed attempts across many accounts, complementing
         // BR-013's per-account lockout inside authenticateUser().
         const ip = getRequestIp(request.headers);
-        let success = true;
-        // const { success } = await checkRateLimit(loginRateLimit, ip);
+        const { success } = await checkRateLimit(loginRateLimit, ip);
         if (!success) {
           throw new RateLimitedSignin();
         }

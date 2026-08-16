@@ -6,6 +6,8 @@ import User from "@/models/User";
 import Office from "@/models/Office";
 import Category from "@/models/Category";
 import Complaint from "@/models/Complaint";
+import RoutingRule from "@/models/RoutingRule";
+import SLARule from "@/models/SLARule";
 export async function GET() {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Unauthorized environment execution" }, { status: 403 });
@@ -19,6 +21,8 @@ export async function GET() {
     await Office.deleteMany({});
     await Category.deleteMany({});
     await Complaint.deleteMany({});
+    await RoutingRule.deleteMany({});
+    await SLARule.deleteMany({});
 
     // 1. Provision Core Structural Nodes with mandatory 'code' fields
     const collegeOfComputing = await Office.create({
@@ -65,6 +69,23 @@ export async function GET() {
       description: "Issues related to grade posting, computation, or disputes",
       defaultOfficeRef: registrarOffice._id,
       defaultPriority: "medium",
+      isActive: true,
+    });
+
+    // BR-023/BR-029: a category needs both an active routing rule and an
+    // active SLA rule before a complaint can actually be submitted against
+    // it (see resolveRoutingOffice/resolveSlaRule) — without these, the
+    // seeded category above exists but every submission 422s.
+    await RoutingRule.create({
+      categoryRef: complaintCategory._id,
+      targetOfficeRef: registrarOffice._id,
+      isActive: true,
+    });
+    await SLARule.create({
+      categoryRef: complaintCategory._id,
+      priority: "medium",
+      responseHours: 24,
+      resolutionHours: 120,
       isActive: true,
     });
     // 3. Populate testing accounts matching the unified identity field

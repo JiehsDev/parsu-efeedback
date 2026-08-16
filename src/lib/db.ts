@@ -42,6 +42,16 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     return cache.conn;
   }
 
+  // Something outside this cache already opened Mongoose's default
+  // connection — e.g. the vitest test harness (src/test/setup-db.ts)
+  // connects directly to an in-memory MongoDB instance in beforeAll().
+  // Reuse it instead of requiring env.MONGODB_URI, which isn't set in
+  // the test environment.
+  if (mongoose.connection.readyState === 1) {
+    cache.conn = mongoose;
+    return cache.conn;
+  }
+
   if (!cache.promise) {
     mongoose.set("strictQuery", true);
 

@@ -8,7 +8,20 @@ import ComplaintUpdated from "../../../../emails/ComplaintUpdated";
 import ComplaintResolved from "../../../../emails/ComplaintResolved";
 import SLAWarning from "../../../../emails/SLAWarning";
 import Escalation from "../../../../emails/Escalation";
+import PasswordReset from "../../../../emails/PasswordReset";
 
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  recipientName: string;
+  resetToken: string;
+}) {
+  const resetUrl = `${env.NEXT_PUBLIC_APP_URL}/reset-password/${params.resetToken}`;
+  await sendEmail(
+    params.to,
+    "Reset your ParSU e-Feedback password",
+    PasswordReset({ recipientName: params.recipientName, resetUrl }),
+  );
+}
 async function sendEmail(to: string, subject: string, react: React.ReactElement) {
   // Without a verified domain, Resend only delivers to the account's own
   // signup email. Redirect there in dev/test so the pipeline is still
