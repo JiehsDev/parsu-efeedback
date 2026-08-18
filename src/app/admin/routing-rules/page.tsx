@@ -2,12 +2,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, ChevronDown, Loader2, Plus, Route } from "lucide-react";
+import { AlertCircle, Loader2, Plus, Route } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RuleRow {
   _id: string;
@@ -188,45 +189,39 @@ export default function AdminRoutingRulesPage() {
             )}
 
             <FormField label="Category">
-              <div className="relative">
-                <select
-                  required
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.categoryRef}
-                  onChange={(e) => setForm((p) => ({ ...p, categoryRef: e.target.value }))}
-                >
-                  <option value="" disabled>
-                    Select category
-                  </option>
+              <Select
+                value={form.categoryRef}
+                onValueChange={(value) => setForm((p) => ({ ...p, categoryRef: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
                   {categories.map((c) => (
-                    <option key={c._id} value={c._id}>
+                    <SelectItem key={c._id} value={c._id}>
                       {c.name}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+                </SelectContent>
+              </Select>
             </FormField>
 
             <FormField label="Target office">
-              <div className="relative">
-                <select
-                  required
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.targetOfficeRef}
-                  onChange={(e) => setForm((p) => ({ ...p, targetOfficeRef: e.target.value }))}
-                >
-                  <option value="" disabled>
-                    Select office
-                  </option>
+              <Select
+                value={form.targetOfficeRef}
+                onValueChange={(value) => setForm((p) => ({ ...p, targetOfficeRef: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select office" />
+                </SelectTrigger>
+                <SelectContent>
                   {offices.map((o) => (
-                    <option key={o._id} value={o._id}>
+                    <SelectItem key={o._id} value={o._id}>
                       {o.name}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+                </SelectContent>
+              </Select>
             </FormField>
 
             <button

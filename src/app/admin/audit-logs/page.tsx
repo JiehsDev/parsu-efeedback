@@ -2,8 +2,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ScrollText, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ScrollText, Search } from "lucide-react";
 import { RelativeTime } from "@/components/shared/RelativeTime";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AuditLogRow {
   _id: string;
@@ -40,8 +47,6 @@ export default function AdminAuditLogsPage() {
   }, [page, entityType, actionFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / 50));
-  const selectClass =
-    "appearance-none rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 pr-9 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
   return (
     <div className="space-y-6">
@@ -49,31 +54,30 @@ export default function AdminAuditLogsPage() {
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
           <ScrollText className="h-5 w-5" />
         </span>
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
-          Audit Logs
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Audit Logs</h1>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <div className="relative">
-          <select
-            value={entityType}
-            onChange={(e) => {
-              setEntityType(e.target.value);
-              setPage(1);
-            }}
-            className={selectClass}
-          >
+        <Select
+          value={entityType}
+          onValueChange={(value) => {
+            setEntityType(value);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-auto bg-[var(--card)]">
+            <SelectValue placeholder="All entity types" />
+          </SelectTrigger>
+          <SelectContent>
             {ENTITY_TYPES.map((t) => (
-              <option key={t} value={t}>
+              <SelectItem key={t} value={t}>
                 {t || "All entity types"}
-              </option>
+              </SelectItem>
             ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-        </div>
+          </SelectContent>
+        </Select>
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
             placeholder="Filter by action (e.g. user.create)"
             value={actionFilter}
@@ -81,7 +85,7 @@ export default function AdminAuditLogsPage() {
               setActionFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pl-10 pr-3.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
         </div>
       </div>
@@ -110,7 +114,9 @@ export default function AdminAuditLogsPage() {
                       </span>
                     </span>
                     <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
-                      {log.actorRef ? `${log.actorRef.firstName} ${log.actorRef.lastName}` : "System"}
+                      {log.actorRef
+                        ? `${log.actorRef.firstName} ${log.actorRef.lastName}`
+                        : "System"}
                       {" · "}
                       {log.entityType} <span className="font-mono">{log.entityId}</span>
                     </span>

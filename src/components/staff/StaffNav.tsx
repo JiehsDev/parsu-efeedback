@@ -48,9 +48,9 @@ export function StaffNav({ userName }: { userName: string }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--border)]/70 bg-[var(--card)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
         <div className="flex items-center gap-6">
-          <Link href="/staff/dashboard" className="flex items-center gap-2 shrink-0">
+          <Link href="/staff/dashboard" className="flex shrink-0 items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--primary)] text-sm font-bold text-[var(--primary-foreground)]">
               P
             </span>
@@ -87,7 +87,7 @@ export function StaffNav({ userName }: { userName: string }) {
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--destructive)] px-1 text-[10px] font-semibold text-white">
+              <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--destructive)] px-1 text-[10px] font-semibold text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -106,7 +106,7 @@ export function StaffNav({ userName }: { userName: string }) {
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
+                className="absolute top-full right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">

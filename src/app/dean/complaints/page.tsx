@@ -63,6 +63,15 @@ export default async function DeanComplaintsPage({
     },
     { $unwind: "$student" },
     {
+      $lookup: {
+        from: "offices",
+        localField: "student.collegeRef",
+        foreignField: "_id",
+        as: "college",
+      },
+    },
+    { $unwind: { path: "$college", preserveNullAndEmptyArrays: true } },
+    {
       $match: {
         "student.collegeRef": collegeRef,
         isArchived: false,
@@ -150,7 +159,7 @@ export default async function DeanComplaintsPage({
                         {c.title}
                       </span>
                       {c.isOverdue && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--destructive)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--destructive)]">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--destructive)]/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--destructive)] uppercase">
                           Overdue
                         </span>
                       )}
@@ -163,6 +172,8 @@ export default async function DeanComplaintsPage({
                       <span>·</span>
                       <span>
                         {c.student.firstName} {c.student.lastName}
+                        {c.student.employeeOrStudentId ? ` · ${c.student.employeeOrStudentId}` : ""}
+                        {c.college?.name ? ` · ${c.college.name}` : ""}
                       </span>
                     </span>
                   </span>

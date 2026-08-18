@@ -3,10 +3,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ChevronDown, Loader2, MessageSquare, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, MessageSquare, RefreshCw } from "lucide-react";
 import { ALLOWED_TRANSITIONS_CLIENT, STATUS_LABELS } from "@/lib/status-transitions-client";
 import type { ComplaintStatus } from "@/lib/constants";
 import { useToast } from "@/components/shared/Toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function StatusUpdateForm({
   complaintId,
@@ -70,22 +71,19 @@ export function StatusUpdateForm({
         </div>
       )}
 
-      <div className="mt-3 relative">
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-        <select
-          value={nextStatus}
-          onChange={(e) => setNextStatus(e.target.value)}
-          className="w-full appearance-none rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 pr-9 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-        >
-          <option value="" disabled>
-            Change to…
-          </option>
-          {options.map((status) => (
-            <option key={status} value={status}>
-              {STATUS_LABELS[status]}
-            </option>
-          ))}
-        </select>
+      <div className="mt-3">
+        <Select value={nextStatus} onValueChange={setNextStatus}>
+          <SelectTrigger>
+            <SelectValue placeholder="Change to…" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((status) => (
+              <SelectItem key={status} value={status}>
+                {STATUS_LABELS[status]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="relative mt-2">

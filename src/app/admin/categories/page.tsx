@@ -3,12 +3,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ChevronDown, ChevronRight, Loader2, Plus, Tag } from "lucide-react";
+import { AlertCircle, ChevronRight, Loader2, Plus, Tag } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CategoryRow {
   _id: string;
@@ -221,41 +222,39 @@ export default function AdminCategoriesPage() {
             </FormField>
 
             <FormField label="Default office">
-              <div className="relative">
-                <select
-                  required
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.defaultOfficeRef}
-                  onChange={(e) => setForm((p) => ({ ...p, defaultOfficeRef: e.target.value }))}
-                >
-                  <option value="" disabled>
-                    Select office
-                  </option>
+              <Select
+                value={form.defaultOfficeRef}
+                onValueChange={(value) => setForm((p) => ({ ...p, defaultOfficeRef: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select office" />
+                </SelectTrigger>
+                <SelectContent>
                   {offices.map((o) => (
-                    <option key={o._id} value={o._id}>
+                    <SelectItem key={o._id} value={o._id}>
                       {o.name}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+                </SelectContent>
+              </Select>
             </FormField>
 
             <FormField label="Default priority">
-              <div className="relative">
-                <select
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.defaultPriority}
-                  onChange={(e) => setForm((p) => ({ ...p, defaultPriority: e.target.value }))}
-                >
+              <Select
+                value={form.defaultPriority}
+                onValueChange={(value) => setForm((p) => ({ ...p, defaultPriority: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>
+                    <SelectItem key={p} value={p}>
                       {p}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+                </SelectContent>
+              </Select>
             </FormField>
 
             <button

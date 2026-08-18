@@ -1,4 +1,4 @@
-// src/components/staff/NotesSection.tsx
+// src/components/shared/NotesSection.tsx
 "use client";
 
 import { useState } from "react";
@@ -15,9 +15,11 @@ interface Note {
 export function NotesSection({
   complaintId,
   initialNotes,
+  readOnly = false,
 }: {
   complaintId: string;
   initialNotes: Note[];
+  readOnly?: boolean;
 }) {
   const { show: showToast } = useToast();
   const [notes, setNotes] = useState(initialNotes);
@@ -79,33 +81,35 @@ export function NotesSection({
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-4">
-        {error && (
-          <div className="mb-2 flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Add an internal note…"
-          rows={2}
-          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-        />
-        <button
-          type="submit"
-          disabled={isSubmitting || !body.trim()}
-          className="mt-2.5 flex items-center gap-2 rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Send className="h-3.5 w-3.5" />
+      {!readOnly && (
+        <form onSubmit={handleSubmit} className="mt-4">
+          {error && (
+            <div className="mb-2 flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
           )}
-          {isSubmitting ? "Adding…" : "Add Note"}
-        </button>
-      </form>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Add an internal note…"
+            rows={2}
+            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting || !body.trim()}
+            className="mt-2.5 flex items-center gap-2 rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            {isSubmitting ? "Adding…" : "Add Note"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

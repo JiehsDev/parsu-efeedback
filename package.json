@@ -16,6 +16,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",
     "@aws-sdk/s3-request-presigner": "^3.1079.0",
+    "@radix-ui/react-select": "^2.3.7",
     "@upstash/qstash": "^2.11.1",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
@@ -34,6 +35,7 @@
     "react": "19.2.4",
     "react-dom": "^19.2.4",
     "react-email": "^6.6.6",
+    "react-is": "^19.2.8",
     "recharts": "^3.9.2",
     "resend": "^6.17.1",
     "tailwind-merge": "^3.6.0",

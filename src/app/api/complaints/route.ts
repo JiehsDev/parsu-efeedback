@@ -160,6 +160,15 @@ export async function GET(req: NextRequest) {
       },
       { $unwind: "$student" },
       {
+        $lookup: {
+          from: "offices",
+          localField: "student.collegeRef",
+          foreignField: "_id",
+          as: "college",
+        },
+      },
+      { $unwind: { path: "$college", preserveNullAndEmptyArrays: true } },
+      {
         $match: {
           "student.collegeRef": collegeRef,
           isArchived: false,
@@ -175,6 +184,11 @@ export async function GET(req: NextRequest) {
   } else {
     [complaints, total] = await Promise.all([
       Complaint.find(filter)
+        .populate({
+          path: "studentRef",
+          select: "firstName lastName employeeOrStudentId collegeRef",
+          populate: { path: "collegeRef", select: "name" },
+        })
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)

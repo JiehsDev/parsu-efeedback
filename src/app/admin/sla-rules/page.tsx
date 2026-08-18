@@ -2,12 +2,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, ChevronDown, Loader2, Plus, Timer } from "lucide-react";
+import { AlertCircle, Loader2, Plus, Timer } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SlaRuleRow {
   _id: string;
@@ -121,9 +128,7 @@ export default function AdminSlaRulesPage() {
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
             <Timer className="h-5 w-5" />
           </span>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
-            SLA Rules
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">SLA Rules</h1>
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -141,49 +146,49 @@ export default function AdminSlaRulesPage() {
       {isLoading ? (
         <ListRowsSkeleton />
       ) : (
-      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
-        <ul className="divide-y divide-[var(--border)]">
-          {rules.map((r) => (
-            <li
-              key={r._id}
-              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    {categoryName(r.categoryRef)}
+        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+          <ul className="divide-y divide-[var(--border)]">
+            {rules.map((r) => (
+              <li
+                key={r._id}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-[var(--foreground)]">
+                      {categoryName(r.categoryRef)}
+                    </span>
+                    <span className="rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+                      {r.priority}
+                    </span>
                   </span>
-                  <span className="rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-                    {r.priority}
+                  <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                    Response {r.responseHours}h · Resolution {r.resolutionHours}h
                   </span>
                 </span>
-                <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
-                  Response {r.responseHours}h · Resolution {r.resolutionHours}h
-                </span>
-              </span>
-              <div className="flex items-center gap-2 sm:shrink-0">
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    r.isActive
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                  }`}
-                >
-                  {r.isActive ? "Active" : "Inactive"}
-                </span>
-                {r.isActive && (
-                  <button
-                    onClick={() => deactivate(r)}
-                    className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+                <div className="flex items-center gap-2 sm:shrink-0">
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      r.isActive
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                    }`}
                   >
-                    Deactivate
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+                    {r.isActive ? "Active" : "Inactive"}
+                  </span>
+                  {r.isActive && (
+                    <button
+                      onClick={() => deactivate(r)}
+                      className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+                    >
+                      Deactivate
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {showCreate && (
@@ -197,38 +202,40 @@ export default function AdminSlaRulesPage() {
             )}
 
             <FormField label="Category" hint="Leave blank for institution-wide default">
-              <div className="relative">
-                <select
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.categoryRef}
-                  onChange={(e) => setForm((p) => ({ ...p, categoryRef: e.target.value }))}
-                >
-                  <option value="">— Institution-wide —</option>
+              <Select
+                value={form.categoryRef}
+                onValueChange={(value) => setForm((p) => ({ ...p, categoryRef: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="— Institution-wide —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Institution-wide —</SelectItem>
                   {categories.map((c) => (
-                    <option key={c._id} value={c._id}>
+                    <SelectItem key={c._id} value={c._id}>
                       {c.name}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+                </SelectContent>
+              </Select>
             </FormField>
 
             <FormField label="Priority">
-              <div className="relative">
-                <select
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.priority}
-                  onChange={(e) => setForm((p) => ({ ...p, priority: e.target.value }))}
-                >
+              <Select
+                value={form.priority}
+                onValueChange={(value) => setForm((p) => ({ ...p, priority: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>
+                    <SelectItem key={p} value={p}>
                       {p}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+                </SelectContent>
+              </Select>
             </FormField>
 
             <div className="grid grid-cols-2 gap-3">

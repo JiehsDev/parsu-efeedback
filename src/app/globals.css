@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /*
- * ParSU e-Feedback — Tech Blue & Silver theme
- * Fixed dark theme (not tied to prefers-color-scheme) per the project spec:
+ * ParSU e-Feedback — Sky Blue & White theme
+ * Fixed light theme (not tied to prefers-color-scheme) per the project spec:
  * enterprise, modern, minimal, academic, high contrast.
  *
  * Values here map 1:1 to shadcn/ui's expected CSS variable names, so
@@ -12,37 +12,35 @@
  */
 
 :root {
-  --background: #09101d;
-  --foreground: #ffffff;
+  --background: #f4f9fd;
+  --foreground: #0c1a2b;
 
-  --card: #0d1830;
-  --card-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #0c1a2b;
 
-  --popover: #0d1830;
-  --popover-foreground: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #0c1a2b;
 
-  /* Primary accent (#00a2ff) is bright — pair with a near-black foreground
-     for AA contrast on buttons/badges rather than white-on-bright-blue. */
-  --primary: #00a2ff;
-  --primary-foreground: #04121f;
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
 
-  --secondary: #0a50d8;
+  --secondary: #0369a1;
   --secondary-foreground: #ffffff;
 
-  --muted: #101c33;
-  --muted-foreground: #a3c8f7;
+  --muted: #eef6fc;
+  --muted-foreground: #5b7086;
 
-  --accent: #00a2ff;
-  --accent-foreground: #04121f;
+  --accent: #e0f2fe;
+  --accent-foreground: #0369a1;
 
-  --destructive: #ef4444;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
-  --border: #1c2a44;
-  --input: #1c2a44;
-  --ring: #00a2ff;
+  --border: #dceaf7;
+  --input: #d7e6f5;
+  --ring: #0284c7;
 
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 }
 
 @theme inline {
@@ -79,7 +77,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-archivo);
   --font-mono: var(--font-geist-mono);
 }
 

@@ -3,20 +3,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  AlertCircle,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  Plus,
-  Search,
-  Users as UsersIcon,
-} from "lucide-react";
+import { AlertCircle, ChevronRight, Loader2, Plus, Search, Users as UsersIcon } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UserRow {
   _id: string;
@@ -254,58 +253,55 @@ export default function AdminUsersPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, or ID…"
-            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pl-10 pr-3.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
         </div>
         <div className="flex flex-wrap gap-3">
-          <div className="relative">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="max-w-[9.5rem] appearance-none truncate rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pl-3.5 pr-9 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            >
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-auto max-w-[9.5rem] bg-[var(--card)]">
+              <SelectValue placeholder="All positions" />
+            </SelectTrigger>
+            <SelectContent>
               {visibleRoleOptions.map((r) => (
-                <option key={r.value} value={r.value}>
+                <SelectItem key={r.value} value={r.value}>
                   {r.label}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-          </div>
-          <div className="relative">
-            <select
-              value={officeFilter}
-              onChange={(e) => setOfficeFilter(e.target.value)}
-              className="max-w-[11rem] appearance-none truncate rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pl-3.5 pr-9 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            >
-              <option value="">All offices/colleges</option>
+            </SelectContent>
+          </Select>
+          <Select value={officeFilter} onValueChange={setOfficeFilter}>
+            <SelectTrigger className="w-auto max-w-[11rem] bg-[var(--card)]">
+              <SelectValue placeholder="All offices/colleges" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All offices/colleges</SelectItem>
               {visibleOffices.map((o) => (
-                <option key={o._id} value={o._id}>
+                <SelectItem key={o._id} value={o._id}>
                   {o.name}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-          </div>
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as (typeof SORT_OPTIONS)[number]["value"])}
-              className="appearance-none rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pl-3.5 pr-9 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
-            >
+            </SelectContent>
+          </Select>
+          <Select
+            value={sortBy}
+            onValueChange={(value) => setSortBy(value as (typeof SORT_OPTIONS)[number]["value"])}
+          >
+            <SelectTrigger className="w-auto bg-[var(--card)]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
               {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
+                <SelectItem key={o.value} value={o.value}>
                   {o.label}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-          </div>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -321,61 +317,61 @@ export default function AdminUsersPage() {
           </p>
         </div>
       ) : (
-      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
-        <ul className="divide-y divide-[var(--border)]">
-          {visibleUsers.map((u) => (
-            <li
-              key={u._id}
-              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
-            >
-              <Link
-                href={`/admin/users/${u._id}`}
-                className="group flex min-w-0 flex-1 items-center gap-4 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
+        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+          <ul className="divide-y divide-[var(--border)]">
+            {visibleUsers.map((u) => (
+              <li
+                key={u._id}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--muted)] text-xs font-semibold text-[var(--muted-foreground)]">
-                  {u.firstName[0]}
-                  {u.lastName[0]}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium text-[var(--foreground)]">
-                      {u.firstName} {u.lastName}
+                <Link
+                  href={`/admin/users/${u._id}`}
+                  className="group flex min-w-0 flex-1 items-center gap-4 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--muted)] text-xs font-semibold text-[var(--muted-foreground)]">
+                    {u.firstName[0]}
+                    {u.lastName[0]}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium text-[var(--foreground)]">
+                        {u.firstName} {u.lastName}
+                      </span>
+                      <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+                        {u.role.replace("_", " ")}
+                      </span>
                     </span>
-                    <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-                      {u.role.replace("_", " ")}
+                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-[var(--muted-foreground)]">
+                      <span className="truncate">{u.email}</span>
+                      <span>·</span>
+                      <span className="shrink-0">{affiliationLabel(u)}</span>
+                      <span>·</span>
+                      <span className="shrink-0 font-mono">{u.employeeOrStudentId}</span>
                     </span>
                   </span>
-                  <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-[var(--muted-foreground)]">
-                    <span className="truncate">{u.email}</span>
-                    <span>·</span>
-                    <span className="shrink-0">{affiliationLabel(u)}</span>
-                    <span>·</span>
-                    <span className="shrink-0 font-mono">{u.employeeOrStudentId}</span>
+                  <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+                </Link>
+                <div className="flex items-center gap-2 sm:shrink-0">
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      u.isActive
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    {u.isActive ? "Active" : "Inactive"}
                   </span>
-                </span>
-                <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
-              </Link>
-              <div className="flex items-center gap-2 sm:shrink-0">
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    u.isActive
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                  }`}
-                >
-                  {u.isActive ? "Active" : "Inactive"}
-                </span>
-                <button
-                  onClick={() => toggleActive(u)}
-                  className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
-                >
-                  {u.isActive ? "Deactivate" : "Activate"}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+                  <button
+                    onClick={() => toggleActive(u)}
+                    className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                  >
+                    {u.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {showCreate && (
@@ -438,67 +434,62 @@ export default function AdminUsersPage() {
             </FormField>
 
             <FormField label="Role">
-              <div className="relative">
-                <select
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.role}
-                  onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
-                >
+              <Select
+                value={form.role}
+                onValueChange={(value) => setForm((p) => ({ ...p, role: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {ROLES.map((r) => (
-                    <option key={r} value={r}>
+                    <SelectItem key={r} value={r}>
                       {r.replace("_", " ")}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+                </SelectContent>
+              </Select>
             </FormField>
 
             {needsOffice && (
               <FormField label="Office">
-                <div className="relative">
-                  <select
-                    required
-                    className={`${inputClass} appearance-none pr-9`}
-                    value={form.officeRef}
-                    onChange={(e) => setForm((p) => ({ ...p, officeRef: e.target.value }))}
-                  >
-                    <option value="" disabled>
-                      Select office
-                    </option>
+                <Select
+                  value={form.officeRef}
+                  onValueChange={(value) => setForm((p) => ({ ...p, officeRef: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select office" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {offices.map((o) => (
-                      <option key={o._id} value={o._id}>
+                      <SelectItem key={o._id} value={o._id}>
                         {o.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-                </div>
+                  </SelectContent>
+                </Select>
               </FormField>
             )}
 
             {needsCollege && (
               <FormField label="College">
-                <div className="relative">
-                  <select
-                    required
-                    className={`${inputClass} appearance-none pr-9`}
-                    value={form.collegeRef}
-                    onChange={(e) => setForm((p) => ({ ...p, collegeRef: e.target.value }))}
-                  >
-                    <option value="" disabled>
-                      Select college
-                    </option>
+                <Select
+                  value={form.collegeRef}
+                  onValueChange={(value) => setForm((p) => ({ ...p, collegeRef: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select college" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {offices
                       .filter((o) => o.type === "college")
                       .map((o) => (
-                        <option key={o._id} value={o._id}>
+                        <SelectItem key={o._id} value={o._id}>
                           {o.name}
-                        </option>
+                        </SelectItem>
                       ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-                </div>
+                  </SelectContent>
+                </Select>
               </FormField>
             )}
 

@@ -1,14 +1,16 @@
 // src/app/dean/complaints/[id]/page.tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Hash, History, User as UserIcon } from "lucide-react";
+import { ArrowLeft, Calendar, GraduationCap, Hash, History, User as UserIcon } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { User } from "@/models/User";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { ComplaintNote } from "@/models/ComplaintNote";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
+import { NotesSection } from "@/components/shared/NotesSection";
 import { ReassignForm } from "@/components/dean/ReassignForm";
 import type { ComplaintStatus } from "@/lib/constants";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
@@ -27,12 +29,15 @@ export default async function DeanComplaintDetailPage({
   if (!complaint) notFound();
 
   const c = complaint as any;
-  const student = await User.findById(c.studentRef).lean();
-  if (!student || String((student as any).collegeRef) !== session!.user.collegeRef) {
+  const student = await User.findById(c.studentRef).populate("collegeRef", "name").lean();
+  if (!student || String((student as any).collegeRef?._id) !== session!.user.collegeRef) {
     notFound();
   }
 
-  const timeline = await ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean();
+  const [timeline, notes] = await Promise.all([
+    ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+    ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -63,14 +68,22 @@ export default async function DeanComplaintDetailPage({
         <div className="space-y-6">
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
             <p className="text-sm font-semibold text-[var(--foreground)]">Description</p>
-            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[var(--foreground)]/90">
+            <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-[var(--foreground)]/90">
               {c.description}
             </p>
           </div>
 
           <AttachmentGallery complaintId={String(c._id)} />
 
-          <ReassignForm complaintId={String(c._id)} currentOfficeRef={String(c.assignedOfficeRef)} />
+          <NotesSection
+            complaintId={String(c._id)}
+            initialNotes={JSON.parse(JSON.stringify(notes))}
+          />
+
+          <ReassignForm
+            complaintId={String(c._id)}
+            currentOfficeRef={c.assignedOfficeRef ? String(c.assignedOfficeRef) : ""}
+          />
         </div>
 
         <div className="space-y-6">
@@ -86,10 +99,17 @@ export default async function DeanComplaintDetailPage({
               <div>
                 <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
                   <UserIcon className="h-3.5 w-3.5" />
-                  Student
+                  Complainant
                 </dt>
                 <dd className="mt-1.5 text-[var(--foreground)]">
                   {(student as any).firstName} {(student as any).lastName}
+                </dd>
+                <dd className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {(student as any).employeeOrStudentId ?? "—"}
+                </dd>
+                <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
+                  <GraduationCap className="h-3 w-3 shrink-0" />
+                  {(student as any).collegeRef?.name ?? "—"}
                 </dd>
               </div>
               <div>

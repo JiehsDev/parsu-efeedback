@@ -53,6 +53,11 @@ export default async function StaffComplaintsPage({
           }
         : {}),
     })
+      .populate({
+        path: "studentRef",
+        select: "firstName lastName employeeOrStudentId collegeRef",
+        populate: { path: "collegeRef", select: "name" },
+      })
       .sort({ createdAt: sortOrder })
       .lean(),
     Complaint.countDocuments({
@@ -77,21 +82,19 @@ export default async function StaffComplaintsPage({
 
       <div className="grid grid-cols-3 divide-x divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] sm:hidden">
         <div className="px-2 py-2.5 text-center">
-          <p className="text-lg font-bold leading-none tracking-tight text-[var(--foreground)]">
+          <p className="text-lg leading-none font-bold tracking-tight text-[var(--foreground)]">
             {unassignedCount}
           </p>
-          <p className="mt-1 text-[11px] leading-none text-[var(--muted-foreground)]">
-            Unassigned
-          </p>
+          <p className="mt-1 text-[11px] leading-none text-[var(--muted-foreground)]">Unassigned</p>
         </div>
         <div className="px-2 py-2.5 text-center">
-          <p className="text-lg font-bold leading-none tracking-tight text-[var(--foreground)]">
+          <p className="text-lg leading-none font-bold tracking-tight text-[var(--foreground)]">
             {overdueCount}
           </p>
           <p className="mt-1 text-[11px] leading-none text-[var(--muted-foreground)]">Overdue</p>
         </div>
         <div className="px-2 py-2.5 text-center">
-          <p className="text-lg font-bold leading-none tracking-tight text-[var(--foreground)]">
+          <p className="text-lg leading-none font-bold tracking-tight text-[var(--foreground)]">
             {totalCount}
           </p>
           <p className="mt-1 text-[11px] leading-none text-[var(--muted-foreground)]">Total</p>
@@ -199,7 +202,7 @@ export default async function StaffComplaintsPage({
                         {c.title}
                       </span>
                       {c.isOverdue && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--destructive)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--destructive)]">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--destructive)]/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--destructive)] uppercase">
                           Overdue
                         </span>
                       )}
@@ -213,6 +216,13 @@ export default async function StaffComplaintsPage({
                       <span className="capitalize">{c.priority}</span>
                       <span>·</span>
                       <span>{c.assignedStaffRef ? "Assigned" : "Unassigned"}</span>
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-[var(--muted-foreground)]">
+                      {c.studentRef?.firstName} {c.studentRef?.lastName}
+                      {c.studentRef?.employeeOrStudentId
+                        ? ` · ${c.studentRef.employeeOrStudentId}`
+                        : ""}
+                      {c.studentRef?.collegeRef?.name ? ` · ${c.studentRef.collegeRef.name}` : ""}
                     </span>
                   </span>
 

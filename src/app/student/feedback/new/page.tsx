@@ -7,7 +7,6 @@ import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
-  ChevronDown,
   EyeOff,
   Loader2,
   MessageSquareText,
@@ -15,14 +14,8 @@ import {
   Sparkles,
   Tag,
 } from "lucide-react";
-
-const FEEDBACK_CATEGORIES = [
-  "General Suggestion",
-  "System Usability",
-  "Service Quality",
-  "Facility Concern",
-  "Other",
-];
+import { FEEDBACK_CATEGORIES } from "@/features/feedback/constants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const GOOD_FEEDBACK_EXAMPLES = [
   "The online enrollment portal times out during peak hours.",
@@ -38,6 +31,10 @@ export default function NewFeedbackPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!form.category) {
+      setError("Please select a category.");
+      return;
+    }
     setError(null);
     setIsSubmitting(true);
 
@@ -107,24 +104,22 @@ export default function NewFeedbackPage() {
                 Category
               </label>
               <div className="relative">
-                <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-                <select
-                  id="category"
-                  required
+                <Tag className="pointer-events-none absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <Select
                   value={form.category}
-                  onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                  className={`${inputClass} appearance-none pr-9`}
+                  onValueChange={(value) => setForm((p) => ({ ...p, category: value }))}
                 >
-                  <option value="" disabled>
-                    Select a category
-                  </option>
-                  {FEEDBACK_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                  <SelectTrigger id="category" className="pl-10">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FEEDBACK_CATEGORIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -133,7 +128,7 @@ export default function NewFeedbackPage() {
                 Message
               </label>
               <div className="relative">
-                <MessageSquareText className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+                <MessageSquareText className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
                 <textarea
                   id="message"
                   required
@@ -182,8 +177,8 @@ export default function NewFeedbackPage() {
             </div>
             <p className="mt-3 text-xs leading-relaxed text-[var(--muted-foreground)]">
               Feedback isn't a complaint — it's how the university spots patterns and improves
-              services before they become problems. Every submission reaches the Quality
-              Assurance office directly.
+              services before they become problems. Every submission reaches the Quality Assurance
+              office directly.
             </p>
           </div>
 
@@ -195,18 +190,20 @@ export default function NewFeedbackPage() {
               <p className="text-sm font-medium text-[var(--foreground)]">Anonymity, respected</p>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-[var(--muted-foreground)]">
-              Check "Submit anonymously" and your name is never attached to this feedback — not
-              even QA staff can trace it back to your account.
+              Check "Submit anonymously" and your name is never attached to this feedback — not even
+              QA staff can trace it back to your account.
             </p>
           </div>
 
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-            <p className="text-sm font-medium text-[var(--foreground)]">Good feedback sounds like</p>
+            <p className="text-sm font-medium text-[var(--foreground)]">
+              Good feedback sounds like
+            </p>
             <ul className="mt-3 space-y-2.5">
               {GOOD_FEEDBACK_EXAMPLES.map((example) => (
                 <li
                   key={example}
-                  className="rounded-xl bg-[var(--muted)]/40 px-3 py-2 text-xs italic leading-relaxed text-[var(--muted-foreground)]"
+                  className="rounded-xl bg-[var(--muted)]/40 px-3 py-2 text-xs leading-relaxed text-[var(--muted-foreground)] italic"
                 >
                   "{example}"
                 </li>

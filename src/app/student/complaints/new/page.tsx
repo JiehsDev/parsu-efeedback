@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   Building2,
   CheckCircle2,
-  ChevronDown,
   ClipboardList,
   Lightbulb,
   Loader2,
@@ -20,6 +19,7 @@ import {
   UserCheck,
   X,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Category {
   _id: string;
@@ -153,6 +153,10 @@ export default function NewComplaintPage() {
   }
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!form.categoryRef) {
+      setError("Please select a category.");
+      return;
+    }
     setError(null);
     setIsSubmitting(true);
 
@@ -248,24 +252,22 @@ export default function NewComplaintPage() {
                 Category
               </label>
               <div className="relative">
-                <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-                <select
-                  id="categoryRef"
-                  required
+                <Tag className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <Select
                   value={form.categoryRef}
-                  onChange={(e) => setForm((prev) => ({ ...prev, categoryRef: e.target.value }))}
-                  className={`${inputClass} appearance-none pr-9`}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, categoryRef: value }))}
                 >
-                  <option value="" disabled>
-                    Select a category
-                  </option>
-                  {categories.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                  <SelectTrigger id="categoryRef" className="pl-10">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c._id} value={c._id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               {selectedCategory?.description && (
                 <p className="text-xs text-[var(--muted-foreground)]">

@@ -57,6 +57,16 @@ export async function GET() {
       parentOffice: null,
     });
 
+    // Handles Campus Facilities complaints (physical plant + campus IT),
+    // per the capstone's four-group complaint taxonomy — none of the
+    // other seeded offices are a sensible routing target for these.
+    const generalServicesOffice = await Office.create({
+      name: "General Services Office",
+      code: "GSO",
+      type: "service_office",
+      parentOffice: null,
+    });
+
     // Administrator doesn't belong to any office/college per BR — it's a
     // distinct permission set, not staff+extra (architecture.md §6).
     // officeRef/collegeRef stay null for this role.
@@ -88,11 +98,121 @@ export async function GET() {
       resolutionHours: 120,
       isActive: true,
     });
+
+    // Remaining categories, grouped by the capstone doc's four core
+    // complaint types (Campus Facilities / Administrative Services /
+    // Academic Matters / Student Welfare). "Grade Concern" above already
+    // covers one Academic Matters example; these fill out the rest so the
+    // category picker reflects realistic, in-scope complaint types instead
+    // of a single placeholder.
+    const additionalCategories = [
+      // --- Campus Facilities ---
+      {
+        name: "Classroom & Laboratory Equipment",
+        description:
+          "Broken air conditioners/fans, malfunctioning projectors, damaged desks or chairs",
+        defaultOfficeRef: generalServicesOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Restroom & Sanitation",
+        description: "Lack of running water, unsanitary conditions, damaged plumbing/fixtures",
+        defaultOfficeRef: generalServicesOffice._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Campus Wi-Fi & IT Infrastructure",
+        description: "Slow or non-functional campus Wi-Fi, computer lab hardware/software issues",
+        defaultOfficeRef: generalServicesOffice._id,
+        defaultPriority: "medium",
+      },
+      // --- Administrative Services ---
+      {
+        name: "Document Request Delays",
+        description:
+          "Delays in issuing TOR, Honorable Dismissal, diploma, or certification requests",
+        defaultOfficeRef: registrarOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Staff Responsiveness",
+        description: "Unhelpful, slow, or unprofessional conduct from office personnel",
+        defaultOfficeRef: registrarOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Administrative Process Concerns",
+        description:
+          "Redundant requirements, cumbersome procedures, or unannounced office closures",
+        defaultOfficeRef: registrarOffice._id,
+        defaultPriority: "low",
+      },
+      // --- Academic Matters ---
+      {
+        name: "Faculty & Teaching Performance",
+        description:
+          "Excessive absenteeism, late arrivals, poor instruction, or unprofessional behavior",
+        defaultOfficeRef: collegeOfComputing._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Curriculum & Scheduling",
+        description:
+          "Class scheduling conflicts, overcrowded sections, missing prerequisite subjects",
+        defaultOfficeRef: collegeOfComputing._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Consultation & Advising",
+        description:
+          "Faculty unavailability during posted consultation hours, lack of academic guidance",
+        defaultOfficeRef: collegeOfComputing._id,
+        defaultPriority: "low",
+      },
+      // --- Student Welfare ---
+      {
+        name: "Campus Safety & Security",
+        description:
+          "Unsecured areas, lost items, security personnel behavior, harassment concerns",
+        defaultOfficeRef: osasOffice._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Student Services",
+        description:
+          "Canteen hygiene/food quality, health services/clinic operations, guidance and counseling",
+        defaultOfficeRef: osasOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Financial Assistance & Scholarships",
+        description: "Delayed disbursement of scholarships, unclear grant guidelines",
+        defaultOfficeRef: osasOffice._id,
+        defaultPriority: "medium",
+      },
+    ] as const;
+
+    for (const cat of additionalCategories) {
+      const category = await Category.create({ ...cat, isActive: true });
+      await RoutingRule.create({
+        categoryRef: category._id,
+        targetOfficeRef: cat.defaultOfficeRef,
+        isActive: true,
+      });
+      await SLARule.create({
+        categoryRef: category._id,
+        priority: cat.defaultPriority,
+        responseHours: 24,
+        resolutionHours: 120,
+        isActive: true,
+      });
+    }
+
     // 3. Populate testing accounts matching the unified identity field
     const usersToCreate = [
       {
-        firstName: "Rolando",
-        lastName: "Abellon",
+        firstName: "Elliot",
+        lastName: "Anderson",
         email: "student@parsu.edu.ph",
         passwordHash: commonPasswordHash,
         role: "student",

@@ -1,5 +1,6 @@
 // src/app/api/offices/[id]/staff/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { User } from "@/models/User";
@@ -13,8 +14,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await connectToDatabase();
   const { id } = await params;
+  if (!Types.ObjectId.isValid(id)) {
+    return NextResponse.json({ staff: [] });
+  }
+
+  await connectToDatabase();
 
   const staff = await User.find({ officeRef: id, role: "office_staff", isActive: true })
     .select("firstName lastName email")

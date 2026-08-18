@@ -12,6 +12,7 @@ import {
   Inbox,
   LayoutGrid,
   LogOut,
+  MessageSquareText,
   Timer,
   UserRound,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import {
 const NAV_ITEMS = [
   { href: "/qa/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/qa/complaints", label: "Complaints", icon: Inbox },
+  { href: "/qa/feedback", label: "Feedback", icon: MessageSquareText },
   { href: "/qa/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/qa/sla-compliance", label: "SLA", icon: Timer },
   { href: "/qa/reports", label: "Reports", icon: FileBarChart },
@@ -59,7 +61,7 @@ export function QaNav({ userName }: { userName: string }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--border)]/70 bg-[var(--card)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
         <Link href="/qa/dashboard" className="flex shrink-0 items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--primary)] text-sm font-bold text-[var(--primary-foreground)]">
             P
@@ -76,7 +78,7 @@ export function QaNav({ userName }: { userName: string }) {
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--destructive)] px-1 text-[10px] font-semibold text-white">
+              <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--destructive)] px-1 text-[10px] font-semibold text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -95,7 +97,7 @@ export function QaNav({ userName }: { userName: string }) {
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
+                className="absolute top-full right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">
@@ -128,8 +130,8 @@ export function QaNav({ userName }: { userName: string }) {
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 pb-3 sm:px-6">
-        <nav className="flex items-center gap-0.5 overflow-x-auto rounded-full bg-[var(--muted)]/50 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mx-auto max-w-[1600px] px-4 pb-3 sm:px-6 lg:px-10">
+        <nav className="flex [scrollbar-width:none] items-center gap-0.5 overflow-x-auto rounded-full bg-[var(--muted)]/50 p-1 [&::-webkit-scrollbar]:hidden">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (

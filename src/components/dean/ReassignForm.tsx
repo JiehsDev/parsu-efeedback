@@ -3,8 +3,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRightLeft, ChevronDown, Loader2, MessageSquare } from "lucide-react";
+import { AlertCircle, ArrowRightLeft, Loader2, MessageSquare } from "lucide-react";
 import { useToast } from "@/components/shared/Toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Office {
   _id: string;
@@ -80,9 +87,6 @@ export function ReassignForm({
     router.refresh();
   }
 
-  const selectClass =
-    "mt-1 w-full appearance-none rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 pr-9 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -105,49 +109,45 @@ export function ReassignForm({
       <div className="mt-3 space-y-3">
         <div>
           <label className="text-xs text-[var(--muted-foreground)]">Office</label>
-          <div className="relative">
-            <select
-              value={selectedOffice}
-              onChange={(e) => setSelectedOffice(e.target.value)}
-              className={selectClass}
-            >
+          <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select an office" />
+            </SelectTrigger>
+            <SelectContent>
               {offices.map((o) => (
-                <option key={o._id} value={o._id}>
+                <SelectItem key={o._id} value={o._id}>
                   {o.name}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-          </div>
+            </SelectContent>
+          </Select>
         </div>
 
         <div>
           <label className="text-xs text-[var(--muted-foreground)]">Staff (optional)</label>
-          <div className="relative">
-            <select
-              value={selectedStaff}
-              onChange={(e) => setSelectedStaff(e.target.value)}
-              className={selectClass}
-            >
-              <option value="">— Unassigned —</option>
+          <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="— Unassigned —" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">— Unassigned —</SelectItem>
               {staff.map((s) => (
-                <option key={s._id} value={s._id}>
+                <SelectItem key={s._id} value={s._id}>
                   {s.firstName} {s.lastName}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-          </div>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="relative">
-          <MessageSquare className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+          <MessageSquare className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Reason for reassignment (optional)"
             rows={2}
-            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pr-3 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
         </div>
 

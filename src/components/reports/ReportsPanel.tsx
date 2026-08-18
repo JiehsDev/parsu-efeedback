@@ -2,16 +2,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  AlertCircle,
-  Download,
-  FileBarChart,
-  FileClock,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
+import { AlertCircle, Download, FileBarChart, FileClock, Loader2, Sparkles } from "lucide-react";
 import { ReportStatusBadge } from "./ReportStatusBadge";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Category {
   _id: string;
@@ -143,64 +143,80 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[var(--foreground)]">Format</label>
-            <select
+            <Select
               value={form.format}
-              onChange={(e) => setForm((p) => ({ ...p, format: e.target.value as any }))}
-              className={selectClass}
+              onValueChange={(value) => setForm((p) => ({ ...p, format: value as any }))}
             >
-              <option value="csv">CSV</option>
-              <option value="excel">Excel</option>
-              <option value="pdf">PDF</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="csv">CSV</SelectItem>
+                <SelectItem value="excel">Excel</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[var(--foreground)]">Category</label>
-            <select
+            <Select
               value={form.categoryRef}
-              onChange={(e) => setForm((p) => ({ ...p, categoryRef: e.target.value }))}
-              className={selectClass}
+              onValueChange={(value) => setForm((p) => ({ ...p, categoryRef: value }))}
             >
-              <option value="">All categories</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c._id} value={c._id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {showOfficeFilter && (
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--foreground)]">Office</label>
-              <select
+              <Select
                 value={form.officeRef}
-                onChange={(e) => setForm((p) => ({ ...p, officeRef: e.target.value }))}
-                className={selectClass}
+                onValueChange={(value) => setForm((p) => ({ ...p, officeRef: value }))}
               >
-                <option value="">All offices</option>
-                {offices.map((o) => (
-                  <option key={o._id} value={o._id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="All offices" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All offices</SelectItem>
+                  {offices.map((o) => (
+                    <SelectItem key={o._id} value={o._id}>
+                      {o.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[var(--foreground)]">Status</label>
-            <select
+            <Select
               value={form.status}
-              onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-              className={selectClass}
+              onValueChange={(value) => setForm((p) => ({ ...p, status: value }))}
             >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s ? s.replace("_", " ") : "All statuses"}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s ? s.replace("_", " ") : "All statuses"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
@@ -278,10 +294,10 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium capitalize text-[var(--foreground)]">
+                      <span className="truncate text-sm font-medium text-[var(--foreground)] capitalize">
                         {r.reportType.replace(/-/g, " ")}
                       </span>
-                      <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                      <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
                         {r.format}
                       </span>
                     </span>

@@ -3,12 +3,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, Building2, ChevronDown, ChevronRight, Loader2, Plus } from "lucide-react";
+import { AlertCircle, Building2, ChevronRight, Loader2, Plus } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface OfficeRow {
   _id: string;
@@ -183,17 +184,15 @@ export default function AdminOfficesPage() {
             </FormField>
 
             <FormField label="Type">
-              <div className="relative">
-                <select
-                  className={`${inputClass} appearance-none pr-9`}
-                  value={form.type}
-                  onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
-                >
-                  <option value="service_office">Service Office</option>
-                  <option value="college">College</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              </div>
+              <Select value={form.type} onValueChange={(value) => setForm((p) => ({ ...p, type: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="service_office">Service Office</SelectItem>
+                  <SelectItem value="college">College</SelectItem>
+                </SelectContent>
+              </Select>
             </FormField>
 
             <button

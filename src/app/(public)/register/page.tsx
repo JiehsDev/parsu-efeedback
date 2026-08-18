@@ -7,7 +7,6 @@ import Link from "next/link";
 import {
   AlertCircle,
   BookOpen,
-  ChevronDown,
   Eye,
   EyeOff,
   Hash,
@@ -16,6 +15,7 @@ import {
   Mail,
   User,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface College {
   _id: string;
@@ -198,24 +198,22 @@ export default function RegisterPage() {
               College
             </label>
             <div className="relative">
-              <BookOpen className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-              <select
-                id="collegeId"
-                required
+              <BookOpen className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Select
                 value={form.collegeId}
-                onChange={update("collegeId")}
-                className={`${inputClass} appearance-none pr-9`}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, collegeId: value }))}
               >
-                <option value="" disabled>
-                  Select your college
-                </option>
-                {colleges.map((college) => (
-                  <option key={college._id} value={college._id}>
-                    {college.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <SelectTrigger id="collegeId" className="pl-10">
+                  <SelectValue placeholder="Select your college" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colleges.map((college) => (
+                    <SelectItem key={college._id} value={college._id}>
+                      {college.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
