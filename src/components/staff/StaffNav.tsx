@@ -47,43 +47,43 @@ export function StaffNav({ userName }: { userName: string }) {
   const initials = getInitials(userName);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--border)]/70 bg-[var(--card)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
-        <div className="flex items-center gap-6">
-          <Link href="/staff/dashboard" className="flex shrink-0 items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--primary)] text-sm font-bold text-[var(--primary-foreground)]">
-              P
-            </span>
-            <span className="hidden text-sm font-semibold tracking-tight text-[var(--foreground)] sm:inline">
-              ParSU Staff
-            </span>
-          </Link>
+    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)] lg:w-56">
+      <Link href="/staff/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--foreground)] text-xs font-bold text-[var(--card)]">
+          P
+        </span>
+        <span className="hidden text-[13px] font-bold tracking-tight text-[var(--foreground)] lg:inline">
+          ParSU Staff
+        </span>
+      </Link>
 
-          <nav className="flex items-center gap-0.5 rounded-full bg-[var(--muted)]/50 p-1">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
-                    active
-                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                  }`}
-                >
-                  <item.icon className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
+        {NAV_ITEMS.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
+                active
+                  ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
+                  : "font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <item.icon className="h-[17px] w-[17px] shrink-0" />
+              <span className="hidden lg:inline">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
+      <div className="shrink-0 border-t border-[var(--border)]/70 p-2.5">
         <div className="flex items-center gap-2">
           <Link
             href="/staff/notifications"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)]/60 hover:text-[var(--foreground)]"
+            title="Notifications"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)]/60 hover:text-[var(--foreground)]"
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
@@ -93,20 +93,30 @@ export function StaffNav({ userName }: { userName: string }) {
             )}
           </Link>
 
-          <div className="relative" ref={menuRef}>
+          <div className="relative min-w-0 flex-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary)]/15 text-xs font-semibold text-[var(--primary)] ring-1 ring-[var(--primary)]/30 transition-transform hover:scale-105"
+              className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-[var(--muted)]/60"
             >
-              {initials}
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--muted)] text-[11px] font-bold text-[var(--foreground)]">
+                {initials}
+              </span>
+              <span className="hidden min-w-0 flex-1 text-left lg:block">
+                <span className="block truncate text-[12.5px] font-semibold text-[var(--foreground)]">
+                  {userName}
+                </span>
+                <span className="block truncate text-[10.5px] text-[var(--muted-foreground)]">
+                  Office Staff
+                </span>
+              </span>
             </button>
 
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute top-full right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
+                className="absolute bottom-full left-0 z-20 mb-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">
@@ -138,6 +148,6 @@ export function StaffNav({ userName }: { userName: string }) {
           </div>
         </div>
       </div>
-    </header>
+    </aside>
   );
 }

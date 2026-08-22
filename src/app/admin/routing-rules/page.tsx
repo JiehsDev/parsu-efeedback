@@ -1,8 +1,8 @@
 // src/app/admin/routing-rules/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertCircle, Loader2, Plus, Route } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Loader2, Pencil, Plus, Route, Search } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
@@ -27,17 +27,21 @@ interface Office {
   name: string;
 }
 
+const EMPTY_FORM = { categoryRef: "", targetOfficeRef: "" };
+
 export default function AdminRoutingRulesPage() {
   const { show: showToast } = useToast();
   const confirm = useConfirm();
   const [rules, setRules] = useState<RuleRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
+  const [search, setSearch] = useState("");
+  // "new" opens the modal in create mode; a RuleRow opens it pre-filled to edit that rule.
+  const [editingRule, setEditingRule] = useState<RuleRow | "new" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [form, setForm] = useState({ categoryRef: "", targetOfficeRef: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   function refresh() {
     fetch("/api/admin/routing-rules")
@@ -63,27 +67,57 @@ export default function AdminRoutingRulesPage() {
     return offices.find((o) => o._id === id)?.name ?? id;
   }
 
-  async function handleCreate(event: React.FormEvent) {
+  const visibleRules = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return rules;
+    return rules.filter((r) =>
+      [categoryName(r.categoryRef), officeName(r.targetOfficeRef)]
+        .join(" ")
+        .toLowerCase()
+        .includes(term),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rules, search, categories, offices]);
+
+  function openCreate() {
+    setForm(EMPTY_FORM);
+    setError(null);
+    setEditingRule("new");
+  }
+
+  function openEdit(rule: RuleRow) {
+    setForm({ categoryRef: rule.categoryRef, targetOfficeRef: rule.targetOfficeRef });
+    setError(null);
+    setEditingRule(rule);
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
 
-    const res = await fetch("/api/admin/routing-rules", {
-      method: "POST",
+    const isEdit = editingRule && editingRule !== "new";
+    const url = isEdit ? `/api/admin/routing-rules/${editingRule._id}` : "/api/admin/routing-rules";
+    const res = await fetch(url, {
+      method: isEdit ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     const data = await res.json();
 
     if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "Could not create rule.");
+      setError(
+        typeof data.error === "string"
+          ? data.error
+          : `Could not ${isEdit ? "update" : "create"} rule.`,
+      );
       setIsSubmitting(false);
       return;
     }
 
-    setShowCreate(false);
+    setEditingRule(null);
     setIsSubmitting(false);
-    setForm({ categoryRef: "", targetOfficeRef: "" });
+    setForm(EMPTY_FORM);
     refresh();
   }
 
@@ -110,6 +144,8 @@ export default function AdminRoutingRulesPage() {
     refresh();
   }
 
+  const isEditMode = editingRule !== null && editingRule !== "new";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -122,7 +158,7 @@ export default function AdminRoutingRulesPage() {
           </h1>
         </div>
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={openCreate}
           className="flex items-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
@@ -135,12 +171,31 @@ export default function AdminRoutingRulesPage() {
         a replacement.
       </p>
 
+      <div className="relative max-w-xs">
+        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by category or office…"
+          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+        />
+      </div>
+
       {isLoading ? (
         <ListRowsSkeleton />
+      ) : visibleRules.length === 0 ? (
+        <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+            <Route className="h-6 w-6" />
+          </span>
+          <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
+            No routing rules match this search.
+          </p>
+        </div>
       ) : (
       <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
         <ul className="divide-y divide-[var(--border)]">
-          {rules.map((r) => (
+          {visibleRules.map((r) => (
             <li
               key={r._id}
               className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
@@ -163,6 +218,13 @@ export default function AdminRoutingRulesPage() {
                 >
                   {r.isActive ? "Active" : "Inactive"}
                 </span>
+                <button
+                  onClick={() => openEdit(r)}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Edit
+                </button>
                 {r.isActive && (
                   <button
                     onClick={() => deactivate(r)}
@@ -178,9 +240,9 @@ export default function AdminRoutingRulesPage() {
       </div>
       )}
 
-      {showCreate && (
-        <Modal title="Add Routing Rule" onClose={() => setShowCreate(false)}>
-          <form onSubmit={handleCreate} className="space-y-4">
+      {editingRule !== null && (
+        <Modal title={isEditMode ? "Edit Routing Rule" : "Add Routing Rule"} onClose={() => setEditingRule(null)}>
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -230,7 +292,7 @@ export default function AdminRoutingRulesPage() {
               className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isSubmitting ? "Creating…" : "Create Rule"}
+              {isSubmitting ? "Saving…" : isEditMode ? "Save Changes" : "Create Rule"}
             </button>
           </form>
         </Modal>

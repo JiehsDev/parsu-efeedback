@@ -2,9 +2,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, Download, FileBarChart, FileClock, Loader2, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  Download,
+  FileBarChart,
+  FileClock,
+  Loader2,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { ReportStatusBadge } from "./ReportStatusBadge";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { useToast } from "@/components/shared/Toast";
 import {
   Select,
   SelectContent,
@@ -46,12 +56,15 @@ const selectClass =
   "w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
 export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: boolean }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [reports, setReports] = useState<ReportRecord[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     format: "csv" as "csv" | "excel" | "pdf",
@@ -117,7 +130,30 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
     }
 
     setIsGenerating(false);
+    toast.show(`${form.format.toUpperCase()} report generated.`, "success");
     refreshReports();
+  }
+
+  async function handleDelete(report: ReportRecord) {
+    const ok = await confirm({
+      title: "Delete this report?",
+      message: `This will permanently delete the ${report.format.toUpperCase()} ${report.reportType.replace(/-/g, " ")} report. This can't be undone.`,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+
+    setDeletingId(report._id);
+    const res = await fetch(`/api/reports/${report._id}`, { method: "DELETE" });
+    setDeletingId(null);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(typeof data.error === "string" ? data.error : "Failed to delete report.");
+      return;
+    }
+
+    setReports((prev) => prev.filter((r) => r._id !== report._id));
   }
 
   return (
@@ -315,6 +351,20 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
                       Download
                     </a>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(r)}
+                    disabled={deletingId === r._id}
+                    title="Delete report"
+                    aria-label="Delete report"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)] disabled:opacity-50"
+                  >
+                    {deletingId === r._id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                 </li>
               ))}
             </ul>

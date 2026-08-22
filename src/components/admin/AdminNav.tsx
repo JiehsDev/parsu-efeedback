@@ -8,24 +8,18 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   Building2,
-  ChevronDown,
   FileBarChart,
   LayoutGrid,
   LogOut,
   Route,
   ScrollText,
   Settings,
-  SlidersHorizontal,
   Tag,
   Timer,
   UserRound,
   Users,
 } from "lucide-react";
 
-// Frequent, day-to-day destinations stay as top-level pills; everything
-// else that's closer to one-time/occasional configuration is grouped under
-// the "Configuration" dropdown below so the primary row stays uncrowded
-// and actually lines up with the logo instead of wrapping to its own row.
 const PRIMARY_NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart },
@@ -33,6 +27,9 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/admin/offices", label: "Offices", icon: Building2 },
 ];
 
+// A sidebar has room to just list these instead of tucking them behind a
+// "Configuration" dropdown the way the old top-nav had to — a small
+// section label does the same grouping without hiding anything.
 const CONFIG_NAV_ITEMS = [
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/routing-rules", label: "Routing Rules", icon: Route },
@@ -52,9 +49,7 @@ export function AdminNav({ userName }: { userName: string }) {
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [configOpen, setConfigOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const configRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/notifications?unreadOnly=true")
@@ -64,125 +59,63 @@ export function AdminNav({ userName }: { userName: string }) {
   }, []);
 
   useEffect(() => {
-    if (!menuOpen && !configOpen) return;
+    if (!menuOpen) return;
     function handleClickOutside(event: MouseEvent) {
-      if (menuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
-      }
-      if (configOpen && configRef.current && !configRef.current.contains(event.target as Node)) {
-        setConfigOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen, configOpen]);
-
-  // AdminNav lives in the layout and never unmounts across navigation, so
-  // closing the dropdown has to happen here — reacting to the route
-  // actually changing — rather than in each Link's onClick. Closing
-  // on-click instead unmounts the Link mid-event and cancels Next's own
-  // navigation before it completes.
-  useEffect(() => {
-    setMenuOpen(false);
-    setConfigOpen(false);
-  }, [pathname]);
+  }, [menuOpen]);
 
   const initials = getInitials(userName);
-  const isConfigActive = CONFIG_NAV_ITEMS.some(
-    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
-  );
+
+  function renderItem(item: (typeof PRIMARY_NAV_ITEMS)[number]) {
+    const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        title={item.label}
+        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
+          active
+            ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
+            : "font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+        }`}
+      >
+        <item.icon className="h-[17px] w-[17px] shrink-0" />
+        <span className="hidden lg:inline">{item.label}</span>
+      </Link>
+    );
+  }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--border)]/70 bg-[var(--card)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
-        <div className="flex min-w-0 items-center gap-6">
-          <Link href="/admin/dashboard" className="flex shrink-0 items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--primary)] text-sm font-bold text-[var(--primary-foreground)]">
-              P
-            </span>
-            <span className="hidden text-sm font-semibold tracking-tight text-[var(--foreground)] md:inline">
-              ParSU Admin
-            </span>
-          </Link>
+    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)] lg:w-56">
+      <Link href="/admin/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--foreground)] text-xs font-bold text-[var(--card)]">
+          P
+        </span>
+        <span className="hidden text-[13px] font-bold tracking-tight text-[var(--foreground)] lg:inline">
+          ParSU Admin
+        </span>
+      </Link>
 
-          <div className="flex min-w-0 items-center gap-2">
-            <nav className="flex min-w-0 [scrollbar-width:none] items-center gap-0.5 overflow-x-auto rounded-full bg-[var(--muted)]/50 p-1 [&::-webkit-scrollbar]:hidden">
-              {PRIMARY_NAV_ITEMS.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
-                      active
-                        ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
-                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    <item.icon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
+        {PRIMARY_NAV_ITEMS.map(renderItem)}
 
-            {/* Deliberately a sibling of <nav>, not nested inside it: nav has
-                overflow-x-auto for horizontal pill scrolling, and setting
-                overflow-x also forces overflow-y to clip per the CSS spec —
-                any absolutely-positioned dropdown nested inside would get
-                silently clipped away despite being present in the DOM. */}
-            <div className="relative shrink-0" ref={configRef}>
-              <button
-                onClick={() => setConfigOpen((v) => !v)}
-                aria-haspopup="menu"
-                aria-expanded={configOpen}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
-                  isConfigActive
-                    ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Configuration</span>
-                <ChevronDown
-                  className={`h-3 w-3 shrink-0 transition-transform ${configOpen ? "rotate-180" : ""}`}
-                />
-              </button>
+        <p className="mt-3 mb-1 px-3 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+          <span className="hidden lg:inline">Configuration</span>
+          <span className="lg:hidden">···</span>
+        </p>
+        {CONFIG_NAV_ITEMS.map(renderItem)}
+      </nav>
 
-              {configOpen && (
-                <div
-                  role="menu"
-                  className="absolute top-full left-0 z-20 mt-2 w-56 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
-                >
-                  <div className="p-1">
-                    {CONFIG_NAV_ITEMS.map((item) => {
-                      const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          role="menuitem"
-                          className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm transition-colors ${
-                            active
-                              ? "bg-[var(--primary)]/10 text-[var(--primary)]"
-                              : "text-[var(--foreground)] hover:bg-[var(--muted)]"
-                          }`}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
+      <div className="shrink-0 border-t border-[var(--border)]/70 p-2.5">
+        <div className="flex items-center gap-2">
           <Link
             href="/admin/notifications"
+            title="Notifications"
             className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)]/60 hover:text-[var(--foreground)]"
           >
             <Bell className="h-[18px] w-[18px]" />
@@ -193,20 +126,30 @@ export function AdminNav({ userName }: { userName: string }) {
             )}
           </Link>
 
-          <div className="relative shrink-0" ref={menuRef}>
+          <div className="relative min-w-0 flex-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary)]/15 text-xs font-semibold text-[var(--primary)] ring-1 ring-[var(--primary)]/30 transition-transform hover:scale-105"
+              className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-[var(--muted)]/60"
             >
-              {initials}
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--muted)] text-[11px] font-bold text-[var(--foreground)]">
+                {initials}
+              </span>
+              <span className="hidden min-w-0 flex-1 text-left lg:block">
+                <span className="block truncate text-[12.5px] font-semibold text-[var(--foreground)]">
+                  {userName}
+                </span>
+                <span className="block truncate text-[10.5px] text-[var(--muted-foreground)]">
+                  Administrator
+                </span>
+              </span>
             </button>
 
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute top-full right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
+                className="absolute bottom-full left-0 z-20 mb-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">
@@ -218,6 +161,7 @@ export function AdminNav({ userName }: { userName: string }) {
                   <Link
                     href="/admin/profile"
                     role="menuitem"
+                    onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
                   >
                     <UserRound className="h-4 w-4 text-[var(--muted-foreground)]" />
@@ -237,6 +181,6 @@ export function AdminNav({ userName }: { userName: string }) {
           </div>
         </div>
       </div>
-    </header>
+    </aside>
   );
 }

@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, ScrollText, Search } from "lucide-react";
 import { RelativeTime } from "@/components/shared/RelativeTime";
 import {
@@ -29,6 +30,9 @@ export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
   const [entityType, setEntityType] = useState("");
   const [actionFilter, setActionFilter] = useState("");
+  const [actorFilter, setActorFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,6 +40,9 @@ export default function AdminAuditLogsPage() {
     const params = new URLSearchParams({ page: String(page) });
     if (entityType) params.set("entityType", entityType);
     if (actionFilter) params.set("action", actionFilter);
+    if (actorFilter) params.set("actor", actorFilter);
+    if (dateFrom) params.set("dateFrom", dateFrom);
+    if (dateTo) params.set("dateTo", dateTo);
 
     fetch(`/api/admin/audit-logs?${params}`)
       .then((res) => res.json())
@@ -44,7 +51,7 @@ export default function AdminAuditLogsPage() {
         setTotal(data.total ?? 0);
       })
       .finally(() => setIsLoading(false));
-  }, [page, entityType, actionFilter]);
+  }, [page, entityType, actionFilter, actorFilter, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(total / 50));
 
@@ -88,6 +95,41 @@ export default function AdminAuditLogsPage() {
             className="rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
         </div>
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+          <input
+            placeholder="Filter by actor name or email"
+            value={actorFilter}
+            onChange={(e) => {
+              setActorFilter(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            aria-label="From date"
+            value={dateFrom}
+            onChange={(e) => {
+              setDateFrom(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+          />
+          <span className="text-sm text-[var(--muted-foreground)]">to</span>
+          <input
+            type="date"
+            aria-label="To date"
+            value={dateTo}
+            onChange={(e) => {
+              setDateTo(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+          />
+        </div>
       </div>
 
       {isLoading ? (
@@ -106,25 +148,31 @@ export default function AdminAuditLogsPage() {
           <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
             <ul className="divide-y divide-[var(--border)]">
               {logs.map((log) => (
-                <li key={log._id} className="flex items-center gap-4 px-5 py-3.5">
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-[var(--foreground)]">
-                        {log.action}
+                <li key={log._id}>
+                  <Link
+                    href={`/admin/audit-logs/${log._id}`}
+                    className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-[var(--muted)]/40"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-medium text-[var(--foreground)]">
+                          {log.action}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                        {log.actorRef
+                          ? `${log.actorRef.firstName} ${log.actorRef.lastName}`
+                          : "System"}
+                        {" · "}
+                        {log.entityType} <span className="font-mono">{log.entityId}</span>
                       </span>
                     </span>
-                    <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
-                      {log.actorRef
-                        ? `${log.actorRef.firstName} ${log.actorRef.lastName}`
-                        : "System"}
-                      {" · "}
-                      {log.entityType} <span className="font-mono">{log.entityId}</span>
-                    </span>
-                  </span>
-                  <RelativeTime
-                    date={log.createdAt}
-                    className="shrink-0 text-xs text-[var(--muted-foreground)]"
-                  />
+                    <RelativeTime
+                      date={log.createdAt}
+                      className="shrink-0 text-xs text-[var(--muted-foreground)]"
+                    />
+                    <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+                  </Link>
                 </li>
               ))}
             </ul>

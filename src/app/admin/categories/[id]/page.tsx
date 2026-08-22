@@ -19,6 +19,7 @@ import { Office } from "@/models/Office";
 import { RoutingRule } from "@/models/RoutingRule";
 import { SLARule } from "@/models/SLARule";
 import { CategoryStatusToggle } from "@/components/admin/CategoryStatusToggle";
+import { EditCategoryButton } from "@/components/admin/EditCategoryButton";
 
 export default async function AdminCategoryDetailPage({
   params,
@@ -34,13 +35,16 @@ export default async function AdminCategoryDetailPage({
 
   const c = category as any;
 
-  const [defaultOffice, routingRule, slaRules] = await Promise.all([
+  const [defaultOffice, routingRule, slaRules, allOffices] = await Promise.all([
     Office.findById(c.defaultOfficeRef).select("name code").lean(),
     RoutingRule.findOne({ categoryRef: id, isActive: true })
       .populate("targetOfficeRef", "name")
       .lean(),
     SLARule.find({ categoryRef: id, isActive: true }).sort({ priority: 1 }).lean(),
+    Office.find().select("name").lean(),
   ]);
+
+  const officeOptions = allOffices.map((o: any) => ({ _id: String(o._id), name: o.name }));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -78,7 +82,19 @@ export default async function AdminCategoryDetailPage({
           </div>
         </div>
 
-        <CategoryStatusToggle categoryId={String(c._id)} categoryName={c.name} isActive={c.isActive} />
+        <div className="flex shrink-0 items-center gap-2">
+          <EditCategoryButton
+            category={{
+              _id: String(c._id),
+              name: c.name,
+              description: c.description,
+              defaultOfficeRef: String(c.defaultOfficeRef),
+              defaultPriority: c.defaultPriority,
+            }}
+            offices={officeOptions}
+          />
+          <CategoryStatusToggle categoryId={String(c._id)} categoryName={c.name} isActive={c.isActive} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

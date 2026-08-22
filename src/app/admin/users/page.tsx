@@ -3,7 +3,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ChevronRight, Loader2, Plus, Search, Users as UsersIcon } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronRight,
+  Download,
+  Loader2,
+  Plus,
+  Search,
+  Users as UsersIcon,
+} from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
@@ -72,6 +80,7 @@ export default function AdminUsersPage() {
   const { show: showToast } = useToast();
   const confirm = useConfirm();
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [offices, setOffices] = useState<Office[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,9 +103,16 @@ export default function AdminUsersPage() {
   });
 
   function refreshUsers() {
-    fetch("/api/admin/users")
+    // limit=2000: the admin roster for one institution fits comfortably
+    // under this, and it keeps every user in memory for the client-side
+    // search/sort/filter below instead of only ever seeing the API's
+    // default first page.
+    fetch("/api/admin/users?limit=2000")
       .then((res) => res.json())
-      .then((data) => setUsers(data.users ?? []))
+      .then((data) => {
+        setUsers(data.users ?? []);
+        setTotalUsers(data.total ?? 0);
+      })
       .finally(() => setIsLoading(false));
   }
 
@@ -201,6 +217,34 @@ export default function AdminUsersPage() {
     return filtered;
   }, [users, search, officeFilter, roleFilter, sortBy]);
 
+  function csvCell(value: string): string {
+    return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  }
+
+  function handleExportCsv() {
+    const header = ["First name", "Last name", "Email", "ID", "Role", "Affiliation", "Status"];
+    const rows = visibleUsers.map((u) => [
+      u.firstName,
+      u.lastName,
+      u.email,
+      u.employeeOrStudentId,
+      u.role.replace("_", " "),
+      affiliationLabel(u),
+      u.isActive ? "Active" : "Inactive",
+    ]);
+    const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `parsu-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // Narrow each dropdown's options to whatever the other filter still
   // allows — picking "Student" leaves only colleges in the office list
   // (and vice versa), so you can't land on a combination that can never
@@ -242,14 +286,34 @@ export default function AdminUsersPage() {
           </span>
           <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Users</h1>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          Add User
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCsv}
+            disabled={visibleUsers.length === 0}
+            className="flex items-center gap-2 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Add User
+          </button>
+        </div>
       </div>
+
+      {totalUsers > users.length && (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Showing the {users.length.toLocaleString()} most recent of {totalUsers.toLocaleString()}{" "}
+            users. Narrow your search to find someone outside this range.
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs flex-1">

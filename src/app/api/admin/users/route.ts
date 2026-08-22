@@ -15,7 +15,12 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const limit = Math.min(100, Number(searchParams.get("limit") ?? 20));
+  // Capped well above this institution's realistic headcount rather than
+  // paginated — the admin Users page relies on having the full roster in
+  // memory for instant client-side search/sort/filter (see src/app/admin/
+  // users/page.tsx). 20 was silently hiding most of the user base once
+  // seed/real data passed that count.
+  const limit = Math.min(2000, Number(searchParams.get("limit") ?? 20));
   const role = searchParams.get("role");
 
   const filter: Record<string, unknown> = {};

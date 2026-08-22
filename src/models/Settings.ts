@@ -27,6 +27,12 @@ const settingsSchema = new Schema(
     authMaxFailedLoginAttempts: { type: Number, required: true, default: 5 },
     authLockoutDurationMinutes: { type: Number, required: true, default: 15 },
     authSessionMaxAgeMinutes: { type: Number, required: true, default: 480 },
+
+    // Heartbeat stamped by the SLA cron (src/app/api/cron/sla-check/route.ts)
+    // on every successful run — the admin dashboard's health checklist reads
+    // this to detect a silently-stopped cron, which a 0-escalation run would
+    // otherwise leave no other trace of.
+    lastSlaCheckAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

@@ -44,6 +44,10 @@ export const updateUserSchema = z.object({
   collegeRef: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(8).optional(),
+  // Bumps tokenVersion without touching the password — for invalidating
+  // every JWT already issued to this user (e.g. a lost device) when there's
+  // no reason to also force a password change.
+  forceLogout: z.boolean().optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

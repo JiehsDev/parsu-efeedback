@@ -220,12 +220,12 @@ export default function NewComplaintPage() {
         Back to dashboard
       </Link>
 
-      <div className="mt-5 flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
-          <ClipboardList className="h-5 w-5" />
+      <div className="mt-4 flex items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
+          <ClipboardList className="h-4 w-4" />
         </span>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
             Submit a Complaint
           </h1>
           <p className="text-sm text-[var(--muted-foreground)]">
@@ -234,8 +234,8 @@ export default function NewComplaintPage() {
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
+      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             {error && (
               <div
@@ -373,17 +373,15 @@ export default function NewComplaintPage() {
           </form>
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
-                <Lightbulb className="h-[18px] w-[18px]" />
-              </span>
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 shrink-0 text-amber-400" />
               <p className="text-sm font-medium text-[var(--foreground)]">
                 Tips for a faster resolution
               </p>
             </div>
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-3 space-y-2.5">
               {TIPS.map((tip) => (
                 <li key={tip} className="flex gap-2.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
                   <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--muted-foreground)]" />
@@ -393,18 +391,18 @@ export default function NewComplaintPage() {
             </ul>
           </div>
 
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
             <p className="text-sm font-medium text-[var(--foreground)]">What happens next</p>
-            <div className="mt-4">
+            <div className="mt-3">
               {PROCESS_STEPS.map((step, i) => (
-                <div key={step.title} className="relative flex gap-3 pb-5 last:pb-0">
+                <div key={step.title} className="relative flex gap-2.5 pb-4 last:pb-0">
                   {i < PROCESS_STEPS.length - 1 && (
-                    <span className="absolute left-[15px] top-8 h-[calc(100%-1.25rem)] w-px bg-[var(--border)]" />
+                    <span className="absolute left-[13px] top-7 h-[calc(100%-1rem)] w-px bg-[var(--border)]" />
                   )}
-                  <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
-                    <step.icon className="h-4 w-4" />
+                  <span className="relative z-10 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
+                    <step.icon className="h-3.5 w-3.5" />
                   </span>
-                  <div className="pt-1">
+                  <div className="pt-0.5">
                     <p className="text-xs font-medium text-[var(--foreground)]">{step.title}</p>
                     <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
                       {step.description}

@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
   }
-  const { password, ...rest } = parsed.data;
+  const { password, forceLogout, ...rest } = parsed.data;
   const update: Record<string, unknown> = { ...rest };
 
   if (password) {
@@ -64,15 +64,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     update.passwordChangedAt = new Date();
     // Force existing sessions to invalidate on password reset
     update.tokenVersion = (before as any).tokenVersion + 1;
+  } else if (forceLogout) {
+    update.tokenVersion = (before as any).tokenVersion + 1;
   }
 
-  const after = await User.findByIdAndUpdate(id, update, { new: true })
+  const after = await User.findByIdAndUpdate(id, update, { returnDocument: "after" })
     .select("-passwordHash")
     .lean();
 
+  const isForceLogoutOnly = forceLogout && !password && Object.keys(rest).length === 0;
+
   await writeAuditLog({
     actorId: guard.session.user.id,
-    action: "user.update",
+    action: isForceLogoutOnly ? "user.force_logout" : "user.update",
     entityType: "User",
     entityId: id,
     beforeState: before,
@@ -101,7 +105,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   // Soft-delete preferred: deactivate rather than hard-delete, since Users
   // are referenced everywhere (complaints, notes, audit logs)
-  const after = await User.findByIdAndUpdate(id, { isActive: false }, { new: true })
+  const after = await User.findByIdAndUpdate(id, { isActive: false }, { returnDocument: "after" })
     .select("-passwordHash")
     .lean();
 

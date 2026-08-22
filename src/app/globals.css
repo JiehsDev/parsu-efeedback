@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
 /*
- * ParSU e-Feedback — Sky Blue & White theme
+ * ParSU e-Feedback — "Refined Light" theme
  * Fixed light theme (not tied to prefers-color-scheme) per the project spec:
- * enterprise, modern, minimal, academic, high contrast.
+ * enterprise, modern, minimal, academic, high contrast. Originally built
+ * for the QA portal and promoted app-wide — every portal reads these same
+ * shadcn-shaped variable names via bg-[var(--x)] bracket syntax, so the
+ * whole app re-skins through normal CSS cascade with no per-file changes.
  *
  * Values here map 1:1 to shadcn/ui's expected CSS variable names, so
  * `npx shadcn add <component>` (run somewhere with internet access to
@@ -12,35 +15,68 @@
  */
 
 :root {
-  --background: #f4f9fd;
-  --foreground: #0c1a2b;
+  --background: #faf9f6;
+  --foreground: #1c2130;
 
   --card: #ffffff;
-  --card-foreground: #0c1a2b;
+  --card-foreground: #1c2130;
 
   --popover: #ffffff;
-  --popover-foreground: #0c1a2b;
+  --popover-foreground: #1c2130;
 
-  --primary: #0284c7;
+  --primary: #5b4fe0;
   --primary-foreground: #ffffff;
 
-  --secondary: #0369a1;
+  --secondary: #1f8a8f;
   --secondary-foreground: #ffffff;
 
-  --muted: #eef6fc;
-  --muted-foreground: #5b7086;
+  --muted: #f2f0ea;
+  --muted-foreground: #5c6478;
 
-  --accent: #e0f2fe;
-  --accent-foreground: #0369a1;
+  --accent: #ecebfa;
+  --accent-foreground: #5b4fe0;
 
-  --destructive: #dc2626;
+  --destructive: #d64545;
   --destructive-foreground: #ffffff;
 
-  --border: #dceaf7;
-  --input: #d7e6f5;
-  --ring: #0284c7;
+  --border: #e7e4dc;
+  --input: #e2dfd6;
+  --ring: #5b4fe0;
 
   --radius: 0.75rem;
+
+  /* Extra chart/status accents with no shadcn slot — first added for the
+     QA portal's analytics, kept global since any portal's charts can use
+     them for consistent color coding (success/warning/etc). */
+  --qa-success: #1c9a6c;
+  --qa-success-soft: #e4f6ed;
+  --qa-amber: #c07f1f;
+  --qa-amber-soft: #faf0dd;
+  --qa-rose: #c24b5c;
+  --qa-slate: #6b7280;
+
+  /* Accessible text-on-soft-fill pairs for the fixed LIGHT theme. The
+     original --qa-* values above are chart-fill colors; used as TEXT they
+     land between 3:1 and 4:1 on white, so status pills that reached for
+     Tailwind's *-400 shades (a dark-theme habit) were failing WCAG AA.
+     These -strong/-soft pairs are all >= 5:1 against each other. */
+  --qa-success-strong: #0f6b49;
+  --qa-amber-strong: #8a5510;
+  --qa-rose-soft: #fbe9ec;
+  --qa-rose-strong: #96253a;
+  --qa-teal-soft: #e2f2f2;
+  --qa-teal-strong: #14666b;
+}
+
+.qa-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.qa-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 @theme inline {
@@ -77,8 +113,8 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-archivo);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
 }
 
 body {

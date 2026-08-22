@@ -7,7 +7,11 @@ export async function generateTicketNumber(): Promise<string> {
   const counterId = `ticketNumber:${year}`;
 
   const [counter, settings] = await Promise.all([
-    Counter.findOneAndUpdate({ _id: counterId }, { $inc: { seq: 1 } }, { upsert: true, new: true }),
+    Counter.findOneAndUpdate(
+      { _id: counterId },
+      { $inc: { seq: 1 } },
+      { upsert: true, returnDocument: "after" },
+    ),
     getSettings(),
   ]);
 

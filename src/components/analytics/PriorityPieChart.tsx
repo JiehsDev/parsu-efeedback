@@ -25,16 +25,22 @@ function summarize(data: PriorityPoint[]): string {
   return `Pie chart of complaint volume by priority, ${total} complaints total: ${parts.join(", ")}. Full breakdown follows in the adjacent table.`;
 }
 
-export function PriorityPieChart({ data }: { data: PriorityPoint[] }) {
+export function PriorityPieChart({
+  data,
+  heightClassName = "h-72",
+}: {
+  data: PriorityPoint[];
+  heightClassName?: string;
+}) {
   const volumeByPriority = Object.fromEntries(data.map((d) => [d.priority, d.volume]));
   const label = summarize(data);
 
   return (
     <div>
-      <div role="img" aria-label={label} className="h-72 w-full">
+      <div role="img" aria-label={label} className={`${heightClassName} w-full`}>
         <ResponsiveContainer width="100%" height="100%" aria-hidden="true">
           <PieChart>
-            <Pie data={data} dataKey="volume" nameKey="priority" cx="50%" cy="50%" outerRadius={90}>
+            <Pie data={data} dataKey="volume" nameKey="priority" cx="50%" cy="50%" outerRadius="70%">
               {data.map((entry) => (
                 <Cell key={entry.priority} fill={PRIORITY_COLORS[entry.priority] ?? "#6b7280"} />
               ))}
@@ -57,23 +63,29 @@ export function PriorityPieChart({ data }: { data: PriorityPoint[] }) {
         </ResponsiveContainer>
       </div>
 
-      <table className="sr-only">
-        <caption>Complaint volume by priority</caption>
-        <thead>
-          <tr>
-            <th scope="col">Priority</th>
-            <th scope="col">Volume</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.priority}>
-              <th scope="row">{d.priority}</th>
-              <td>{d.volume}</td>
+      {/* A <table> ignores an explicit tiny width/height (row/column
+          layout sizes from content, not the declared box), so the
+          sr-only class on the table itself doesn't actually constrain
+          its rendered size — wrap it in a div instead, which does. */}
+      <div className="sr-only">
+        <table>
+          <caption>Complaint volume by priority</caption>
+          <thead>
+            <tr>
+              <th scope="col">Priority</th>
+              <th scope="col">Volume</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.priority}>
+                <th scope="row">{d.priority}</th>
+                <td>{d.volume}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -1,69 +1,26 @@
 // src/app/student/feedback/new/page.tsx
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  AlertCircle,
-  ArrowLeft,
-  EyeOff,
-  Loader2,
-  MessageSquareText,
-  Send,
-  Sparkles,
-  Tag,
-} from "lucide-react";
-import { FEEDBACK_CATEGORIES } from "@/features/feedback/constants";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { connectToDatabase } from "@/lib/db";
+import { Feedback } from "@/models/Feedback";
+import { RelativeTime } from "@/components/shared/RelativeTime";
+import { FeedbackForm } from "@/components/student/FeedbackForm";
 
-const GOOD_FEEDBACK_EXAMPLES = [
-  "The online enrollment portal times out during peak hours.",
-  "The library extended hours during finals week — please keep it.",
-  "Signage near the new admin building is confusing for freshmen.",
-];
+export default async function NewFeedbackPage() {
+  const session = await auth();
+  await connectToDatabase();
 
-export default function NewFeedbackPage() {
-  const router = useRouter();
-  const [form, setForm] = useState({ category: "", message: "", isAnonymous: false });
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!form.category) {
-      setError("Please select a category.");
-      return;
-    }
-    setError(null);
-    setIsSubmitting(true);
-
-    const res = await fetch("/api/feedback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      const message =
-        typeof data.error === "string"
-          ? data.error
-          : (data.errors?.[0]?.message ?? "Could not submit feedback.");
-
-      setError(message);
-      setIsSubmitting(false);
-      return;
-    }
-
-    router.push("/student/dashboard?feedbackSubmitted=true");
-  }
-
-  const inputClass =
-    "w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
+  // Read server-side like every other page in the app. The GET half of
+  // /api/feedback returns exactly this, but no student page had ever called
+  // it — so a student could not see anything they had sent.
+  const recent = await Feedback.find({ studentRef: session!.user.id })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-2xl space-y-5">
       <Link
         href="/student/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -72,146 +29,50 @@ export default function NewFeedbackPage() {
         Back to dashboard
       </Link>
 
-      <div className="mt-5 flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
-          <MessageSquareText className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
-            Share Feedback
-          </h1>
-          <p className="text-sm text-[var(--muted-foreground)]">
-            General suggestions or observations — not tied to a specific complaint.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
+          Share Feedback
+        </h1>
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          Suggestions and observations for the Quality Assurance office. Got a specific problem that
+          needs fixing?{" "}
+          <Link
+            href="/student/complaints/new"
+            className="text-[var(--primary)] underline underline-offset-2"
+          >
+            File a complaint instead
+          </Link>
+          .
+        </p>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            {error && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
-              >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+      <FeedbackForm />
 
-            <div className="space-y-1.5">
-              <label htmlFor="category" className="text-sm font-medium text-[var(--foreground)]">
-                Category
-              </label>
-              <div className="relative">
-                <Tag className="pointer-events-none absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-                <Select
-                  value={form.category}
-                  onValueChange={(value) => setForm((p) => ({ ...p, category: value }))}
-                >
-                  <SelectTrigger id="category" className="pl-10">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FEEDBACK_CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="message" className="text-sm font-medium text-[var(--foreground)]">
-                Message
-              </label>
-              <div className="relative">
-                <MessageSquareText className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
-                <textarea
-                  id="message"
-                  required
-                  minLength={10}
-                  rows={8}
-                  value={form.message}
-                  onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
-                  placeholder="Share your thoughts..."
-                  className={`${inputClass} py-3`}
-                />
-              </div>
-            </div>
-
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--foreground)]">
-              <input
-                type="checkbox"
-                checked={form.isAnonymous}
-                onChange={(e) => setForm((p) => ({ ...p, isAnonymous: e.target.checked }))}
-                className="h-4 w-4 rounded border-[var(--border)] accent-[var(--primary)]"
-              />
-              Submit anonymously
-            </label>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              {isSubmitting ? "Submitting…" : "Submit Feedback"}
-            </button>
-          </form>
+      {recent.length > 0 && (
+        <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
+          <h2 className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]">
+            Feedback you&rsquo;ve sent
+          </h2>
+          <ul className="divide-y divide-[var(--border)]">
+            {recent.map((f) => (
+              <li key={String(f._id)} className="px-4 py-3">
+                <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                  <span className="font-medium text-[var(--foreground)]">{f.category}</span>
+                  {f.isAnonymous && (
+                    <span className="rounded bg-[var(--muted)] px-1.5 py-0.5 text-[11px]">
+                      Anonymous
+                    </span>
+                  )}
+                  <RelativeTime date={f.createdAt} className="qa-tabular ml-auto shrink-0" />
+                </div>
+                <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                  {f.message}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
-
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
-                <Sparkles className="h-[18px] w-[18px]" />
-              </span>
-              <p className="text-sm font-medium text-[var(--foreground)]">Why share feedback?</p>
-            </div>
-            <p className="mt-3 text-xs leading-relaxed text-[var(--muted-foreground)]">
-              Feedback isn't a complaint — it's how the university spots patterns and improves
-              services before they become problems. Every submission reaches the Quality Assurance
-              office directly.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-                <EyeOff className="h-[18px] w-[18px]" />
-              </span>
-              <p className="text-sm font-medium text-[var(--foreground)]">Anonymity, respected</p>
-            </div>
-            <p className="mt-3 text-xs leading-relaxed text-[var(--muted-foreground)]">
-              Check "Submit anonymously" and your name is never attached to this feedback — not even
-              QA staff can trace it back to your account.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-            <p className="text-sm font-medium text-[var(--foreground)]">
-              Good feedback sounds like
-            </p>
-            <ul className="mt-3 space-y-2.5">
-              {GOOD_FEEDBACK_EXAMPLES.map((example) => (
-                <li
-                  key={example}
-                  className="rounded-xl bg-[var(--muted)]/40 px-3 py-2 text-xs leading-relaxed text-[var(--muted-foreground)] italic"
-                >
-                  "{example}"
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

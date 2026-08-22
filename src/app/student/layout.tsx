@@ -6,9 +6,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const session = await auth();
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="flex h-screen flex-col bg-[var(--background)]">
       <StudentNav userName={session?.user?.name ?? "Student"} />
-      <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">{children}</main>
+      <main className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+        {children}
+      </main>
     </div>
   );
 }

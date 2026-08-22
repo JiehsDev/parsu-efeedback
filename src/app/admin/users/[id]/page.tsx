@@ -16,7 +16,10 @@ import {
 } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
 import { User } from "@/models/User";
+import { Office } from "@/models/Office";
 import { UserStatusToggle } from "@/components/admin/UserStatusToggle";
+import { EditUserButton } from "@/components/admin/EditUserButton";
+import { ForceLogoutButton } from "@/components/admin/ForceLogoutButton";
 import { RelativeTime } from "@/components/shared/RelativeTime";
 
 function getInitials(firstName: string, lastName: string): string {
@@ -48,6 +51,22 @@ export default async function AdminUserDetailPage({
 
   const u = user as any;
   const isLocked = u.lockedUntil && new Date(u.lockedUntil) > new Date();
+
+  const offices = await Office.find().select("name type").lean();
+  const editableUser = {
+    _id: String(u._id),
+    firstName: u.firstName,
+    lastName: u.lastName,
+    email: u.email,
+    role: u.role,
+    officeRef: u.officeRef ? { _id: String(u.officeRef._id) } : null,
+    collegeRef: u.collegeRef ? { _id: String(u.collegeRef._id) } : null,
+  };
+  const officeOptions = offices.map((o: any) => ({
+    _id: String(o._id),
+    name: o.name,
+    type: o.type,
+  }));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -93,11 +112,14 @@ export default async function AdminUserDetailPage({
           </div>
         </div>
 
-        <UserStatusToggle
-          userId={String(u._id)}
-          userName={`${u.firstName} ${u.lastName}`}
-          isActive={u.isActive}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <EditUserButton user={editableUser} offices={officeOptions} />
+          <UserStatusToggle
+            userId={String(u._id)}
+            userName={`${u.firstName} ${u.lastName}`}
+            isActive={u.isActive}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -185,6 +207,15 @@ export default async function AdminUserDetailPage({
               </dd>
             </div>
           </dl>
+
+          <div className="mt-5 border-t border-[var(--border)] pt-4">
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Signs this account out of every device immediately, without changing the password.
+            </p>
+            <div className="mt-2.5">
+              <ForceLogoutButton userId={String(u._id)} userName={`${u.firstName} ${u.lastName}`} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

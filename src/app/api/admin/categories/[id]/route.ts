@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
-  const after = await Category.findByIdAndUpdate(id, parsed.data, { new: true }).lean();
+  const after = await Category.findByIdAndUpdate(id, parsed.data, { returnDocument: "after" }).lean();
 
   await writeAuditLog({
     actorId: guard.session.user.id,
@@ -74,7 +74,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   // Soft-delete — BR-024: inactive categories just stop appearing on the
   // submission form, but historical complaints still reference them
-  const after = await Category.findByIdAndUpdate(id, { isActive: false }, { new: true }).lean();
+  const after = await Category.findByIdAndUpdate(id, { isActive: false }, { returnDocument: "after" }).lean();
 
   await writeAuditLog({
     actorId: guard.session.user.id,

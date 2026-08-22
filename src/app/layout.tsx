@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Archivo, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/shared/Toast";
 import { ConfirmProvider } from "@/components/shared/ConfirmDialog";
 import "./globals.css";
 
-const archivo = Archivo({
-  variable: "--font-archivo",
+const appSans = Plus_Jakarta_Sans({
+  variable: "--font-app-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const appMono = IBM_Plex_Mono({
+  variable: "--font-app-mono",
+  weight: ["400", "500", "600"],
   subsets: ["latin"],
 });
 
@@ -25,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${archivo.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${appSans.variable} ${appMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <ToastProvider>
           <ConfirmProvider>{children}</ConfirmProvider>

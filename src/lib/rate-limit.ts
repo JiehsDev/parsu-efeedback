@@ -9,6 +9,14 @@ const redis = new Redis({
   token: env.UPSTASH_REDIS_REST_TOKEN,
 });
 
+// Presence-only, same bar as isR2Configured() in ./r2.ts — confirms the
+// config was supplied, not that Redis actually responds (checkRateLimit
+// below already fails open on an unreachable Redis, so a stale/placeholder
+// value here degrades rate limiting silently rather than breaking requests).
+export function isRedisConfigured(): boolean {
+  return Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
+}
+
 export const loginRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(10, "1 m"),

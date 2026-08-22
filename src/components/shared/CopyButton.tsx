@@ -38,7 +38,7 @@ export function CopyButton({
       className={`inline-flex shrink-0 items-center justify-center rounded-md p-0.5 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)] hover:text-[var(--foreground)] ${className}`}
     >
       {copied ? (
-        <Check className="h-3 w-3 text-emerald-400" />
+        <Check className="h-3 w-3 text-[var(--qa-success-strong)]" />
       ) : (
         <Copy className="h-3 w-3" />
       )}

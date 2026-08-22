@@ -37,7 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
-  const after = await SLARule.findByIdAndUpdate(id, parsed.data, { new: true }).lean();
+  const after = await SLARule.findByIdAndUpdate(id, parsed.data, { returnDocument: "after" }).lean();
 
   await writeAuditLog({
     actorId: guard.session.user.id,
@@ -63,7 +63,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const before = await SLARule.findById(id).lean();
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const after = await SLARule.findByIdAndUpdate(id, { isActive: false }, { new: true }).lean();
+  const after = await SLARule.findByIdAndUpdate(id, { isActive: false }, { returnDocument: "after" }).lean();
 
   await writeAuditLog({
     actorId: guard.session.user.id,

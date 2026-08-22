@@ -1,6 +1,7 @@
 // src/app/admin/notifications/page.tsx
 import { Bell } from "lucide-react";
 import { NotificationsPanel } from "@/components/shared/NotificationsPanel";
+import { BroadcastComposer } from "@/components/admin/BroadcastComposer";
 
 export default function AdminNotificationsPage() {
   return (
@@ -13,6 +14,7 @@ export default function AdminNotificationsPage() {
           Notifications
         </h1>
       </div>
+      <BroadcastComposer />
       <NotificationsPanel complaintBasePath="/admin/complaints" />
     </div>
   );

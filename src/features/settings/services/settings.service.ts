@@ -10,7 +10,7 @@ export async function getSettings() {
   const settings = await Settings.findOneAndUpdate(
     { _id: SETTINGS_SINGLETON_ID },
     { $setOnInsert: { _id: SETTINGS_SINGLETON_ID } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   ).lean();
 
   return settings!;
@@ -24,6 +24,7 @@ export async function updateSettings(
     authMaxFailedLoginAttempts: number;
     authLockoutDurationMinutes: number;
     authSessionMaxAgeMinutes: number;
+    lastSlaCheckAt: Date;
   }>,
 ) {
   await connectToDatabase();
@@ -31,7 +32,7 @@ export async function updateSettings(
   const updated = await Settings.findOneAndUpdate(
     { _id: SETTINGS_SINGLETON_ID },
     { $set: patch },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   ).lean();
 
   return updated;

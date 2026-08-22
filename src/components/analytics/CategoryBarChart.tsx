@@ -20,12 +20,18 @@ function summarize(data: CategoryPoint[]): string {
   );
 }
 
-export function CategoryBarChart({ data }: { data: CategoryPoint[] }) {
+export function CategoryBarChart({
+  data,
+  heightClassName = "h-72",
+}: {
+  data: CategoryPoint[];
+  heightClassName?: string;
+}) {
   const label = summarize(data);
 
   return (
     <div>
-      <div role="img" aria-label={label} className="h-72 w-full">
+      <div role="img" aria-label={label} className={`${heightClassName} w-full`}>
         <ResponsiveContainer width="100%" height="100%" aria-hidden="true">
           <BarChart data={data} layout="vertical" margin={{ top: 8, right: 16, left: 16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -54,23 +60,29 @@ export function CategoryBarChart({ data }: { data: CategoryPoint[] }) {
         </ResponsiveContainer>
       </div>
 
-      <table className="sr-only">
-        <caption>Complaint volume by category</caption>
-        <thead>
-          <tr>
-            <th scope="col">Category</th>
-            <th scope="col">Volume</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.category}>
-              <th scope="row">{d.category}</th>
-              <td>{d.volume}</td>
+      {/* A <table> ignores an explicit tiny width/height (row/column
+          layout sizes from content, not the declared box), so the
+          sr-only class on the table itself doesn't actually constrain
+          its rendered size — wrap it in a div instead, which does. */}
+      <div className="sr-only">
+        <table>
+          <caption>Complaint volume by category</caption>
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              <th scope="col">Volume</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.category}>
+                <th scope="row">{d.category}</th>
+                <td>{d.volume}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

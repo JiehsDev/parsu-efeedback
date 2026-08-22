@@ -37,17 +37,32 @@ function summarize(data: TrendPoint[]): string {
   );
 }
 
-export function TrendChart({ data }: { data: TrendPoint[] }) {
+export function TrendChart({
+  data,
+  heightClassName = "h-72",
+}: {
+  data: TrendPoint[];
+  heightClassName?: string;
+}) {
   const label = summarize(data);
+  // "h-full" only resolves against a parent with a definite height, but a
+  // plain block wrapper never stretches to fill one (block auto-height
+  // shrinks to content) — switch the wrapper to a flex column so the
+  // chart area can actually grow to fill the available space in that mode.
+  const fill = heightClassName === "h-full";
 
   return (
-    <div>
+    <div className={fill ? "flex h-full flex-col" : undefined}>
       {/* role="img" + aria-label gives assistive tech a spoken summary in
           place of the raw SVG (WCAG 1.1.1); the chart markup itself is
           aria-hidden since it's not meaningfully navigable node-by-node,
           and the sr-only table below is the full data-equivalent (WCAG
           1.4.1 — the chart also can't be the *only* way to get this data). */}
-      <div role="img" aria-label={label} className="h-72 w-full">
+      <div
+        role="img"
+        aria-label={label}
+        className={fill ? "min-h-0 w-full flex-1" : `${heightClassName} w-full`}
+      >
         <ResponsiveContainer width="100%" height="100%" aria-hidden="true">
           <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -97,25 +112,31 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
           the chart above is aria-hidden. Dashed stroke on the SLA line
           above is the same "don't rely on color alone" idea (WCAG 1.4.1)
           applied to the visual chart itself. */}
-      <table className="sr-only">
-        <caption>Monthly complaint volume and SLA compliance</caption>
-        <thead>
-          <tr>
-            <th scope="col">Month</th>
-            <th scope="col">Complaint volume</th>
-            <th scope="col">SLA compliance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((p) => (
-            <tr key={p.month}>
-              <th scope="row">{p.month}</th>
-              <td>{p.volume}</td>
-              <td>{p.slaCompliancePercent}%</td>
+      {/* A <table> ignores an explicit tiny width/height (row/column
+          layout sizes from content, not the declared box), so the
+          sr-only class on the table itself doesn't actually constrain
+          its rendered size — wrap it in a div instead, which does. */}
+      <div className="sr-only">
+        <table>
+          <caption>Monthly complaint volume and SLA compliance</caption>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col">Complaint volume</th>
+              <th scope="col">SLA compliance</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((p) => (
+              <tr key={p.month}>
+                <th scope="row">{p.month}</th>
+                <td>{p.volume}</td>
+                <td>{p.slaCompliancePercent}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

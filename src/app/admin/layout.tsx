@@ -6,9 +6,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await auth();
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="flex h-screen bg-[var(--background)]">
       <AdminNav userName={session?.user?.name ?? "Admin"} />
-      <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+        {children}
+      </main>
     </div>
   );
 }

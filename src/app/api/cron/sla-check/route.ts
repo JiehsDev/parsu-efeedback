@@ -6,6 +6,7 @@ import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { SLARule } from "@/models/SLARule";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import { updateSettings } from "@/features/settings/services/settings.service";
 import { env } from "@/lib/env";
 import type { ComplaintStatus, PriorityLevel } from "@/lib/constants";
 import {
@@ -66,7 +67,7 @@ async function checkDeadline(
     const updated = await Complaint.findOneAndUpdate(
       { _id: complaint._id, isOverdue: false },
       update,
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
 
     if (!updated) return { escalated: false, warned: false };
@@ -204,6 +205,8 @@ async function runSlaCheck(req: NextRequest) {
       if (responseResult.warned) warnedCount++;
     }
   }
+
+  await updateSettings({ lastSlaCheckAt: now });
 
   return NextResponse.json({
     checked: candidates.length,

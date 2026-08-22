@@ -7,6 +7,7 @@ const ICON_COLOR: Record<string, string> = {
   escalation: "text-[var(--destructive)]",
   complaint_resolved: "text-emerald-400",
   report_generated: "text-[var(--muted-foreground)]",
+  system_announcement: "text-[var(--primary)]",
 };
 
 export function NotificationDot({ type }: { type: string }) {

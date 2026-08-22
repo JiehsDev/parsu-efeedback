@@ -64,6 +64,7 @@ export const NOTIFICATION_TYPES = [
   "escalation",
   "complaint_resolved",
   "report_generated",
+  "system_announcement",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

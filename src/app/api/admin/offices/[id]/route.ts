@@ -49,7 +49,7 @@ export async function PATCH(
     );
   }
 
-  const after = await Office.findByIdAndUpdate(id, parsed.data, { new: true }).lean();
+  const after = await Office.findByIdAndUpdate(id, parsed.data, { returnDocument: "after" }).lean();
 
   await writeAuditLog({
     actorId: guard.session.user.id,
@@ -90,7 +90,7 @@ export async function DELETE(
 
   // Soft-delete, consistent with Users — per BR-020 inactive offices just
   // stop receiving new assignments rather than disappearing from history
-  const after = await Office.findByIdAndUpdate(id, { isActive: false }, { new: true }).lean();
+  const after = await Office.findByIdAndUpdate(id, { isActive: false }, { returnDocument: "after" }).lean();
 
   await writeAuditLog({
     actorId: guard.session.user.id,

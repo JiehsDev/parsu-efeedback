@@ -7,6 +7,7 @@ import { connectToDatabase } from "@/lib/db";
 import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { OfficeStatusToggle } from "@/components/admin/OfficeStatusToggle";
+import { EditOfficeButton } from "@/components/admin/EditOfficeButton";
 
 export default async function AdminOfficeDetailPage({
   params,
@@ -49,6 +50,16 @@ export default async function AdminOfficeDetailPage({
     (a: any, b: any) => (ROLE_SORT_PRIORITY[a.role] ?? 3) - (ROLE_SORT_PRIORITY[b.role] ?? 3),
   );
 
+  const allOffices = await Office.find().select("name").lean();
+  const officeOptions = allOffices.map((opt: any) => ({ _id: String(opt._id), name: opt.name }));
+
+  // Only active staff already on this roster can become head — plus the
+  // current head, even if they've since gone inactive, so the dropdown
+  // never silently drops whoever is presently assigned.
+  const memberOptions = members
+    .filter((m: any) => m.isActive || String(m._id) === String(o.headUserRef))
+    .map((m: any) => ({ _id: String(m._id), firstName: m.firstName, lastName: m.lastName }));
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <Link
@@ -88,7 +99,16 @@ export default async function AdminOfficeDetailPage({
           </div>
         </div>
 
-        <OfficeStatusToggle officeId={String(o._id)} officeName={o.name} isActive={o.isActive} />
+        <div className="flex shrink-0 items-center gap-2">
+          <EditOfficeButton
+            office={{ _id: String(o._id), name: o.name, code: o.code, type: o.type }}
+            parentOfficeId={o.parentOffice ? String(o.parentOffice) : null}
+            headUserId={o.headUserRef ? String(o.headUserRef) : null}
+            officeOptions={officeOptions}
+            memberOptions={memberOptions}
+          />
+          <OfficeStatusToggle officeId={String(o._id)} officeName={o.name} isActive={o.isActive} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

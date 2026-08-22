@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export function ListSortSelect({
   options,
   paramName = "sort",
+  placeholder,
 }: {
   options: Array<{ value: string; label: string }>;
   paramName?: string;
+  placeholder?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -27,7 +29,7 @@ export function ListSortSelect({
   return (
     <Select value={current} onValueChange={handleChange}>
       <SelectTrigger className="w-auto min-w-40 bg-[var(--card)]">
-        <SelectValue />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {options.map((o) => (

@@ -1,9 +1,9 @@
 // src/app/admin/categories/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ChevronRight, Loader2, Plus, Tag } from "lucide-react";
+import { AlertCircle, ChevronRight, Loader2, Plus, Search, Tag } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
@@ -31,6 +31,7 @@ export default function AdminCategoriesPage() {
   const confirm = useConfirm();
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
+  const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,6 +107,12 @@ export default function AdminCategoriesPage() {
     refresh();
   }
 
+  const visibleCategories = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return categories;
+    return categories.filter((c) => c.name.toLowerCase().includes(term));
+  }, [categories, search]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -134,12 +141,31 @@ export default function AdminCategoriesPage() {
         </span>
       </div>
 
+      <div className="relative max-w-xs">
+        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search categories…"
+          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+        />
+      </div>
+
       {isLoading ? (
         <ListRowsSkeleton />
+      ) : visibleCategories.length === 0 ? (
+        <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+            <Tag className="h-6 w-6" />
+          </span>
+          <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
+            No categories match this search.
+          </p>
+        </div>
       ) : (
       <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
         <ul className="divide-y divide-[var(--border)]">
-          {categories.map((c) => (
+          {visibleCategories.map((c) => (
             <li
               key={c._id}
               className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"

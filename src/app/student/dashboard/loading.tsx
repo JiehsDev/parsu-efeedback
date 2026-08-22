@@ -1,49 +1,41 @@
 // src/app/student/dashboard/loading.tsx
-import { Skeleton, StatCardSkeleton } from "@/components/shared/Skeleton";
+import { Skeleton } from "@/components/shared/Skeleton";
 
+// Mirrors the real dashboard's shape. The previous version rendered three
+// StatCardSkeletons for stat cards the page no longer draws, so the loading
+// state promised a layout that never arrived and visibly reflowed on paint.
 export default function Loading() {
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Skeleton className="h-7 w-56" />
-          <Skeleton className="mt-2 h-4 w-72" />
-        </div>
-        <Skeleton className="h-10 w-40" />
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Skeleton className="h-6 w-56" />
+        <Skeleton className="h-9 w-40" />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:hidden">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-2 py-2.5">
-            <Skeleton className="mx-auto h-5 w-6" />
-            <Skeleton className="mx-auto mt-1.5 h-2.5 w-12" />
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-[var(--card)] px-4 py-3">
+            <Skeleton className="h-6 w-8" />
+            <Skeleton className="mt-2 h-3 w-24" />
           </div>
         ))}
       </div>
 
-      <div className="hidden gap-4 sm:grid sm:grid-cols-3">
-        <StatCardSkeleton />
-        <StatCardSkeleton />
-        <StatCardSkeleton />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 lg:col-span-2">
-          <Skeleton className="h-5 w-40" />
-          <div className="mt-5 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
-          </div>
+      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-20" />
         </div>
-
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
-          <Skeleton className="h-5 w-28" />
-          <div className="mt-5 space-y-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-11 w-full" />
-            ))}
-          </div>
+        <div className="divide-y divide-[var(--border)]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+              <Skeleton className="hidden h-3 w-32 shrink-0 sm:block" />
+              <Skeleton className="h-3.5 flex-1" />
+              <Skeleton className="hidden h-3 w-16 shrink-0 sm:block" />
+              <Skeleton className="h-5 w-24 shrink-0 rounded-full" />
+              <Skeleton className="hidden h-3 w-12 shrink-0 sm:block" />
+            </div>
+          ))}
         </div>
       </div>
     </div>

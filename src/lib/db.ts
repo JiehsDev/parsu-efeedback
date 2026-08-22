@@ -21,6 +21,15 @@
 import mongoose from "mongoose";
 import { env } from "./env";
 import { logger } from "./logger";
+// Side-effect import: registers every model (via src/models/index.ts's barrel
+// exports) as soon as this module loads. Without this, a .populate() call on
+// a ref whose model file no one has imported yet throws MissingSchemaError —
+// and which page happens to be hit first after a cold start decides whether
+// that ref "works," since Mongoose registration is a one-time, process-wide
+// side effect of importing a model file. Every page already calls
+// connectToDatabase() before querying, so this guarantees registration
+// order can never matter again.
+import "@/models";
 
 interface MongooseCache {
   conn: typeof mongoose | null;
