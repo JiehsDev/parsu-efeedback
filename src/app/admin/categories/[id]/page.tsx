@@ -20,6 +20,8 @@ import { RoutingRule } from "@/models/RoutingRule";
 import { SLARule } from "@/models/SLARule";
 import { CategoryStatusToggle } from "@/components/admin/CategoryStatusToggle";
 import { EditCategoryButton } from "@/components/admin/EditCategoryButton";
+import { EditRoutingRuleButton } from "@/components/admin/EditRoutingRuleButton";
+import { EditSlaRuleButton } from "@/components/admin/EditSlaRuleButton";
 
 export default async function AdminCategoryDetailPage({
   params,
@@ -35,12 +37,16 @@ export default async function AdminCategoryDetailPage({
 
   const c = category as any;
 
-  const [defaultOffice, routingRule, slaRules, allOffices] = await Promise.all([
-    Office.findById(c.defaultOfficeRef).select("name code").lean(),
+  const [defaultOffice, routingRule, slaRule, allOffices] = await Promise.all([
+    c.defaultOfficeRef ? Office.findById(c.defaultOfficeRef).select("name code").lean() : null,
     RoutingRule.findOne({ categoryRef: id, isActive: true })
       .populate("targetOfficeRef", "name")
       .lean(),
-    SLARule.find({ categoryRef: id, isActive: true }).sort({ priority: 1 }).lean(),
+    // A category only ever has one active SLA rule — its priority is fixed
+    // to the category's own defaultPriority (see src/models/SLARule.ts).
+    SLARule.findOne({ categoryRef: id, isActive: true })
+      .populate("escalateToOfficeRef", "name")
+      .lean(),
     Office.find().select("name").lean(),
   ]);
 
@@ -88,10 +94,7 @@ export default async function AdminCategoryDetailPage({
               _id: String(c._id),
               name: c.name,
               description: c.description,
-              defaultOfficeRef: String(c.defaultOfficeRef),
-              defaultPriority: c.defaultPriority,
             }}
-            offices={officeOptions}
           />
           <CategoryStatusToggle categoryId={String(c._id)} categoryName={c.name} isActive={c.isActive} />
         </div>
@@ -145,11 +148,25 @@ export default async function AdminCategoryDetailPage({
               ) : (
                 <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--destructive)]" />
               )}
-              <div>
-                <p className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
-                  <Route className="h-3.5 w-3.5" />
-                  Routing rule
-                </p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
+                    <Route className="h-3.5 w-3.5" />
+                    Routing rule
+                  </p>
+                  <EditRoutingRuleButton
+                    categoryId={String(c._id)}
+                    rule={
+                      routingRule
+                        ? {
+                            _id: String((routingRule as any)._id),
+                            targetOfficeRef: String((routingRule as any).targetOfficeRef?._id),
+                          }
+                        : null
+                    }
+                    offices={officeOptions}
+                  />
+                </div>
                 <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                   {routingRule
                     ? `Routes to ${(routingRule as any).targetOfficeRef?.name ?? "—"}`
@@ -159,30 +176,44 @@ export default async function AdminCategoryDetailPage({
             </div>
 
             <div className="flex items-start gap-2.5">
-              {slaRules.length > 0 ? (
+              {slaRule ? (
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
               ) : (
                 <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--destructive)]" />
               )}
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
-                  <Timer className="h-3.5 w-3.5" />
-                  SLA rules
-                </p>
-                {slaRules.length === 0 ? (
-                  <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                    No category-specific SLA rules — falls back to the institution-wide default.
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
+                    <Timer className="h-3.5 w-3.5" />
+                    SLA rule
                   </p>
-                ) : (
-                  <ul className="mt-1.5 space-y-1">
-                    {slaRules.map((r: any) => (
-                      <li key={r._id} className="text-xs text-[var(--muted-foreground)]">
-                        <span className="capitalize text-[var(--foreground)]">{r.priority}</span>{" "}
-                        — Response {r.responseHours}h · Resolution {r.resolutionHours}h
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                  <EditSlaRuleButton
+                    categoryId={String(c._id)}
+                    currentPriority={c.defaultPriority}
+                    rule={
+                      slaRule
+                        ? {
+                            _id: String((slaRule as any)._id),
+                            responseHours: (slaRule as any).responseHours,
+                            resolutionHours: (slaRule as any).resolutionHours,
+                            escalateToOfficeRef: (slaRule as any).escalateToOfficeRef
+                              ? String((slaRule as any).escalateToOfficeRef._id)
+                              : null,
+                          }
+                        : null
+                    }
+                    offices={officeOptions}
+                  />
+                </div>
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {slaRule
+                    ? `Response ${(slaRule as any).responseHours}h · Resolution ${(slaRule as any).resolutionHours}h${
+                        (slaRule as any).escalateToOfficeRef
+                          ? ` · Escalates to ${(slaRule as any).escalateToOfficeRef.name}`
+                          : ""
+                      }`
+                    : "No SLA rule of its own yet — falls back to the institution-wide default, if one exists for this priority."}
+                </p>
               </div>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { requireAdmin } from "@/lib/api-guards";
 import { SLARule } from "@/models/SLARule";
+import { Category } from "@/models/Category";
 import { updateSlaRuleSchema } from "@/features/sla/schemas/sla-rule.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
@@ -22,16 +23,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const before = await SLARule.findById(id).lean();
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const effectiveCategoryRef = parsed.data.categoryRef ?? (before as any).categoryRef;
+  const effectivePriority = parsed.data.priority ?? (before as any).priority;
+
+  // Same direction as create: editing a category-scoped rule's priority
+  // here cascades onto that category's defaultPriority (see
+  // src/app/api/admin/sla-rules/route.ts for the fuller reasoning).
+  if (effectiveCategoryRef) {
+    const category = await Category.findById(effectiveCategoryRef).lean();
+    if (!category) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+    if (effectivePriority !== (category as any).defaultPriority) {
+      await Category.updateOne(
+        { _id: effectiveCategoryRef },
+        { $set: { defaultPriority: effectivePriority } },
+      );
+    }
+  }
+
   if (parsed.data.isActive) {
-    const conflict = await SLARule.findOne({
-      categoryRef: parsed.data.categoryRef ?? (before as any).categoryRef,
-      priority: parsed.data.priority ?? (before as any).priority,
-      isActive: true,
-      _id: { $ne: id },
-    });
+    const conflictFilter = effectiveCategoryRef
+      ? { categoryRef: effectiveCategoryRef, isActive: true, _id: { $ne: id } }
+      : { categoryRef: null, priority: effectivePriority, isActive: true, _id: { $ne: id } };
+    const conflict = await SLARule.findOne(conflictFilter);
     if (conflict) {
       return NextResponse.json(
-        { error: "Another active SLA rule already exists for this category+priority" },
+        {
+          error: effectiveCategoryRef
+            ? "Another active SLA rule already exists for this category"
+            : "Another active institution-wide default already exists for this priority",
+        },
         { status: 409 },
       );
     }

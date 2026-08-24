@@ -7,30 +7,14 @@ import { AlertCircle, Loader2, Pencil } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const PRIORITIES = ["low", "medium", "high", "critical"];
 
 interface EditableCategory {
   _id: string;
   name: string;
   description: string;
-  defaultOfficeRef: string;
-  defaultPriority: string;
 }
 
-interface OfficeOption {
-  _id: string;
-  name: string;
-}
-
-export function EditCategoryButton({
-  category,
-  offices,
-}: {
-  category: EditableCategory;
-  offices: OfficeOption[];
-}) {
+export function EditCategoryButton({ category }: { category: EditableCategory }) {
   const router = useRouter();
   const { show: showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -39,8 +23,6 @@ export function EditCategoryButton({
   const [form, setForm] = useState({
     name: category.name,
     description: category.description,
-    defaultOfficeRef: category.defaultOfficeRef,
-    defaultPriority: category.defaultPriority,
   });
 
   async function handleSubmit(event: React.FormEvent) {
@@ -104,41 +86,10 @@ export function EditCategoryButton({
               />
             </FormField>
 
-            <FormField label="Default office">
-              <Select
-                value={form.defaultOfficeRef}
-                onValueChange={(value) => setForm((p) => ({ ...p, defaultOfficeRef: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select office" />
-                </SelectTrigger>
-                <SelectContent>
-                  {offices.map((o) => (
-                    <SelectItem key={o._id} value={o._id}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            <FormField label="Default priority">
-              <Select
-                value={form.defaultPriority}
-                onValueChange={(value) => setForm((p) => ({ ...p, defaultPriority: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Office and priority are set from this category&apos;s routing and SLA rules, not
+              here — edit them from the Configuration Status panel below.
+            </p>
 
             <button
               type="submit"

@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DEFAULT_SLA_HOURS, type PriorityLevel } from "@/lib/constants";
 
 interface SlaRuleRow {
   _id: string;
@@ -22,23 +23,37 @@ interface SlaRuleRow {
   priority: string;
   responseHours: number;
   resolutionHours: number;
+  escalateToOfficeRef: string | null;
   isActive: boolean;
 }
 
 interface Category {
   _id: string;
   name: string;
+  defaultPriority: string;
+}
+
+interface Office {
+  _id: string;
+  name: string;
 }
 
 const PRIORITIES = ["low", "medium", "high", "critical"];
 
-const EMPTY_FORM = { categoryRef: "", priority: "medium", responseHours: 24, resolutionHours: 72 };
+const EMPTY_FORM = {
+  categoryRef: "",
+  priority: "medium",
+  responseHours: DEFAULT_SLA_HOURS.medium.responseHours,
+  resolutionHours: DEFAULT_SLA_HOURS.medium.resolutionHours,
+  escalateToOfficeRef: "",
+};
 
 export default function AdminSlaRulesPage() {
   const { show: showToast } = useToast();
   const confirm = useConfirm();
   const [rules, setRules] = useState<SlaRuleRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
   const [search, setSearch] = useState("");
   // "new" opens the modal in create mode; a SlaRuleRow opens it pre-filled to edit that rule.
   const [editingRule, setEditingRule] = useState<SlaRuleRow | "new" | null>(null);
@@ -59,11 +74,19 @@ export default function AdminSlaRulesPage() {
     fetch("/api/admin/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
+    fetch("/api/admin/offices")
+      .then((res) => res.json())
+      .then((data) => setOffices(data.offices ?? []));
   }, []);
 
   function categoryName(id: string | null) {
     if (!id) return "Institution-wide default";
     return categories.find((c) => c._id === id)?.name ?? id;
+  }
+
+  function officeName(id: string | null) {
+    if (!id) return null;
+    return offices.find((o) => o._id === id)?.name ?? id;
   }
 
   const visibleRules = useMemo(() => {
@@ -87,6 +110,7 @@ export default function AdminSlaRulesPage() {
       priority: rule.priority,
       responseHours: rule.responseHours,
       resolutionHours: rule.resolutionHours,
+      escalateToOfficeRef: rule.escalateToOfficeRef ?? "",
     });
     setError(null);
     setEditingRule(rule);
@@ -102,6 +126,7 @@ export default function AdminSlaRulesPage() {
       categoryRef: form.categoryRef || null,
       responseHours: Number(form.responseHours),
       resolutionHours: Number(form.resolutionHours),
+      escalateToOfficeRef: form.escalateToOfficeRef || null,
     };
 
     const isEdit = editingRule && editingRule !== "new";
@@ -216,6 +241,7 @@ export default function AdminSlaRulesPage() {
                   </span>
                   <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
                     Response {r.responseHours}h · Resolution {r.resolutionHours}h
+                    {r.escalateToOfficeRef && ` · Escalates to ${officeName(r.escalateToOfficeRef)}`}
                   </span>
                 </span>
                 <div className="flex items-center gap-2 sm:shrink-0">
@@ -279,10 +305,25 @@ export default function AdminSlaRulesPage() {
               </Select>
             </FormField>
 
-            <FormField label="Priority">
+            <FormField
+              label="Priority"
+              hint={
+                form.categoryRef
+                  ? "Every complaint under this category gets this priority — picking it here also updates the category's own priority"
+                  : undefined
+              }
+            >
               <Select
                 value={form.priority}
-                onValueChange={(value) => setForm((p) => ({ ...p, priority: value }))}
+                onValueChange={(value) => {
+                  const preset = DEFAULT_SLA_HOURS[value as PriorityLevel];
+                  setForm((p) => ({
+                    ...p,
+                    priority: value,
+                    responseHours: preset.responseHours,
+                    resolutionHours: preset.resolutionHours,
+                  }));
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -323,6 +364,28 @@ export default function AdminSlaRulesPage() {
                 />
               </FormField>
             </div>
+
+            <FormField
+              label="Escalate to office"
+              hint="If the resolution deadline is breached, the complaint is reassigned here automatically"
+            >
+              <Select
+                value={form.escalateToOfficeRef}
+                onValueChange={(value) => setForm((p) => ({ ...p, escalateToOfficeRef: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No escalation — stays at its assigned office" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No escalation — stays at its assigned office</SelectItem>
+                  {offices.map((o) => (
+                    <SelectItem key={o._id} value={o._id}>
+                      {o.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
 
             <button
               type="submit"

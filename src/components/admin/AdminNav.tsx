@@ -11,7 +11,6 @@ import {
   FileBarChart,
   LayoutGrid,
   LogOut,
-  Route,
   ScrollText,
   Settings,
   Tag,
@@ -32,7 +31,6 @@ const PRIMARY_NAV_ITEMS = [
 // section label does the same grouping without hiding anything.
 const CONFIG_NAV_ITEMS = [
   { href: "/admin/categories", label: "Categories", icon: Tag },
-  { href: "/admin/routing-rules", label: "Routing Rules", icon: Route },
   { href: "/admin/sla-rules", label: "SLA Rules", icon: Timer },
   { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
   { href: "/admin/settings", label: "Settings", icon: Settings },

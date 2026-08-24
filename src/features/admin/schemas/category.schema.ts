@@ -5,7 +5,7 @@ import { PRIORITY_LEVELS } from "@/lib/constants";
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1),
   description: z.string().trim().optional().default(""),
-  defaultOfficeRef: z.string().min(1),
+  defaultOfficeRef: z.string().min(1).optional(),
   defaultPriority: z.enum(PRIORITY_LEVELS),
   isActive: z.boolean().optional().default(true),
 });

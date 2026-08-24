@@ -6,6 +6,7 @@ import { Category } from "@/models/Category";
 import { updateCategorySchema } from "@/features/admin/schemas/category.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { RoutingRule } from "@/models/RoutingRule";
+import { SLARule } from "@/models/SLARule";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin();
@@ -47,6 +48,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const after = await Category.findByIdAndUpdate(id, parsed.data, { returnDocument: "after" }).lean();
+
+  // Keep the category's one guaranteed SLA rule pinned to its (possibly
+  // just-changed) defaultPriority — a category-scoped SLA rule's priority
+  // is never an independent choice, it always tracks the category's own
+  // (see SLARule.ts / the admin/sla-rules routes' validation).
+  if (
+    parsed.data.defaultPriority &&
+    parsed.data.defaultPriority !== (before as any).defaultPriority
+  ) {
+    await SLARule.updateOne(
+      { categoryRef: id, isActive: true },
+      { $set: { priority: parsed.data.defaultPriority } },
+    );
+  }
 
   await writeAuditLog({
     actorId: guard.session.user.id,

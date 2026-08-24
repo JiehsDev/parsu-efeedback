@@ -36,11 +36,11 @@ export function StatusUpdateForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: nextStatus, message }),
     });
+    setIsSubmitting(false);
 
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Could not update status.");
-      setIsSubmitting(false);
       return;
     }
 

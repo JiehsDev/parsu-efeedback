@@ -236,7 +236,7 @@ export default async function AdminDashboardPage() {
         categoriesMissingRouting.length === 0
           ? `All ${activeCategories.length} categories have a routing rule`
           : `${categoriesMissingRouting.length} categor${categoriesMissingRouting.length === 1 ? "y has" : "ies have"} no routing rule`,
-      href: "/admin/routing-rules",
+      href: "/admin/categories",
     },
     {
       label: "SLA rules",

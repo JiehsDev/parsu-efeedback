@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { requireAdmin } from "@/lib/api-guards";
 import { RoutingRule } from "@/models/RoutingRule";
+import { Category } from "@/models/Category";
 import { createRoutingRuleSchema } from "@/features/routing-engine/schemas/routing-rule.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
@@ -43,6 +44,14 @@ export async function POST(req: NextRequest) {
   }
 
   const rule = await RoutingRule.create(parsed.data);
+
+  // The category's own defaultOfficeRef is just a denormalized mirror of
+  // its active routing rule's target — keep it in sync here rather than
+  // asking for the office twice (see src/models/Category.ts).
+  await Category.updateOne(
+    { _id: parsed.data.categoryRef },
+    { $set: { defaultOfficeRef: parsed.data.targetOfficeRef } },
+  );
 
   await writeAuditLog({
     actorId: guard.session.user.id,

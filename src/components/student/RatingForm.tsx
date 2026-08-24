@@ -29,11 +29,11 @@ export function RatingForm({ complaintId }: { complaintId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ studentRating: rating, studentRatingComment: comment }),
     });
+    setIsSubmitting(false);
 
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Could not submit rating.");
-      setIsSubmitting(false);
       return;
     }
 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { requireAdmin } from "@/lib/api-guards";
 import { RoutingRule } from "@/models/RoutingRule";
+import { Category } from "@/models/Category";
 import { updateRoutingRuleSchema } from "@/features/routing-engine/schemas/routing-rule.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
@@ -37,6 +38,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const after = await RoutingRule.findByIdAndUpdate(id, parsed.data, { returnDocument: "after" }).lean();
+
+  if (parsed.data.targetOfficeRef) {
+    const effectiveCategoryRef = parsed.data.categoryRef ?? (before as any).categoryRef;
+    await Category.updateOne(
+      { _id: effectiveCategoryRef },
+      { $set: { defaultOfficeRef: parsed.data.targetOfficeRef } },
+    );
+  }
 
   await writeAuditLog({
     actorId: guard.session.user.id,

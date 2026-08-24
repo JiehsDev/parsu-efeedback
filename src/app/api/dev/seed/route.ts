@@ -134,9 +134,9 @@ export async function GET() {
     await SLARule.deleteMany({});
 
     // 1. Provision Core Structural Nodes with mandatory 'code' fields
-    const collegeOfComputing = await Office.create({
-      name: "College of Computing and Information Sciences",
-      code: "CCIS",
+    const primaryCollege = await Office.create({
+      name: "College of Engineering & Computational Sciences",
+      code: "CECS",
       type: "college",
       parentOffice: null,
     });
@@ -144,13 +144,12 @@ export async function GET() {
     // More colleges so college-comparison analytics has something to
     // compare — the original seed only ever created one.
     const otherColleges = await Office.insertMany([
-      { name: "College of Arts and Sciences", code: "CAS", type: "college", parentOffice: null },
-      { name: "College of Business Administration", code: "CBA", type: "college", parentOffice: null },
-      { name: "College of Engineering", code: "COE", type: "college", parentOffice: null },
       { name: "College of Education", code: "CED", type: "college", parentOffice: null },
-      { name: "College of Nursing", code: "CON", type: "college", parentOffice: null },
+      { name: "College of Business & Management", code: "CBM", type: "college", parentOffice: null },
+      { name: "College of Science", code: "COS", type: "college", parentOffice: null },
+      { name: "College of Arts and Humanities", code: "CAH", type: "college", parentOffice: null },
     ]);
-    const colleges = [collegeOfComputing, ...otherColleges];
+    const colleges = [primaryCollege, ...otherColleges];
 
     const registrarOffice = await Office.create({
       name: "Office of the University Registrar",
@@ -205,20 +204,18 @@ export async function GET() {
     // BR-023/BR-029: a category needs both an active routing rule and an
     // active SLA rule before a complaint can actually be submitted against
     // it (see resolveRoutingOffice/resolveSlaRule) — without these, the
-    // seeded category above exists but every submission 422s. Seeding a
-    // rule per priority level (not just the category's default) means
-    // resolveSlaRule keeps working no matter what priority a complaint
-    // ends up at.
-    async function seedSlaRulesForCategory(categoryId: any) {
-      await SLARule.insertMany(
-        (Object.keys(PRIORITY_SLA_HOURS) as PriorityLevel[]).map((priority) => ({
-          categoryRef: categoryId,
-          priority,
-          responseHours: PRIORITY_SLA_HOURS[priority].responseHours,
-          resolutionHours: PRIORITY_SLA_HOURS[priority].resolutionHours,
-          isActive: true,
-        })),
-      );
+    // seeded category above exists but every submission 422s. A category
+    // only ever has one active SLA rule, fixed to its own defaultPriority
+    // (see src/models/SLARule.ts's partial unique index), so this seeds
+    // exactly that one rule rather than one per priority tier.
+    async function seedSlaRuleForCategory(categoryId: any, priority: PriorityLevel) {
+      await SLARule.create({
+        categoryRef: categoryId,
+        priority,
+        responseHours: PRIORITY_SLA_HOURS[priority].responseHours,
+        resolutionHours: PRIORITY_SLA_HOURS[priority].resolutionHours,
+        isActive: true,
+      });
     }
 
     await RoutingRule.create({
@@ -226,7 +223,7 @@ export async function GET() {
       targetOfficeRef: registrarOffice._id,
       isActive: true,
     });
-    await seedSlaRulesForCategory(complaintCategory._id);
+    await seedSlaRuleForCategory(complaintCategory._id, "medium");
 
     // Remaining categories, grouped by the capstone doc's four core
     // complaint types (Campus Facilities / Administrative Services /
@@ -281,21 +278,21 @@ export async function GET() {
         name: "Faculty & Teaching Performance",
         description:
           "Excessive absenteeism, late arrivals, poor instruction, or unprofessional behavior",
-        defaultOfficeRef: collegeOfComputing._id,
+        defaultOfficeRef: primaryCollege._id,
         defaultPriority: "high",
       },
       {
         name: "Curriculum & Scheduling",
         description:
           "Class scheduling conflicts, overcrowded sections, missing prerequisite subjects",
-        defaultOfficeRef: collegeOfComputing._id,
+        defaultOfficeRef: primaryCollege._id,
         defaultPriority: "medium",
       },
       {
         name: "Consultation & Advising",
         description:
           "Faculty unavailability during posted consultation hours, lack of academic guidance",
-        defaultOfficeRef: collegeOfComputing._id,
+        defaultOfficeRef: primaryCollege._id,
         defaultPriority: "low",
       },
       // --- Student Welfare ---
@@ -332,7 +329,7 @@ export async function GET() {
         targetOfficeRef: cat.defaultOfficeRef,
         isActive: true,
       });
-      await seedSlaRulesForCategory(category._id);
+      await seedSlaRuleForCategory(category._id, cat.defaultPriority);
       allCategories.push({
         _id: category._id,
         name: category.name,
@@ -350,7 +347,7 @@ export async function GET() {
         passwordHash: commonPasswordHash,
         role: "student",
         employeeOrStudentId: "2023-10492",
-        collegeRef: collegeOfComputing._id,
+        collegeRef: primaryCollege._id,
         tokenVersion: 1,
         isActive: true,
       },
@@ -405,7 +402,7 @@ export async function GET() {
         passwordHash: commonPasswordHash,
         role: "office_staff",
         employeeOrStudentId: "EMP-0416",
-        officeRef: collegeOfComputing._id,
+        officeRef: primaryCollege._id,
         tokenVersion: 1,
         isActive: true,
       },
@@ -416,7 +413,7 @@ export async function GET() {
         passwordHash: commonPasswordHash,
         role: "college_dean",
         employeeOrStudentId: "EMP-0015",
-        collegeRef: collegeOfComputing._id, // ← was officeRef, now collegeRef
+        collegeRef: primaryCollege._id, // ← was officeRef, now collegeRef
         tokenVersion: 1,
         isActive: true,
       },
@@ -634,7 +631,7 @@ export async function GET() {
         feedback: feedbackDocs.length,
       },
       offices: {
-        collegeOfComputing: collegeOfComputing._id,
+        primaryCollege: primaryCollege._id,
         registrarOffice: registrarOffice._id,
         qaOffice: qaOffice._id,
         complaintCategory: complaintCategory._id,

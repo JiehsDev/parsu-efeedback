@@ -24,11 +24,11 @@ export function AssignSelfButton({ complaintId }: { complaintId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ assignedStaffRef: staffId, message: "Self-assigned" }),
     });
+    setIsSubmitting(false);
 
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Could not assign complaint.");
-      setIsSubmitting(false);
       return;
     }
 

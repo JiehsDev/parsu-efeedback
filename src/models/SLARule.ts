@@ -3,12 +3,19 @@
 //
 // Reconciled: the business rules doc talks about "one SLA configuration"
 // per category (BR-029) but also requires separate response (BR-030) and
-// resolution (BR-031) deadlines. This model keeps the blueprint's
-// per-priority granularity (a category's full "configuration" = one active
-// rule per priority it supports) and adds responseHours alongside the
-// original resolutionHours so both clocks have a source. categoryRef
-// nullable = institution-wide default, applied when no category-specific
-// active rule matches.
+// resolution (BR-031) deadlines — this model adds responseHours alongside
+// the original resolutionHours so both clocks have a source.
+//
+// A category's complaints always carry exactly one priority
+// (Category.defaultPriority — see routing.service.ts / sla.service.ts,
+// which resolve every complaint's routing and SLA rule using that single
+// value, never a student- or staff-chosen one). So a category only ever
+// needs a single active SLA rule, not one per priority tier — the
+// {categoryRef} unique index below enforces that at the database level,
+// not just in the admin UI. categoryRef nullable = institution-wide
+// default, applied when a category has no active rule of its own; that
+// case genuinely does need one rule per priority, since it's the fallback
+// for categories at any priority — see the second index.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { PRIORITY_LEVELS } from "@/lib/constants";
@@ -32,11 +39,22 @@ const slaRuleSchema = new Schema(
   { timestamps: true },
 );
 
-// BR-029: one active SLA configuration per category+priority combination
-// (categoryRef: null groups institution-wide defaults the same way)
+// BR-029: at most one active SLA rule per category — a category's fixed
+// defaultPriority means it never needs more than one.
 slaRuleSchema.index(
-  { categoryRef: 1, priority: 1 },
-  { unique: true, partialFilterExpression: { isActive: true } },
+  { categoryRef: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isActive: true, categoryRef: { $type: "objectId" } },
+  },
+);
+
+// Institution-wide defaults (categoryRef: null) are the one case that
+// legitimately varies by priority — at most one active default per
+// priority level.
+slaRuleSchema.index(
+  { priority: 1 },
+  { unique: true, partialFilterExpression: { isActive: true, categoryRef: null } },
 );
 
 export type SLARuleDocument = InferSchemaType<typeof slaRuleSchema>;

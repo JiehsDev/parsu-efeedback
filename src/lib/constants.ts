@@ -25,6 +25,18 @@ export type OfficeType = (typeof OFFICE_TYPES)[number];
 export const PRIORITY_LEVELS = ["low", "medium", "high", "critical"] as const;
 export type PriorityLevel = (typeof PRIORITY_LEVELS)[number];
 
+// --- Suggested response/resolution windows by priority. Admin UI
+// convenience defaults only (still editable per rule) — not enforced. ---
+export const DEFAULT_SLA_HOURS: Record<
+  PriorityLevel,
+  { responseHours: number; resolutionHours: number }
+> = {
+  critical: { responseHours: 4, resolutionHours: 24 },
+  high: { responseHours: 8, resolutionHours: 48 },
+  medium: { responseHours: 24, resolutionHours: 120 },
+  low: { responseHours: 48, resolutionHours: 168 },
+};
+
 // --- Complaint status (BR-041 lifecycle, reconciled — see
 // docs/schema-reconciliation.md for the mapping from the original
 // architecture-blueprint enum to this one) ---

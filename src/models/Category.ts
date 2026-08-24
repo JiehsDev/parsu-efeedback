@@ -9,10 +9,12 @@ const categorySchema = new Schema(
     name: { type: String, required: true, unique: true, trim: true },
     description: { type: String, default: "" },
 
-    // Default routing target/priority when a category is chosen; the
-    // authoritative routing decision still goes through routing_rules
-    // (Phase 9) — these are the fallback/defaults referenced there.
-    defaultOfficeRef: { type: Schema.Types.ObjectId, ref: "Office", required: true },
+    // Mirrors of the category's routing rule / SLA rule, kept in sync by
+    // cascading writes from those endpoints (see
+    // src/app/api/admin/routing-rules and src/app/api/admin/sla-rules) so
+    // they can be displayed without a join. defaultOfficeRef starts unset
+    // until a routing rule is created for this category.
+    defaultOfficeRef: { type: Schema.Types.ObjectId, ref: "Office" },
     defaultPriority: { type: String, enum: PRIORITY_LEVELS, required: true },
 
     // BR-024: inactive categories cannot be selected on submission
