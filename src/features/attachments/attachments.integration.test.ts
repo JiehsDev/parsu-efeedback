@@ -3,7 +3,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { connectTestDb, disconnectTestDb, clearTestDb } from "@/test/setup-db";
 import { Attachment } from "@/models/Attachment";
 import { Complaint } from "@/models/Complaint";
+import { Settings, SETTINGS_SINGLETON_ID } from "@/models/Settings";
 import { createTestUser, createActivatableCategory } from "@/test/fixtures";
+import { presignUploadSchema, createAttachmentSchema } from "@/features/attachments/schemas/attachment.schema";
 
 beforeAll(connectTestDb);
 afterAll(disconnectTestDb);
@@ -81,5 +83,58 @@ describe("Attachments — BR-058/059/062", () => {
 
     const stillExists = await Complaint.findById(complaint._id);
     expect(stillExists).not.toBeNull();
+  });
+});
+
+describe("Upload MIME/size policy — BR-060/061", () => {
+  // The MIME allow-list and max size are NOT hardcoded in
+  // attachment.schema.ts (presignUploadSchema/createAttachmentSchema
+  // accept any nonempty mimeType string and any positive sizeBytes) —
+  // they're read from the Settings singleton at request time by the route
+  // handler (src/app/api/uploads/presign/route.ts), which is out of scope
+  // under the no-route-import rule. What IS separably testable here: (1)
+  // the schema is deliberately permissive/not the enforcement point, and
+  // (2) Settings persists a real, configurable MIME allow-list and max
+  // size for that handler to read.
+  it("BR-060: presignUploadSchema does not itself restrict mimeType to a fixed allow-list", () => {
+    const result = presignUploadSchema.safeParse({
+      complaintId: "someid",
+      fileName: "malware.exe",
+      mimeType: "application/x-msdownload",
+      sizeBytes: 100,
+    });
+    // Schema-level acceptance is expected — the real allow-list check is
+    // Settings-driven in the route handler, not here.
+    expect(result.success).toBe(true);
+  });
+
+  it("BR-061: createAttachmentSchema requires a positive integer sizeBytes but enforces no upper bound itself", () => {
+    const result = createAttachmentSchema.safeParse({
+      fileUrl: "https://example.com/huge.pdf",
+      fileName: "huge.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 999_999_999_999,
+    });
+    expect(result.success).toBe(true);
+
+    const negative = createAttachmentSchema.safeParse({
+      fileUrl: "https://example.com/bad.pdf",
+      fileName: "bad.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: -1,
+    });
+    expect(negative.success).toBe(false);
+  });
+
+  it("BR-060/061: Settings persists a configurable, real MIME allow-list and max file size for the route handler to enforce", async () => {
+    await Settings.findOneAndUpdate(
+      { _id: SETTINGS_SINGLETON_ID },
+      { $set: { uploadAllowedMimeTypes: ["application/pdf", "image/png"], uploadMaxFileSizeMb: 5 } },
+      { upsert: true },
+    );
+
+    const settings = await Settings.findById(SETTINGS_SINGLETON_ID).lean();
+    expect(settings!.uploadAllowedMimeTypes).toEqual(["application/pdf", "image/png"]);
+    expect(settings!.uploadMaxFileSizeMb).toBe(5);
   });
 });

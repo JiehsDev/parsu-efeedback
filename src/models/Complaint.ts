@@ -17,6 +17,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { COMPLAINT_STATUSES, PRIORITY_LEVELS } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const complaintSchema = new Schema(
   {
@@ -86,6 +87,8 @@ const complaintSchema = new Schema(
   },
   { timestamps: true },
 );
+
+complaintSchema.plugin(refIntegrityPlugin); // BR-099
 
 complaintSchema.index({ studentRef: 1, createdAt: -1 });
 complaintSchema.index({ assignedOfficeRef: 1, status: 1 });

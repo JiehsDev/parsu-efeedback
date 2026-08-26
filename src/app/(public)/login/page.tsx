@@ -55,7 +55,12 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError(ERROR_MESSAGES[result.error] ?? "Something went wrong. Please try again.");
+        // next-auth's `error` field is always the generic "CredentialsSignin"
+        // regardless of cause — the specific reason (invalid_credentials /
+        // account_locked / account_inactive / rate_limited) comes back on
+        // `code` instead (see the CredentialsSignin subclasses in
+        // src/lib/auth.ts). Look up the message by `code`, not `error`.
+        setError(ERROR_MESSAGES[result.code ?? ""] ?? "Something went wrong. Please try again.");
         setIsSubmitting(false);
         return;
       }

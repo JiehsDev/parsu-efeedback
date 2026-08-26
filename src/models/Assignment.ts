@@ -17,6 +17,7 @@
 // layer (Phase 8) by only ever calling `.create()` here.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const assignmentSchema = new Schema(
   {
@@ -33,6 +34,8 @@ const assignmentSchema = new Schema(
     timestamps: { createdAt: true, updatedAt: false },
   },
 );
+
+assignmentSchema.plugin(refIntegrityPlugin); // BR-099
 
 assignmentSchema.index({ complaintRef: 1, createdAt: 1 });
 

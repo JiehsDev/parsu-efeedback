@@ -21,12 +21,17 @@ describe("rbac — BR-091-096 route-level scoping", () => {
 
   it("BR-095: qa routes require qa_office role", () => {
     expect(isRouteAllowed("/qa/analytics", "qa_office")).toBe(true);
-    expect(isRouteAllowed("/qa/analytics", "administrator")).toBe(false);
+    expect(isRouteAllowed("/qa/analytics", "office_staff")).toBe(false);
   });
 
-  it("BR-096/BR-010: admin routes require administrator role", () => {
+  it("BR-096/BR-010: admin routes require administrator role, and administrator is unrestricted everywhere", () => {
     expect(isRouteAllowed("/admin/users", "administrator")).toBe(true);
     expect(isRouteAllowed("/admin/users", "qa_office")).toBe(false);
+    // BR-010: admin's access isn't limited to /admin/** — it's every route.
+    expect(isRouteAllowed("/student/dashboard", "administrator")).toBe(true);
+    expect(isRouteAllowed("/staff/complaints", "administrator")).toBe(true);
+    expect(isRouteAllowed("/dean/dashboard", "administrator")).toBe(true);
+    expect(isRouteAllowed("/qa/analytics", "administrator")).toBe(true);
   });
 
   it("returns each role's correct home route", () => {

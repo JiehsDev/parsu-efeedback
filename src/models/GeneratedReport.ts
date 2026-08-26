@@ -11,6 +11,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { REPORT_FORMATS, REPORT_STATUSES } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const generatedReportSchema = new Schema(
   {
@@ -38,6 +39,8 @@ const generatedReportSchema = new Schema(
     timestamps: true,
   },
 );
+
+generatedReportSchema.plugin(refIntegrityPlugin); // BR-099
 
 generatedReportSchema.index({ creatorRef: 1, createdAt: -1 });
 

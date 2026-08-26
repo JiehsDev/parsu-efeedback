@@ -5,6 +5,7 @@
 // enforced by the upload handler (Phase 12), not this schema.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const attachmentSchema = new Schema(
   {
@@ -19,6 +20,8 @@ const attachmentSchema = new Schema(
     timestamps: { createdAt: "uploadedAt", updatedAt: false } as const,
   },
 );
+
+attachmentSchema.plugin(refIntegrityPlugin); // BR-099
 
 attachmentSchema.index({ complaintRef: 1 });
 

@@ -5,6 +5,7 @@
 // keep this file pure persistence/shape.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const auditLogSchema = new Schema(
   {
@@ -31,6 +32,8 @@ const auditLogSchema = new Schema(
 
 auditLogSchema.index({ entityType: 1, entityId: 1 });
 auditLogSchema.index({ actorRef: 1, createdAt: -1 });
+
+auditLogSchema.plugin(refIntegrityPlugin); // BR-099 — only actorRef is a `ref` path; entityId is Mixed and untouched
 
 export type AuditLogDocument = InferSchemaType<typeof auditLogSchema>;
 export const AuditLog: Model<AuditLogDocument> =

@@ -8,6 +8,7 @@
 // pure persistence/shape.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const complaintNoteSchema = new Schema(
   {
@@ -25,6 +26,8 @@ const complaintNoteSchema = new Schema(
     timestamps: { createdAt: true, updatedAt: false },
   },
 );
+
+complaintNoteSchema.plugin(refIntegrityPlugin); // BR-099
 
 complaintNoteSchema.index({ complaintRef: 1, createdAt: 1 });
 

@@ -19,6 +19,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { PRIORITY_LEVELS } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const slaRuleSchema = new Schema(
   {
@@ -56,6 +57,8 @@ slaRuleSchema.index(
   { priority: 1 },
   { unique: true, partialFilterExpression: { isActive: true, categoryRef: null } },
 );
+
+slaRuleSchema.plugin(refIntegrityPlugin); // BR-099
 
 export type SLARuleDocument = InferSchemaType<typeof slaRuleSchema>;
 export const SLARule: Model<SLARuleDocument> =

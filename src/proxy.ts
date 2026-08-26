@@ -53,8 +53,16 @@ export const proxy = auth((req) => {
     return NextResponse.next();
   }
 
+  // BR-085: an API client can't follow a 3xx redirect the way a browser
+  // navigation can, so every rejection below returns 403 JSON for /api/**
+  // instead of redirecting — pages keep the redirect UX.
+  const isApiRoute = currentPath.startsWith("/api/");
+
   // 3. Strict Authentication Guard: Catch unauthenticated traffic trying to access protected apps
   if (!isLoggedIn) {
+    if (isApiRoute) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const loginUrl = new URL("/login", nextUrl);
     loginUrl.searchParams.set("callbackUrl", currentPath);
     return NextResponse.redirect(loginUrl);
@@ -70,10 +78,16 @@ export const proxy = auth((req) => {
     const accessGranted = isRouteAllowed(currentPath, userRole);
 
     if (!accessGranted) {
+      if (isApiRoute) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       const targetHomeBase = homeRouteForRole(userRole);
       return NextResponse.redirect(new URL(targetHomeBase, nextUrl));
     }
   } else {
+    if (isApiRoute) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.redirect(new URL("/login", nextUrl));
   }
 

@@ -48,8 +48,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Students never change status directly — only staff/dean/qa/admin
-  if (session.user.role === "student") {
+  // Students never change status directly, and BR-095 makes qa_office
+  // read-only institution-wide — only staff/dean/admin may mutate status.
+  if (session.user.role === "student" || session.user.role === "qa_office") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

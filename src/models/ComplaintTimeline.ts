@@ -10,6 +10,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { TIMELINE_EVENT_TYPES } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const complaintTimelineSchema = new Schema(
   {
@@ -27,6 +28,8 @@ const complaintTimelineSchema = new Schema(
     timestamps: { createdAt: true, updatedAt: false },
   },
 );
+
+complaintTimelineSchema.plugin(refIntegrityPlugin); // BR-099
 
 complaintTimelineSchema.index({ complaintRef: 1, createdAt: 1 });
 

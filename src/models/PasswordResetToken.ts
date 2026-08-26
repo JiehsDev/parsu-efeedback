@@ -15,6 +15,7 @@
 //     unused tokens automatically — no cron needed for cleanup.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const passwordResetTokenSchema = new Schema(
   {
@@ -32,6 +33,8 @@ const passwordResetTokenSchema = new Schema(
   },
   { timestamps: true },
 );
+
+passwordResetTokenSchema.plugin(refIntegrityPlugin); // BR-099
 
 passwordResetTokenSchema.index({ userRef: 1, usedAt: 1 });
 // TTL index: MongoDB deletes the document once `expiresAt` is in the past.

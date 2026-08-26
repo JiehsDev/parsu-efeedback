@@ -3,6 +3,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { PRIORITY_LEVELS } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const categorySchema = new Schema(
   {
@@ -23,6 +24,8 @@ const categorySchema = new Schema(
   },
   { timestamps: true },
 );
+
+categorySchema.plugin(refIntegrityPlugin); // BR-099
 
 export type CategoryDocument = InferSchemaType<typeof categorySchema>;
 export const Category: Model<CategoryDocument> =

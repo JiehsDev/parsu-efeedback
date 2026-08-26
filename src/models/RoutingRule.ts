@@ -5,6 +5,7 @@
 // check, enforced by the routing-engine service (Phase 9), not here.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const routingRuleSchema = new Schema(
   {
@@ -32,6 +33,8 @@ routingRuleSchema.index(
   { categoryRef: 1 },
   { unique: true, partialFilterExpression: { isActive: true } },
 );
+
+routingRuleSchema.plugin(refIntegrityPlugin); // BR-099 — categoryRef/targetOfficeRef must point at real documents
 
 export type RoutingRuleDocument = InferSchemaType<typeof routingRuleSchema>;
 export const RoutingRule: Model<RoutingRuleDocument> =

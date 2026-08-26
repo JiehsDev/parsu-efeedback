@@ -90,6 +90,12 @@ export async function authenticateUser(
         Date.now() + env.AUTH_LOCKOUT_DURATION_MINUTES * 60_000,
       );
       user.failedLoginAttempts = 0; // window resets once locked
+      await user.save();
+      // BR-013: report the lockout on the exact attempt that triggers it,
+      // not just the next one — throwing InvalidCredentialsError here too
+      // would read as "just a typo," inviting an immediate retry against
+      // an account that's already locked.
+      throw new AccountLockedError(user.lockedUntil);
     }
 
     await user.save();

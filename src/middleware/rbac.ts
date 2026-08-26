@@ -49,6 +49,11 @@ export function requiredRoleForPath(pathname: string): UserRole | null {
  * (middleware.ts only calls this after confirming a session exists).
  */
 export function isRouteAllowed(pathname: string, role: UserRole): boolean {
+  // BR-010/BR-096: administrator has unrestricted access to every route,
+  // not just the ones under /admin — every other role's prefix check
+  // still applies unchanged below.
+  if (role === "administrator") return true;
+
   const requiredRole = requiredRoleForPath(pathname);
   return requiredRole === null || requiredRole === role;
 }

@@ -3,6 +3,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { NOTIFICATION_TYPES } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const notificationSchema = new Schema(
   {
@@ -19,6 +20,8 @@ const notificationSchema = new Schema(
     timestamps: { createdAt: true, updatedAt: false },
   },
 );
+
+notificationSchema.plugin(refIntegrityPlugin); // BR-099
 
 notificationSchema.index({ userRef: 1, isRead: 1, createdAt: -1 });
 

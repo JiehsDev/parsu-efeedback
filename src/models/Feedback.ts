@@ -3,6 +3,7 @@
 // (distinct from a complaint's satisfaction rating, BR-067..BR-070).
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const feedbackSchema = new Schema(
   {
@@ -15,6 +16,8 @@ const feedbackSchema = new Schema(
     timestamps: { createdAt: true, updatedAt: false },
   },
 );
+
+feedbackSchema.plugin(refIntegrityPlugin); // BR-099
 
 feedbackSchema.index({ studentRef: 1, createdAt: -1 });
 

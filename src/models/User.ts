@@ -4,6 +4,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { USER_ROLES } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const userSchema = new Schema(
   {
@@ -60,6 +61,8 @@ const userSchema = new Schema(
 
 userSchema.index({ role: 1, officeRef: 1 });
 userSchema.index({ collegeRef: 1 });
+
+userSchema.plugin(refIntegrityPlugin); // BR-099
 
 export type UserDocument = InferSchemaType<typeof userSchema>;
 export const User: Model<UserDocument> =

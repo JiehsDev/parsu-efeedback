@@ -6,6 +6,7 @@
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { OFFICE_TYPES } from "@/lib/constants";
+import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
 const officeSchema = new Schema(
   {
@@ -30,6 +31,8 @@ const officeSchema = new Schema(
 
 officeSchema.index({ type: 1 });
 officeSchema.index({ parentOffice: 1 });
+
+officeSchema.plugin(refIntegrityPlugin); // BR-099
 
 export type OfficeDocument = InferSchemaType<typeof officeSchema>;
 export const Office: Model<OfficeDocument> =
