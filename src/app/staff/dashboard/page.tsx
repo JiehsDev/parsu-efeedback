@@ -1,4 +1,5 @@
 // src/app/staff/dashboard/page.tsx
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -20,6 +21,7 @@ import type { ComplaintStatus } from "@/lib/constants";
 
 export default async function StaffDashboardPage() {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
 
   if (!session!.user.officeRef) {

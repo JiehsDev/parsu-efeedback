@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
 import { Category } from "@/models/Category";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { Assignment } from "@/models/Assignment";
 import { createComplaintSchema } from "@/features/complaints/schemas/complaint.schema";
 import { generateTicketNumber } from "@/features/complaints/services/ticket-number.service";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
@@ -98,6 +99,18 @@ export async function POST(req: NextRequest) {
     actorRef: session.user.id,
     toValue: "submitted",
     message: "Complaint submitted by student",
+  });
+
+  // BR-050: the very first assignment record — a system action (no human
+  // assigner) created by automatic routing, not yet claimed by a specific
+  // staff member (assignedToRef stays null until someone self-assigns or
+  // is assigned via /api/complaints/[id]/assign).
+  await Assignment.create({
+    complaintRef: complaint._id,
+    assignedByRef: null,
+    assignedToRef: null,
+    sourceOfficeRef: null,
+    destinationOfficeRef: resolvedOfficeRef,
   });
 
   await writeAuditLog({

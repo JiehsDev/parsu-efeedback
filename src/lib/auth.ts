@@ -11,7 +11,7 @@
  * step-by-step this implements.
  */
 
-import NextAuth, { CredentialsSignin } from "next-auth";
+import NextAuth, { CredentialsSignin, type Session } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { loginSchema } from "@/features/auth/schemas/login.schema";
@@ -22,6 +22,8 @@ import {
   InvalidCredentialsError,
 } from "@/features/auth/services/auth.service";
 import { loginRateLimit, checkRateLimit, getRequestIp } from "@/lib/rate-limit";
+import { connectToDatabase } from "@/lib/db";
+import { User } from "@/models/User";
 
 // Distinct error codes surfaced to the client via the `error` field
 // returned from next-auth's signIn({ redirect: false }) — the login page
@@ -39,7 +41,7 @@ class RateLimitedSignin extends CredentialsSignin {
   override code = "rate_limited";
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const { handlers, auth: baseAuth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
@@ -90,3 +92,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 });
+
+// middleware.ts (Edge runtime, src/proxy.ts) trusts the JWT's claims as of
+// when it was issued and never touches the database — it can't see a
+// later forceLogoutUser() bump or a since-deactivated account (BR-005).
+// This wraps every Node-runtime `auth()` call (every Route Handler, Server
+// Action, and Server Component imports `auth` from here, never straight
+// from next-auth) with the one DB round-trip that actually makes those
+// revocations take effect immediately instead of only at the JWT's
+// natural expiry. Every existing call site's `if (!session?.user)` check
+// already treats `null` as "not signed in", so this needed no call-site
+// changes beyond the few pages that previously assumed auth() could never
+// return null for an already-middleware-gated route (see git history).
+//
+// Only the zero-argument "get the current session" overload is supported
+// here — the only one anything in this codebase actually calls (Route
+// Handlers and Server Components, never middleware's request-wrapping
+// form) — since `baseAuth`'s overloaded type can't be threaded through
+// generically without TS picking the wrong overload.
+export async function auth(): Promise<Session | null> {
+  const session = await baseAuth();
+  if (!session?.user) return session;
+
+  await connectToDatabase();
+  const user = await User.findById(session.user.id).select("isActive tokenVersion").lean();
+  if (!user || !user.isActive || user.tokenVersion !== session.user.tokenVersion) {
+    return null;
+  }
+
+  return session;
+}
+
+export { handlers, signIn, signOut };

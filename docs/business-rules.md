@@ -77,10 +77,10 @@ rule can be traced back to real code rather than taken on faith.
 | BR-030 | Each SLA configuration defines a first-response deadline. |
 | BR-031 | Each SLA configuration defines a resolution deadline (a separate clock from the response deadline). |
 | BR-032 | The system shall flag a complaint as overdue (`isOverdue`) once its resolution deadline has passed. |
-| BR-033 | A complaint approaching or breaching its SLA deadline shall be escalated to a designated office (`escalateToOfficeRef`), with a configurable warning threshold (default 80%) before the hard breach. |
+| BR-033 | A complaint approaching or breaching its SLA deadline shall be escalated, with a configurable warning threshold (default 80%) before the hard breach. On breach, escalation assigns the complaint to the current office's head officer (`Office.headUserRef`) by default — the same oversight role a dean plays for their college, just per-office; an SLA rule may instead configure a specific `escalateToOfficeRef` to reassign the complaint to a different office entirely, which takes priority over the default when set. |
 | BR-034 | Only administrators may create, update, or deactivate SLA configurations. |
 
-*Sources: `src/models/Category.ts`, `src/models/RoutingRule.ts`, `src/models/SLARule.ts`, `src/features/routing-engine/services/routing.service.ts`, `src/features/sla/services/sla.service.ts`, `src/app/api/cron/sla-check/route.ts`.*
+*Sources: `src/models/Category.ts`, `src/models/RoutingRule.ts`, `src/models/SLARule.ts`, `src/models/Office.ts`, `src/features/routing-engine/services/routing.service.ts`, `src/features/sla/services/sla.service.ts`, `src/app/api/cron/sla-check/route.ts`.*
 
 **Reconciliation note (BR-022/BR-029):** the source material describes a category-level default office/priority and "one SLA configuration" per category. The admin UI collects a category's target office and priority at the routing-rule and SLA-rule steps respectively (not on the category form), and the server cascades those choices onto the category's `defaultOfficeRef`/`defaultPriority` fields — so a category's priority and target office each have exactly one place they're actually set, with the category record itself holding a read-only mirror. This is implemented as one active SLA rule per **category** (not per category + priority, since a category has only one priority), plus an optional institution-wide default per priority (`categoryRef: null`) for categories without a rule of their own.
 

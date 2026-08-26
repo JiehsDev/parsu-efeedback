@@ -1,4 +1,5 @@
 // src/app/student/dashboard/page.tsx
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Bell, ClipboardList, MessageSquareWarning, Plus, Timer, Zap } from "lucide-react";
 import { Types } from "mongoose";
@@ -37,6 +38,7 @@ const HOW_IT_WORKS = [
 
 export default async function StudentDashboardPage() {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
 
   const studentId = session!.user.id;

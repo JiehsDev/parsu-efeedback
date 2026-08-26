@@ -35,14 +35,16 @@ export const proxy = auth((req) => {
     "/api/dev/seed",
   ].some((route) => currentPath.startsWith(route));
 
-  // Handle Guest-Only Navigation
+  // Handle Guest-Only Navigation. Deliberately NOT auto-redirecting an
+  // "already logged in" visitor away from here: `isLoggedIn` above is only
+  // ever a raw JWT decode (the edge runtime can't touch the database — see
+  // src/lib/auth.ts), so it can't tell a genuinely active session from one
+  // an admin just force-logged-out or that a password reset just revoked.
+  // A protected page's own auth() check (which does hit the database) is
+  // what redirects a revoked session here in the first place; bouncing
+  // them straight back out again on that same stale edge signal would be
+  // an infinite redirect loop between this route and their old dashboard.
   if (isGuestRoute) {
-    if (isLoggedIn) {
-      // Already logged in? Deflect them to their specific role dashboard base
-      const targetHomeBase = userRole ? homeRouteForRole(userRole) : "/dashboard";
-      return NextResponse.redirect(new URL(targetHomeBase, nextUrl));
-    }
-    // Not logged in? Allow them to view the login/register forms safely
     return NextResponse.next();
   }
 

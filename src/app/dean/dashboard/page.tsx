@@ -1,4 +1,5 @@
 // src/app/dean/dashboard/page.tsx
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CheckCircle2, Inbox, ListChecks } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -15,6 +16,7 @@ import { StatCard, StatChip, type StatCardData } from "@/components/shared/StatC
 
 export default async function DeanDashboardPage() {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
 
   if (!session!.user.collegeRef) {

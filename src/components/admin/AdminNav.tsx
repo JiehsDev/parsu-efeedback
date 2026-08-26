@@ -9,8 +9,10 @@ import {
   Bell,
   Building2,
   FileBarChart,
+  Inbox,
   LayoutGrid,
   LogOut,
+  Megaphone,
   ScrollText,
   Settings,
   Tag,
@@ -21,6 +23,7 @@ import {
 
 const PRIMARY_NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { href: "/admin/complaints", label: "Complaints", icon: Inbox },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/offices", label: "Offices", icon: Building2 },
@@ -32,6 +35,12 @@ const PRIMARY_NAV_ITEMS = [
 const CONFIG_NAV_ITEMS = [
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/sla-rules", label: "SLA Rules", icon: Timer },
+  // Same page the header's bell icon opens (every role treats notifications
+  // as bell-only) — but this page is also the only place to send a
+  // broadcast announcement, an admin-only capability that deserves its own
+  // discoverable entry point rather than hiding behind a generic bell icon
+  // identical to every other role's "view my own notifications" link.
+  { href: "/admin/notifications", label: "Announcements", icon: Megaphone },
   { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

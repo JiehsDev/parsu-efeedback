@@ -1,4 +1,5 @@
 // src/app/student/feedback/new/page.tsx
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -9,6 +10,7 @@ import { FeedbackForm } from "@/components/student/FeedbackForm";
 
 export default async function NewFeedbackPage() {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
 
   // Read server-side like every other page in the app. The GET half of

@@ -5,6 +5,7 @@ import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { SLARule } from "@/models/SLARule";
+import { Office } from "@/models/Office";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { updateSettings } from "@/features/settings/services/settings.service";
 import { env } from "@/lib/env";
@@ -56,7 +57,18 @@ async function checkDeadline(
 
     const update: Record<string, unknown> = { isOverdue: true, status: "escalated" };
     if ((rule as any)?.escalateToOfficeRef) {
+      // Explicit override — cross-office escalation. The old staff
+      // assignment doesn't carry over to an office they don't belong to.
       update.assignedOfficeRef = (rule as any).escalateToOfficeRef;
+      update.assignedStaffRef = null;
+    } else if (fromOffice) {
+      // Default path: escalate to whoever heads the office that's already
+      // sitting on this complaint — the same role a dean plays for their
+      // college, just per-office instead of requiring separate config.
+      const office = await Office.findById(fromOffice).select("headUserRef").lean();
+      if ((office as any)?.headUserRef) {
+        update.assignedStaffRef = (office as any).headUserRef;
+      }
     }
 
     // Atomic claim: the `isOverdue: false` condition is re-checked here at
@@ -97,7 +109,7 @@ async function checkDeadline(
     });
 
     await notifyEscalation({
-      staffId: complaint.assignedStaffRef ? String(complaint.assignedStaffRef) : null,
+      staffId: (updated as any).assignedStaffRef ? String((updated as any).assignedStaffRef) : null,
       ticketNumber: complaint.ticketNumber,
       complaintId: String(complaint._id),
     });

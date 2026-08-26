@@ -1,5 +1,6 @@
 // src/app/student/complaints/page.tsx
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, ClipboardList, Plus, X } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -74,6 +75,7 @@ export default async function StudentComplaintsPage({
   }>;
 }) {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
 
   const params = await searchParams;

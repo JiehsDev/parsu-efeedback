@@ -201,8 +201,8 @@ export async function notifyEscalation(params: {
   await createNotification({
     userRef: params.staffId,
     type: "escalation",
-    title: "Complaint escalated to your office",
-    body: `Complaint ${params.ticketNumber} has breached its SLA and been escalated to your office.`,
+    title: "Complaint escalated to you",
+    body: `Complaint ${params.ticketNumber} has breached its SLA and been escalated to you.`,
     relatedComplaintRef: params.complaintId,
   });
 

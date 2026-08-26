@@ -15,7 +15,7 @@ export default function Escalation({ recipientName, ticketNumber, complaintUrl }
       <Text>Hi {recipientName},</Text>
       <Text>
         Complaint <strong>{ticketNumber}</strong> has breached its SLA deadline and been escalated
-        to your office for immediate attention.
+        to you for immediate attention.
       </Text>
       <Button
         href={complaintUrl}

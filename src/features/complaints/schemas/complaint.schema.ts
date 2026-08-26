@@ -29,7 +29,15 @@ export const rateComplaintSchema = z.object({
   studentRatingComment: z.string().trim().optional().default(""),
 });
 
+// BR-045: administrator-only, hides a complaint from active views without
+// deleting the record — never a status, so it's its own boolean rather
+// than folded into updateComplaintStatusSchema.
+export const archiveComplaintSchema = z.object({
+  isArchived: z.boolean(),
+});
+
 export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
 export type UpdateComplaintStatusInput = z.infer<typeof updateComplaintStatusSchema>;
 export type AddNoteInput = z.infer<typeof addNoteSchema>;
 export type RateComplaintInput = z.infer<typeof rateComplaintSchema>;
+export type ArchiveComplaintInput = z.infer<typeof archiveComplaintSchema>;

@@ -1,4 +1,5 @@
 // src/app/staff/sla/page.tsx
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, ChevronRight, Clock3, Timer } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -65,6 +66,7 @@ function GroupedList({ complaints }: { complaints: any[] }) {
 
 export default async function StaffSlaPage() {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
 
   const officeRef = session!.user.officeRef;

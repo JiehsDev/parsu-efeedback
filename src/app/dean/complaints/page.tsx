@@ -1,5 +1,6 @@
 // src/app/dean/complaints/page.tsx
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, ChevronRight, Inbox } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -33,6 +34,7 @@ export default async function DeanComplaintsPage({
   searchParams: Promise<{ status?: string; q?: string; sort?: string }>;
 }) {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
   const { status, q, sort } = await searchParams;
   const search = q?.trim();

@@ -1,5 +1,6 @@
 // src/app/staff/complaints/page.tsx
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, ChevronRight, Inbox, ListChecks, UserCheck, UserX } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -32,6 +33,7 @@ export default async function StaffComplaintsPage({
   searchParams: Promise<{ status?: string; q?: string; sort?: string }>;
 }) {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
   const { status: statusParam, q, sort } = await searchParams;
   const status = COMPLAINT_STATUSES.find((s) => s === statusParam);

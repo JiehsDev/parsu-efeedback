@@ -112,7 +112,7 @@ export default async function AdminDashboardPage() {
     Category.find({ isActive: true }).select("name").lean(),
     RoutingRule.find({ isActive: true }).select("categoryRef").lean(),
     SLARule.find({ isActive: true }).select("categoryRef").lean(),
-    Office.find({ type: "service_office", isActive: true }).select("name").lean(),
+    Office.find({ type: "service_office", isActive: true }).select("name headUserRef").lean(),
     User.aggregate([
       { $match: { role: "office_staff", isActive: true, officeRef: { $ne: null } } },
       { $group: { _id: "$officeRef", count: { $sum: 1 } } },
@@ -218,6 +218,12 @@ export default async function AdminDashboardPage() {
     ? []
     : activeCategories.filter((c: any) => !slaCoveredCategoryIds.has(String(c._id)));
   const officesMissingStaff = activeOffices.filter((o: any) => !staffedOfficeIds.has(String(o._id)));
+  // Staffed offices only — an unstaffed office is already flagged above,
+  // and a head officer is who SLA escalations default to for whichever
+  // office already holds a complaint (src/app/api/cron/sla-check/route.ts).
+  const staffedOfficesMissingHead = activeOffices.filter(
+    (o: any) => staffedOfficeIds.has(String(o._id)) && !o.headUserRef,
+  );
 
   const lastSlaCheckAt = (settings as any).lastSlaCheckAt as Date | null;
   const slaCronIsFresh =
@@ -254,6 +260,15 @@ export default async function AdminDashboardPage() {
         officesMissingStaff.length === 0
           ? "Every active office has staff"
           : `${officesMissingStaff.length} office${officesMissingStaff.length === 1 ? "" : "s"} with no active staff`,
+      href: "/admin/offices",
+    },
+    {
+      label: "Escalation contacts",
+      ok: staffedOfficesMissingHead.length === 0,
+      detail:
+        staffedOfficesMissingHead.length === 0
+          ? "Every staffed office has a head officer for SLA escalations"
+          : `${staffedOfficesMissingHead.length} staffed office${staffedOfficesMissingHead.length === 1 ? "" : "s"} have no head officer assigned`,
       href: "/admin/offices",
     },
     {

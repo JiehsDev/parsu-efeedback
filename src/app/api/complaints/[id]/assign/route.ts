@@ -6,6 +6,7 @@ import { Complaint } from "@/models/Complaint";
 import { User } from "@/models/User";
 import { Office } from "@/models/Office";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { Assignment } from "@/models/Assignment";
 import { assignComplaintSchema } from "@/features/complaints/schemas/assign.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { notifyComplaintAssigned } from "@/features/notifications/services/notification.service";
@@ -164,6 +165,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     fromValue: String(before.assignedOfficeRef ?? ""),
     toValue: String(complaint.assignedOfficeRef ?? ""),
     message: parsed.data.message ?? "",
+  });
+
+  // BR-047/BR-051: every assign/reassign gets its own immutable record
+  // rather than mutating a prior one — this is a human action, so unlike
+  // the system-routed initial record, assignedByRef is always set.
+  await Assignment.create({
+    complaintRef: complaint._id,
+    assignedByRef: userId,
+    assignedToRef: complaint.assignedStaffRef ?? null,
+    sourceOfficeRef: before.assignedOfficeRef ?? null,
+    destinationOfficeRef: String(complaint.assignedOfficeRef),
   });
 
   await writeAuditLog({

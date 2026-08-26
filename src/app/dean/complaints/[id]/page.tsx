@@ -1,5 +1,5 @@
 // src/app/dean/complaints/[id]/page.tsx
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, GraduationCap, Hash, History, User as UserIcon } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -22,6 +22,7 @@ export default async function DeanComplaintDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
   const { id } = await params;
 

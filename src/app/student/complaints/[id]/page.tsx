@@ -1,5 +1,5 @@
 // src/app/student/complaints/[id]/page.tsx
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, CheckCircle2, Flag, Hash, History, Star } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -22,6 +22,7 @@ const PRIORITY_DOT: Record<string, string> = {
 
 export default async function ComplaintDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  if (!session?.user) redirect("/login");
   await connectToDatabase();
   const { id } = await params;
 
