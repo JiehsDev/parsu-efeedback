@@ -56,8 +56,10 @@ export default async function StaffComplaintsPage({
         : {}),
     })
       .populate({
+        // Student identity is kept out of the staff view — ID + college
+        // only, not name, so a complaint reads a little more anonymous.
         path: "studentRef",
-        select: "firstName lastName employeeOrStudentId collegeRef",
+        select: "employeeOrStudentId collegeRef",
         populate: { path: "collegeRef", select: "name" },
       })
       .sort({ createdAt: sortOrder })
@@ -65,7 +67,7 @@ export default async function StaffComplaintsPage({
     Complaint.countDocuments({
       ...baseFilter,
       assignedStaffRef: null,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
     Complaint.countDocuments({ ...baseFilter, isOverdue: true }),
     Complaint.countDocuments(baseFilter),
@@ -220,10 +222,7 @@ export default async function StaffComplaintsPage({
                       <span>{c.assignedStaffRef ? "Assigned" : "Unassigned"}</span>
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-[var(--muted-foreground)]">
-                      {c.studentRef?.firstName} {c.studentRef?.lastName}
-                      {c.studentRef?.employeeOrStudentId
-                        ? ` · ${c.studentRef.employeeOrStudentId}`
-                        : ""}
+                      {c.studentRef?.employeeOrStudentId ?? "—"}
                       {c.studentRef?.collegeRef?.name ? ` · ${c.studentRef.collegeRef.name}` : ""}
                     </span>
                   </span>

@@ -164,10 +164,15 @@ export async function GET(req: NextRequest) {
   if (role === "college_dean") {
     const pipeline: PipelineStage[] = [
       {
+        // Student identity is kept out of this response — ID + college
+        // only, not name.
         $lookup: {
           from: "users",
-          localField: "studentRef",
-          foreignField: "_id",
+          let: { studentId: "$studentRef" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$studentId"] } } },
+            { $project: { employeeOrStudentId: 1, collegeRef: 1 } },
+          ],
           as: "student",
         },
       },
@@ -198,8 +203,10 @@ export async function GET(req: NextRequest) {
     [complaints, total] = await Promise.all([
       Complaint.find(filter)
         .populate({
+          // Student identity is kept out of this response — ID + college
+          // only, not name.
           path: "studentRef",
-          select: "firstName lastName employeeOrStudentId collegeRef",
+          select: "employeeOrStudentId collegeRef",
           populate: { path: "collegeRef", select: "name" },
         })
         .sort({ createdAt: -1 })

@@ -48,17 +48,17 @@ export default async function StaffDashboardPage() {
     Complaint.countDocuments({
       assignedOfficeRef: officeRef,
       isOverdue: true,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
     Complaint.countDocuments({
       assignedOfficeRef: officeRef,
       assignedStaffRef: null,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
     Complaint.find({
       assignedOfficeRef: officeRef,
       assignedStaffRef: null,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
       isArchived: false,
     })
       .sort({ slaResponseDueAt: 1 })

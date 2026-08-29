@@ -4,7 +4,7 @@
 
 Maps each business rule to its test type and location. Status: ✅ tested & passing, 🟡 partially covered / covered indirectly, ⬜ not independently testable (reason noted), N/A deployment concern. (❌ would mean tested and failing — none remain; every gap found in the first pass has been fixed.)
 
-Last full run: `npx vitest run` (30 files / 152 tests, **152 passed**) + `npx playwright test` (12 spec files / 55 tests, **54 passed / 1 skipped**). Every rule found failing in the first pass has since been fixed and reverified — see `docs/testing/br-test-results.md` for what was wrong and what changed.
+Last full run: `npx vitest run` (30 files / 153 tests, **153 passed**) + `npx playwright test` (13 spec files / 58 tests, **57 passed / 1 skipped**). Every rule found failing in the first pass has since been fixed and reverified — see `docs/testing/br-test-results.md` for what was wrong and what changed.
 
 ## 1. User Management
 
@@ -165,3 +165,9 @@ Last full run: `npx vitest run` (30 files / 152 tests, **152 passed**) + `npx pl
 | ------ | ----------------------------- | ----------- | ---------------------------------------------------------- | ------ |
 | BR-099 | FK references valid            | Integration | `src/models/referential-integrity.integration.test.ts`, `src/lib/mongoose-ref-integrity.ts` | ✅     |
 | BR-100 | Unique immutable identifiers   | Unit        | `ticket-number.service.test.ts` (+ concurrency test in `.integration.test.ts`) | ✅     |
+
+## 20. Post-Launch Addition
+
+| BR     | Rule                                                            | Test Type   | Location                                                                          | Status |
+| ------ | ------------------------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------- | ------ |
+| BR-101 | Student may edit/withdraw own complaint only while "submitted"     | Unit + E2E  | `status-transitions.service.test.ts`, `tests/e2e/edit-withdraw-complaint.spec.ts` | ✅     |

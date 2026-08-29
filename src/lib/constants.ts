@@ -40,6 +40,11 @@ export const DEFAULT_SLA_HOURS: Record<
 // --- Complaint status (BR-041 lifecycle, reconciled — see
 // docs/schema-reconciliation.md for the mapping from the original
 // architecture-blueprint enum to this one) ---
+// "withdrawn" (BR-101): a student may cancel their own complaint while it's
+// still "submitted" — before any staff has picked it up. Terminal, like
+// resolved/closed, but reached only from "submitted" and only by the
+// submitting student (enforced in the route handler, not the state
+// machine — see status-transitions.service.ts).
 export const COMPLAINT_STATUSES = [
   "submitted",
   "assigned",
@@ -48,6 +53,7 @@ export const COMPLAINT_STATUSES = [
   "escalated",
   "resolved",
   "closed",
+  "withdrawn",
 ] as const;
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
 
@@ -64,6 +70,8 @@ export const TIMELINE_EVENT_TYPES = [
   "reopened",
   "closed",
   "rated",
+  "edited", // BR-101: student edited title/description/priority pre-pickup
+  "withdrawn", // BR-101
 ] as const;
 export type TimelineEventType = (typeof TIMELINE_EVENT_TYPES)[number];
 

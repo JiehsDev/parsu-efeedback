@@ -45,7 +45,12 @@ export default async function QaComplaintDetailPage({
   const c = complaint as any;
 
   const [student, office, timeline, notes] = await Promise.all([
-    User.findById(c.studentRef).populate("collegeRef", "name").lean(),
+    // Student identity is kept out of the QA view — ID + college only,
+    // not name, so a complaint reads a little more anonymous.
+    User.findById(c.studentRef)
+      .select("employeeOrStudentId collegeRef")
+      .populate("collegeRef", "name")
+      .lean(),
     c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).lean() : null,
     ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
     ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
@@ -122,9 +127,6 @@ export default async function QaComplaintDetailPage({
                   Complainant
                 </dt>
                 <dd className="mt-1.5 text-[var(--foreground)]">
-                  {student ? `${(student as any).firstName} ${(student as any).lastName}` : "—"}
-                </dd>
-                <dd className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                   {student ? ((student as any).employeeOrStudentId ?? "—") : "—"}
                 </dd>
                 <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">

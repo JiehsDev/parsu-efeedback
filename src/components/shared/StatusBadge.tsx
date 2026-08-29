@@ -48,6 +48,14 @@ const STATUS_STYLES: Record<
     className: "border border-[var(--border)] text-[var(--muted-foreground)]",
     dotClassName: "bg-[var(--qa-slate)]",
   },
+  withdrawn: {
+    // BR-101: also quiet/outline like "closed" (nothing more will happen
+    // to it either), but a dashed border keeps it visually distinct from
+    // an actually-closed ticket rather than reading as a duplicate style.
+    label: "Withdrawn",
+    className: "border border-dashed border-[var(--border)] text-[var(--muted-foreground)]",
+    dotClassName: "bg-[var(--qa-slate)]",
+  },
 };
 
 export function StatusBadge({ status }: { status: ComplaintStatus }) {

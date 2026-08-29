@@ -13,7 +13,8 @@ const rows: ReportRow[] = [
     priority: "high",
     officeName: "IT Office",
     categoryName: "Facilities",
-    studentName: "Jane Doe",
+    studentId: "2023-10492",
+    studentCollege: "College of Engineering",
     submittedAt: "1/1/2026",
     resolvedAt: "1/3/2026",
     slaCompliant: "Yes",
@@ -25,7 +26,8 @@ const rows: ReportRow[] = [
     priority: "low",
     officeName: "Registrar",
     categoryName: "Records",
-    studentName: "John Roe",
+    studentId: "2023-10493",
+    studentCollege: "College of Education",
     submittedAt: "1/2/2026",
     resolvedAt: "—",
     slaCompliant: "N/A",
@@ -41,10 +43,13 @@ describe("report-file.service — BR-079", () => {
     const lines = text.split("\n");
     expect(lines).toHaveLength(3); // header + 2 rows
     expect(lines[0]).toBe(
-      "Ticket,Title,Status,Priority,Office,Category,Student,Submitted,Resolved,SLA Met",
+      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,SLA Met",
     );
     expect(lines[1]).toContain("PARSU-2026-000001");
-    expect(lines[1]).toContain("Jane Doe");
+    expect(lines[1]).toContain("2023-10492");
+    // No student name column at all — reports stay anonymized.
+    expect(text).not.toContain("Jane Doe");
+    expect(text).not.toContain("John Roe");
   });
 
   it("generateCsv escapes fields containing commas/quotes per basic CSV rules", () => {
@@ -56,7 +61,7 @@ describe("report-file.service — BR-079", () => {
   it("generateCsv returns just the header for an empty row set", () => {
     const buffer = generateCsv([]);
     expect(buffer.toString("utf-8")).toBe(
-      "Ticket,Title,Status,Priority,Office,Category,Student,Submitted,Resolved,SLA Met",
+      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,SLA Met",
     );
   });
 

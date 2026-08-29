@@ -40,7 +40,7 @@ export default async function QaSlaCompliancePage({
   const [scopeType, scopeId] = overdueScope?.split(":") ?? [];
   const overdueFilter: Record<string, unknown> = {
     isOverdue: true,
-    status: { $nin: ["resolved", "closed"] },
+    status: { $nin: ["resolved", "closed", "withdrawn"] },
     isArchived: false,
   };
   if (scopeType === "office" && scopeId) {

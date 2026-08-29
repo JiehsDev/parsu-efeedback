@@ -91,12 +91,12 @@ describe("Complaint↔student relationship — BR-038/039", () => {
 });
 
 describe("Closed complaints not student-editable — BR-042", () => {
-  // There is no student-facing content-edit route at all — the only PATCH
-  // route on a complaint (status updates) rejects the "student" role
-  // outright (src/app/api/complaints/[id]/route.ts), independent of the
-  // complaint's current status. That role check is an E2E concern; here we
-  // confirm the underlying lifecycle rule a "closed" complaint is bound by:
-  // it accepts no direct edits, only a reopen transition.
+  // BR-101 (added later) lets the submitting student edit/withdraw their
+  // own complaint via PATCH /api/complaints/[id], but only while it's
+  // still "submitted" — the route itself enforces that cutoff (an E2E
+  // concern, see tests/e2e/edit-withdraw-complaint.spec.ts). Here we only
+  // confirm the underlying lifecycle rule a "closed" complaint is bound
+  // by: it accepts no direct edits, only a reopen transition.
   it("BR-042: a closed complaint's only valid transition is reopening (in_progress)", async () => {
     const complaint = await baseComplaint({ status: "closed", closedAt: new Date() });
     expect(complaint.status).toBe("closed");

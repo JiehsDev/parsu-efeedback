@@ -56,8 +56,10 @@ export default async function QaComplaintsPage({
   const complaints = await Complaint.find(filter)
     .populate("assignedOfficeRef", "name")
     .populate({
+      // Student identity is kept out of the QA view — ID + college
+      // only, not name, so a complaint reads a little more anonymous.
       path: "studentRef",
-      select: "firstName lastName employeeOrStudentId collegeRef",
+      select: "employeeOrStudentId collegeRef",
       populate: { path: "collegeRef", select: "name" },
     })
     .sort({ createdAt: sortOrder })
@@ -157,10 +159,7 @@ export default async function QaComplaintsPage({
                       </span>
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-[var(--muted-foreground)]">
-                      {c.studentRef?.firstName} {c.studentRef?.lastName}
-                      {c.studentRef?.employeeOrStudentId
-                        ? ` · ${c.studentRef.employeeOrStudentId}`
-                        : ""}
+                      {c.studentRef?.employeeOrStudentId ?? "—"}
                       {c.studentRef?.collegeRef?.name ? ` · ${c.studentRef.collegeRef.name}` : ""}
                     </span>
                   </span>

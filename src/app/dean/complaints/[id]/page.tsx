@@ -30,7 +30,12 @@ export default async function DeanComplaintDetailPage({
   if (!complaint) notFound();
 
   const c = complaint as any;
-  const student = await User.findById(c.studentRef).populate("collegeRef", "name").lean();
+  // Student identity is kept out of the dean view — ID + college only,
+  // not name, so a complaint reads a little more anonymous.
+  const student = await User.findById(c.studentRef)
+    .select("employeeOrStudentId collegeRef")
+    .populate("collegeRef", "name")
+    .lean();
   if (!student || String((student as any).collegeRef?._id) !== session!.user.collegeRef) {
     notFound();
   }
@@ -81,10 +86,14 @@ export default async function DeanComplaintDetailPage({
             initialNotes={JSON.parse(JSON.stringify(notes))}
           />
 
-          <ReassignForm
-            complaintId={String(c._id)}
-            currentOfficeRef={c.assignedOfficeRef ? String(c.assignedOfficeRef) : ""}
-          />
+          {/* BR-101: a withdrawn complaint is inert — the route rejects
+              reassigning it regardless, but hide the control too. */}
+          {c.status !== "withdrawn" && (
+            <ReassignForm
+              complaintId={String(c._id)}
+              currentOfficeRef={c.assignedOfficeRef ? String(c.assignedOfficeRef) : ""}
+            />
+          )}
         </div>
 
         <div className="space-y-6">
@@ -103,9 +112,6 @@ export default async function DeanComplaintDetailPage({
                   Complainant
                 </dt>
                 <dd className="mt-1.5 text-[var(--foreground)]">
-                  {(student as any).firstName} {(student as any).lastName}
-                </dd>
-                <dd className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                   {(student as any).employeeOrStudentId ?? "—"}
                 </dd>
                 <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">

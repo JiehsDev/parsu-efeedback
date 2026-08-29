@@ -65,9 +65,9 @@ export default async function QaDashboardPage() {
     Complaint.countDocuments({
       ...scopeMatch,
       isOverdue: true,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
-    Complaint.countDocuments({ ...scopeMatch, status: { $nin: ["resolved", "closed"] } }),
+    Complaint.countDocuments({ ...scopeMatch, status: { $nin: ["resolved", "closed", "withdrawn"] } }),
     Complaint.aggregate([
       { $match: { studentRating: { $ne: null } } },
       { $group: { _id: null, avg: { $avg: "$studentRating" }, count: { $sum: 1 } } },

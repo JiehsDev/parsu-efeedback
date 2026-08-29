@@ -59,6 +59,7 @@ const STATUS_LABELS: Record<ComplaintStatus, string> = {
   escalated: "Escalated",
   resolved: "Resolved",
   closed: "Closed",
+  withdrawn: "Withdrawn",
 };
 
 export default async function StudentComplaintsPage({

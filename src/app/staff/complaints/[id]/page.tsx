@@ -44,8 +44,10 @@ export default async function StaffComplaintDetailPage({
 
   const complaint = await Complaint.findById(id)
     .populate({
+      // Student identity is kept out of the staff view — ID + college
+      // only, not name, so a complaint reads a little more anonymous.
       path: "studentRef",
-      select: "firstName lastName employeeOrStudentId collegeRef",
+      select: "employeeOrStudentId collegeRef",
       populate: { path: "collegeRef", select: "name" },
     })
     .lean();
@@ -125,9 +127,6 @@ export default async function StaffComplaintDetailPage({
                   Complainant
                 </dt>
                 <dd className="mt-1.5 text-[var(--foreground)]">
-                  {c.studentRef?.firstName} {c.studentRef?.lastName}
-                </dd>
-                <dd className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                   {c.studentRef?.employeeOrStudentId ?? "—"}
                 </dd>
                 <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
@@ -168,7 +167,12 @@ export default async function StaffComplaintDetailPage({
             </dl>
           </div>
 
-          {!c.assignedStaffRef && <AssignSelfButton complaintId={String(c._id)} />}
+          {/* BR-101: a withdrawn complaint can never be picked up — the
+              route rejects it regardless, but hide the control too so
+              staff aren't offered an action that can only fail. */}
+          {!c.assignedStaffRef && c.status !== "withdrawn" && (
+            <AssignSelfButton complaintId={String(c._id)} />
+          )}
 
           {String(c.assignedStaffRef) === session!.user.id && (
             <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />

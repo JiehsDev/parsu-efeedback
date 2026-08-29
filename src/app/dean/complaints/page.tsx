@@ -56,10 +56,17 @@ export default async function DeanComplaintsPage({
   const collegeRef = new Types.ObjectId(session!.user.collegeRef);
   const pipeline: any[] = [
     {
+      // Student identity is kept out of the dean view — ID + college
+      // only, not name, so a complaint reads a little more anonymous.
+      // Projected here (not just hidden in the UI) so the name never
+      // leaves the database in the first place.
       $lookup: {
         from: "users",
-        localField: "studentRef",
-        foreignField: "_id",
+        let: { studentId: "$studentRef" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$studentId"] } } },
+          { $project: { employeeOrStudentId: 1, collegeRef: 1 } },
+        ],
         as: "student",
       },
     },
@@ -173,8 +180,7 @@ export default async function DeanComplaintsPage({
                       </span>
                       <span>·</span>
                       <span>
-                        {c.student.firstName} {c.student.lastName}
-                        {c.student.employeeOrStudentId ? ` · ${c.student.employeeOrStudentId}` : ""}
+                        {c.student.employeeOrStudentId ?? "—"}
                         {c.college?.name ? ` · ${c.college.name}` : ""}
                       </span>
                     </span>

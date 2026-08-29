@@ -1,5 +1,6 @@
 // src/features/complaints/schemas/complaint.schema.ts
 import { z } from "zod";
+import { COMPLAINT_STATUSES } from "@/lib/constants";
 
 export const createComplaintSchema = z.object({
   categoryRef: z.string().min(1),
@@ -8,17 +9,26 @@ export const createComplaintSchema = z.object({
 });
 
 export const updateComplaintStatusSchema = z.object({
-  status: z.enum([
-    "submitted",
-    "assigned",
-    "in_progress",
-    "pending_information",
-    "escalated",
-    "resolved",
-    "closed",
-  ]),
+  status: z.enum(COMPLAINT_STATUSES),
   message: z.string().trim().optional(),
 });
+
+// BR-101: a student may edit their own complaint's title/description, but
+// only while it's still "submitted" (not yet picked up by staff) —
+// enforced in the route handler, this just shapes the input. Priority is
+// deliberately NOT accepted here: it's inherited from the category
+// (BR-022) and changing it is a staff/admin call, not the student's —
+// zod's default "strip unknown keys" behavior means a client that sends
+// one anyway just has it silently dropped, never applied. At least one
+// (real) field must be present so an empty PATCH isn't a silent no-op.
+export const editComplaintSchema = z
+  .object({
+    title: z.string().trim().min(5).max(200).optional(),
+    description: z.string().trim().min(20).optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field (title or description) must be provided.",
+  });
 
 export const addNoteSchema = z.object({
   body: z.string().trim().min(1),
@@ -41,3 +51,4 @@ export type UpdateComplaintStatusInput = z.infer<typeof updateComplaintStatusSch
 export type AddNoteInput = z.infer<typeof addNoteSchema>;
 export type RateComplaintInput = z.infer<typeof rateComplaintSchema>;
 export type ArchiveComplaintInput = z.infer<typeof archiveComplaintSchema>;
+export type EditComplaintInput = z.infer<typeof editComplaintSchema>;

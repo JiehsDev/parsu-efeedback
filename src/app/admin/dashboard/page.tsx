@@ -80,22 +80,22 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     User.countDocuments({ isActive: true }),
     User.countDocuments({ isActive: false }),
-    Complaint.countDocuments({ ...scopeMatch, status: { $nin: ["resolved", "closed"] } }),
+    Complaint.countDocuments({ ...scopeMatch, status: { $nin: ["resolved", "closed", "withdrawn"] } }),
     Complaint.countDocuments({
       ...scopeMatch,
       isOverdue: true,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
     Complaint.countDocuments({
       ...scopeMatch,
       assignedOfficeRef: null,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
     Complaint.countDocuments({
       ...scopeMatch,
       assignedOfficeRef: { $ne: null },
       assignedStaffRef: null,
-      status: { $nin: ["resolved", "closed"] },
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
     Complaint.countDocuments({ ...scopeMatch, status: "submitted", createdAt: { $lt: dayAgo } }),
     getMonthlyTrends(scopeMatch),
@@ -121,7 +121,7 @@ export default async function AdminDashboardPage() {
       {
         $match: {
           ...scopeMatch,
-          status: { $nin: ["resolved", "closed"] },
+          status: { $nin: ["resolved", "closed", "withdrawn"] },
           assignedOfficeRef: { $ne: null },
         },
       },

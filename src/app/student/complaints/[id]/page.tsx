@@ -9,6 +9,7 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { RatingForm } from "@/components/student/RatingForm";
+import { EditWithdrawComplaint } from "@/components/student/EditWithdrawComplaint";
 import type { ComplaintStatus } from "@/lib/constants";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
 import { CopyButton } from "@/components/shared/CopyButton";
@@ -68,6 +69,15 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
               {c.description}
             </p>
           </div>
+
+          {c.status === "submitted" && (
+            <EditWithdrawComplaint
+              complaintId={String(c._id)}
+              ticketNumber={c.ticketNumber}
+              initialTitle={c.title}
+              initialDescription={c.description}
+            />
+          )}
 
           {c.status === "resolved" && c.studentRating === null && (
             <RatingForm complaintId={String(c._id)} />

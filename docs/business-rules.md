@@ -239,6 +239,16 @@ rule can be traced back to real code rather than taken on faith.
 
 ---
 
+## 20. Post-Launch Addition (not part of the original client BR-001–BR-100 set)
+
+| BR | Rule |
+|---|---|
+| BR-101 | The submitting student may edit a complaint's title and description, or withdraw it outright, for as long as it remains in the `submitted` status — i.e. before any staff member has picked it up. Priority is deliberately excluded from student editing, consistent with BR-022/BR-037 (it's inherited from the category, never chosen or edited by the student) — the edit endpoint silently drops a `priority` field if one is sent. Once the complaint leaves `submitted` (assigned, in progress, etc.), neither editing nor withdrawing is available to the student, in the UI or at the API. Withdrawing is a soft, terminal state (`withdrawn`) — the record and its history are kept, never hard-deleted, consistent with BR-045 — and a withdrawn complaint cannot be assigned, reassigned, or otherwise revived by staff/dean/admin. |
+
+*Sources: `src/features/complaints/services/status-transitions.service.ts`, `src/features/complaints/schemas/complaint.schema.ts`, `src/app/api/complaints/[id]/route.ts`, `src/app/api/complaints/[id]/assign/route.ts`, `src/components/student/EditWithdrawComplaint.tsx`, `tests/e2e/edit-withdraw-complaint.spec.ts`.*
+
+---
+
 ## Configurable Thresholds (Environment Variables)
 
 A subset of the rules above specify "a configurable number/format" rather

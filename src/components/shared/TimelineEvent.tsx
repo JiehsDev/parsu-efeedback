@@ -13,6 +13,8 @@ const EVENT_LABELS: Record<string, string> = {
   reopened: "Reopened",
   closed: "Closed",
   rated: "Rated by student",
+  edited: "Details updated by student",
+  withdrawn: "Withdrawn by student",
 };
 
 export function TimelineEvent({ event }: { event: any }) {

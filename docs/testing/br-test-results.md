@@ -6,8 +6,8 @@ First full run: `npx vitest run` — 30 files / 152 tests — 149 passed, 3 fail
 First full run: `npx playwright test` — 12 spec files / 55 tests — 43 passed, 11 failed, 1 skipped.
 
 **All 9 failures were fixed and reverified.** Latest full run:
-`npx vitest run` — 30 files / 152 tests — **152 passed**.
-`npx playwright test` — 12 spec files / 55 tests — **54 passed, 1 skipped**.
+`npx vitest run` — 30 files / 153 tests — **153 passed**.
+`npx playwright test` — 13 spec files / 58 tests — **57 passed, 1 skipped**.
 
 ## Summary (100 rules)
 
@@ -57,3 +57,11 @@ While reverifying, `tests/e2e/complaint-status-lifecycle.spec.ts`'s no-op-transi
 ## Full per-BR list
 
 See `docs/testing/br-traceability.md` for the complete BR-001–BR-100 table with test type, exact file location, and status per rule.
+
+## BR-101 — new business rule, added after the initial 100-rule pass
+
+Per user request: "student can edit or delete a complaint until it is picked up by staff." Implemented as a soft `withdrawn` status (not a hard delete, consistent with BR-045's "never delete complaints" principle) plus title/description/priority editing, both gated to the submitting student and only while the complaint is still `submitted`. See `docs/business-rules.md` §20 for the full rule text and `tests/e2e/edit-withdraw-complaint.spec.ts` / the extended `status-transitions.service.test.ts` for coverage. Verified ✅ passing in the full suite run alongside BR-001–BR-100.
+
+Two related gaps were caught and fixed while implementing this (not separate BRs, just consequences of introducing the new terminal status):
+- `AssignSelfButton` (staff "Pick Up This Complaint") and the assign API route had no status guard at all — any complaint with no `assignedStaffRef` could be "picked up" regardless of status. A withdrawn complaint would have slipped through. Fixed by rejecting `status === "withdrawn"` in `src/app/api/complaints/[id]/assign/route.ts`, and hiding the now-pointless button/form in the staff and dean complaint-detail pages.
+- Every "active work" count/query across staff, QA, and admin dashboards (`status: { $nin: ["resolved", "closed"] }`, 13 occurrences) needed `"withdrawn"` added to that exclusion list, or withdrawn complaints would have inflated "unassigned"/"overdue"/"needs attention" counts despite being inert.

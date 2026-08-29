@@ -73,7 +73,7 @@ export default async function StaffSlaPage() {
 
   const complaints = await Complaint.find({
     assignedOfficeRef: officeRef,
-    status: { $nin: ["resolved", "closed"] },
+    status: { $nin: ["resolved", "closed", "withdrawn"] },
     isArchived: false,
   })
     .sort({ slaResolutionDueAt: 1 })

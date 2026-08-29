@@ -18,7 +18,11 @@ export const OPEN_STATUSES = [
   "escalated",
 ] as const satisfies readonly ComplaintStatus[];
 
-export const DONE_STATUSES = ["resolved", "closed"] as const satisfies readonly ComplaintStatus[];
+export const DONE_STATUSES = [
+  "resolved",
+  "closed",
+  "withdrawn",
+] as const satisfies readonly ComplaintStatus[];
 
 // Priority is shown by exception only. Every complaint has one, but "low"
 // and "medium" are the overwhelming majority and flagging them would just

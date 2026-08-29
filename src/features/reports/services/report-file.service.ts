@@ -10,7 +10,8 @@ const COLUMNS = [
   { key: "priority", label: "Priority" },
   { key: "officeName", label: "Office" },
   { key: "categoryName", label: "Category" },
-  { key: "studentName", label: "Student" },
+  { key: "studentId", label: "Student ID" },
+  { key: "studentCollege", label: "College" },
   { key: "submittedAt", label: "Submitted" },
   { key: "resolvedAt", label: "Resolved" },
   { key: "slaCompliant", label: "SLA Met" },
@@ -54,7 +55,7 @@ export async function generatePdf(rows: ReportRow[], title: string): Promise<Buf
     doc.fontSize(9).text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
     doc.moveDown(1.5);
 
-    const colWidths = [90, 140, 70, 60, 110, 110, 110, 70, 70, 55];
+    const colWidths = [90, 140, 70, 60, 100, 100, 70, 90, 65, 65, 50];
     const startX = doc.page.margins.left;
     let y = doc.y;
 

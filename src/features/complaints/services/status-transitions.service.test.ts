@@ -35,4 +35,12 @@ describe("status-transitions.service — BR-040/041/043", () => {
     expect(isValidTransition("in_progress", "escalated")).toBe(true);
     expect(isValidTransition("escalated", "in_progress")).toBe(true);
   });
+
+  it("BR-101: allows withdrawing only from submitted, and withdrawn is terminal", () => {
+    expect(isValidTransition("submitted", "withdrawn")).toBe(true);
+    expect(isValidTransition("assigned", "withdrawn")).toBe(false);
+    expect(isValidTransition("in_progress", "withdrawn")).toBe(false);
+    expect(isValidTransition("withdrawn", "in_progress")).toBe(false);
+    expect(isValidTransition("withdrawn", "submitted")).toBe(false);
+  });
 });

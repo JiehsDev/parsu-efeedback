@@ -19,7 +19,10 @@ export interface ReportRow {
   priority: string;
   officeName: string;
   categoryName: string;
-  studentName: string;
+  // Student identity is kept out of reports — ID + college only, not
+  // name, so an exported file reads a little more anonymous.
+  studentId: string;
+  studentCollege: string;
   submittedAt: string;
   resolvedAt: string;
   slaCompliant: string;
@@ -32,9 +35,29 @@ export interface ReportRow {
 export async function queryReportData(filters: ReportFilters): Promise<ReportRow[]> {
   const pipeline: any[] = [
     {
-      $lookup: { from: "users", localField: "studentRef", foreignField: "_id", as: "student" },
+      // Projected here (not just hidden downstream) so the student's name
+      // never leaves the database in the first place — only the ID and
+      // college feed into the report.
+      $lookup: {
+        from: "users",
+        let: { studentId: "$studentRef" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$studentId"] } } },
+          { $project: { employeeOrStudentId: 1, collegeRef: 1 } },
+        ],
+        as: "student",
+      },
     },
     { $unwind: "$student" },
+    {
+      $lookup: {
+        from: "offices",
+        localField: "student.collegeRef",
+        foreignField: "_id",
+        as: "studentCollege",
+      },
+    },
+    { $unwind: { path: "$studentCollege", preserveNullAndEmptyArrays: true } },
     {
       $lookup: {
         from: "offices",
@@ -88,7 +111,8 @@ export async function queryReportData(filters: ReportFilters): Promise<ReportRow
       priority: c.priority,
       officeName: c.office?.name ?? "—",
       categoryName: c.category?.name ?? "—",
-      studentName: `${c.student.firstName} ${c.student.lastName}`,
+      studentId: c.student.employeeOrStudentId ?? "—",
+      studentCollege: c.studentCollege?.name ?? "—",
       submittedAt: new Date(c.submittedAt).toLocaleDateString(),
       resolvedAt: c.resolvedAt ? new Date(c.resolvedAt).toLocaleDateString() : "—",
       slaCompliant,

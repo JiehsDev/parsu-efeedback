@@ -40,6 +40,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // BR-101: a withdrawn complaint is inert — the student pulled it before
+  // anyone acted on it, so it must never become assignable/pickable again.
+  if (complaint.status === "withdrawn") {
+    return NextResponse.json(
+      { error: "This complaint was withdrawn by the student and cannot be assigned." },
+      { status: 400 },
+    );
+  }
+
   const { assignedOfficeRef, assignedStaffRef } = parsed.data;
 
   // --- Scope checks per role ---
