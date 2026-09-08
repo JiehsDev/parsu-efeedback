@@ -8,7 +8,7 @@
 // unreachable in this environment), not a BR-078/079/080/081/082
 // enforcement failure — those rules are about what the app does with a
 // successfully generated report, not about R2 connectivity.
-import { staffTest, studentTest, deanTest, expect } from "./fixtures";
+import { staffTest, studentTest, expect } from "./fixtures";
 import { loginAs } from "./helpers";
 import type { APIRequestContext } from "@playwright/test";
 
@@ -86,26 +86,5 @@ studentTest("BR-078: a student has no report-generation access (no UI entry poin
   expect(res.status()).toBe(403);
 });
 
-deanTest(
-  "BR-080/081: a dean's report filters are forcibly scoped to their own college even if a different collegeRef is requested",
-  async ({ request }) => {
-    const session = await request.get("/api/auth/session").then((r) => r.json());
-    const deanCollegeRef = session.user.collegeRef;
-    const bogusCollegeRef = "000000000000000000000000";
-
-    const res = await generateReport(request, "csv", { collegeRef: bogusCollegeRef });
-    if (res.status() === 500) {
-      deanTest.skip(true, "R2 appears unreachable in this environment — cannot generate a report to check dean college-scoping.");
-      return;
-    }
-    expect(res.ok()).toBeTruthy();
-    const { report } = await res.json();
-
-    const listRes = await request.get("/api/reports/export");
-    const { reports } = await listRes.json();
-    const stored = reports.find((r: any) => r._id === report._id);
-    expect(stored).toBeTruthy();
-    expect(stored.filters.collegeRef).not.toBe(bogusCollegeRef);
-    expect(stored.filters.collegeRef).toBe(deanCollegeRef);
-  },
-);
+// VPAA/VPAF/OSAS report-generation scoping is covered alongside their
+// Offices/Users/Complaints scoping — see the admin-scope e2e coverage.

@@ -137,30 +137,30 @@ export async function GET() {
     const primaryCollege = await Office.create({
       name: "College of Engineering & Computational Sciences",
       code: "CECS",
-      type: "college",
+      type: "college_office",
       parentOffice: null,
     });
 
     // More colleges so college-comparison analytics has something to
     // compare — the original seed only ever created one.
     const otherColleges = await Office.insertMany([
-      { name: "College of Education", code: "CED", type: "college", parentOffice: null },
-      { name: "College of Business & Management", code: "CBM", type: "college", parentOffice: null },
-      { name: "College of Science", code: "COS", type: "college", parentOffice: null },
-      { name: "College of Arts and Humanities", code: "CAH", type: "college", parentOffice: null },
+      { name: "College of Education", code: "CED", type: "college_office", parentOffice: null },
+      { name: "College of Business & Management", code: "CBM", type: "college_office", parentOffice: null },
+      { name: "College of Science", code: "COS", type: "college_office", parentOffice: null },
+      { name: "College of Arts and Humanities", code: "CAH", type: "college_office", parentOffice: null },
     ]);
     const colleges = [primaryCollege, ...otherColleges];
 
     const registrarOffice = await Office.create({
       name: "Office of the University Registrar",
       code: "OUR",
-      type: "service_office",
+      type: "university_office",
       parentOffice: null,
     });
     const osasOffice = await Office.create({
       name: "Office of the University OSAS",
       code: "OSAS",
-      type: "service_office",
+      type: "university_office",
       parentOffice: null,
     });
 
@@ -172,7 +172,7 @@ export async function GET() {
     const qaOffice = await Office.create({
       name: "Quality Assurance Office",
       code: "QAO",
-      type: "service_office",
+      type: "university_office",
       parentOffice: null,
     });
 
@@ -182,7 +182,7 @@ export async function GET() {
     const generalServicesOffice = await Office.create({
       name: "General Services Office",
       code: "GSO",
-      type: "service_office",
+      type: "university_office",
       parentOffice: null,
     });
 
@@ -407,17 +407,6 @@ export async function GET() {
         isActive: true,
       },
       {
-        firstName: "Dr. Juan",
-        lastName: "Cruz",
-        email: "dean@parsu.edu.ph",
-        passwordHash: commonPasswordHash,
-        role: "college_dean",
-        employeeOrStudentId: "EMP-0015",
-        collegeRef: primaryCollege._id, // ← was officeRef, now collegeRef
-        tokenVersion: 1,
-        isActive: true,
-      },
-      {
         firstName: "Elena",
         lastName: "Reyes",
         email: "qa@parsu.edu.ph",
@@ -441,6 +430,42 @@ export async function GET() {
         isActive: true,
       },
       {
+        firstName: "Dr. Juan",
+        lastName: "Cruz",
+        email: "vpaa@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "vpaa",
+        employeeOrStudentId: "EMP-0015",
+        officeRef: null,
+        collegeRef: null,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Rosario",
+        lastName: "Villanueva",
+        email: "vpaf@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "vpaf",
+        employeeOrStudentId: "EMP-0016",
+        officeRef: null,
+        collegeRef: null,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Cristina",
+        lastName: "Bautista",
+        email: "osas@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "osas",
+        employeeOrStudentId: "EMP-0017",
+        officeRef: null,
+        collegeRef: null,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
         firstName: "Inactive",
         lastName: "Test",
         email: "inactive@parsu.edu.ph",
@@ -453,8 +478,8 @@ export async function GET() {
     ];
 
     // A wide student pool spread across every college so college-comparison
-    // and per-college dean views have real volume to show, not just the
-    // one hand-picked "student@parsu.edu.ph" account.
+    // and VPAA's college-office views have real volume to show, not just
+    // the one hand-picked "student@parsu.edu.ph" account.
     const STUDENTS_PER_COLLEGE = 7;
     let studentSeq = 20001;
     const generatedStudents: (typeof baseUsers)[number][] = [];

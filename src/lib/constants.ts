@@ -8,17 +8,23 @@
  */
 
 // --- Roles (BR-001, BR-010) ---
+// vpaa/vpaf/osas are scoped sub-admin roles: same /admin/** pages/routes as
+// administrator, but data-level scoped to college offices, university
+// offices, and students respectively (see src/lib/admin-scope.ts).
+// administrator remains unrestricted everywhere (BR-010/096).
 export const USER_ROLES = [
   "student",
   "office_staff",
-  "college_dean",
   "qa_office",
   "administrator",
+  "vpaa",
+  "vpaf",
+  "osas",
 ] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
-// --- Offices (unified college + service-office hierarchy) ---
-export const OFFICE_TYPES = ["college", "service_office"] as const;
+// --- Offices (unified college + university-office hierarchy) ---
+export const OFFICE_TYPES = ["college_office", "university_office"] as const;
 export type OfficeType = (typeof OFFICE_TYPES)[number];
 
 // --- Priority (used by categories, complaints, sla_rules) ---

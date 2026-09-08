@@ -1,5 +1,5 @@
 // tests/e2e/analytics.spec.ts — BR-089, BR-095
-import { studentTest, deanTest, qaTest, expect } from "./fixtures";
+import { studentTest, vpaaTest, qaTest, expect } from "./fixtures";
 
 studentTest(
   "BR-089/095: a student has no analytics access — no UI entry point, and 403 at the API",
@@ -12,21 +12,13 @@ studentTest(
   },
 );
 
-deanTest("BR-089/094: a dean's analytics is scoped to their own college only (no institution-wide comparison)", async ({
-  request,
-  page,
-}) => {
-  const res = await request.get("/api/analytics/trends");
-  expect(res.ok()).toBeTruthy();
-  const data = await res.json();
-  // Only qa_office/administrator get an institution-wide college comparison
-  // (see src/app/api/analytics/trends/route.ts) — a dean must never see it,
-  // since their whole view is pre-filtered to one college already.
-  expect(data.collegeComparison).toBeNull();
-
-  await page.goto("/dean/analytics");
-  await expect(page.getByRole("heading", { name: "Analytics" })).toBeVisible();
-});
+vpaaTest(
+  "BR-089: a scoped sub-admin (vpaa) gets 403 from the institution-wide analytics endpoint — its analytics come from the scoped /admin/dashboard instead",
+  async ({ request }) => {
+    const res = await request.get("/api/analytics/trends");
+    expect(res.status()).toBe(403);
+  },
+);
 
 qaTest(
   "BR-095: QA sees institution-wide analytics data but has no complaint-mutation rights",

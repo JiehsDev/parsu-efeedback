@@ -1,20 +1,27 @@
 // src/app/api/admin/offices/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { requireAdmin } from "@/lib/api-guards";
+import { requireScopedAdmin } from "@/lib/api-guards";
 import { Office } from "@/models/Office";
 import { createOfficeSchema } from "@/features/admin/schemas/office.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import { officeFilterForScope } from "@/lib/admin-scope";
 
 export async function GET(req: NextRequest) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
+
+  // osas has no Offices access at all — not even read.
+  if (scope.kind === "student") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await connectToDatabase();
 
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { ...officeFilterForScope(scope) };
   if (type) filter.type = type;
 
   const offices = await Office.find(filter).sort({ name: 1 }).lean();
@@ -22,8 +29,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
+
+  if (scope.kind === "student") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await connectToDatabase();
 
@@ -31,6 +43,18 @@ export async function POST(req: NextRequest) {
   const parsed = createOfficeSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  // vpaa/vpaf may only create an office in their own category — an admin
+  // (scope.kind "all") can create either.
+  if (
+    (scope.kind === "college_office" || scope.kind === "university_office") &&
+    parsed.data.type !== scope.kind
+  ) {
+    return NextResponse.json(
+      { error: "You can only create offices in your own office category" },
+      { status: 403 },
+    );
   }
 
   const existing = await Office.findOne({ code: parsed.data.code });

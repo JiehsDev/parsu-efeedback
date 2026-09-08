@@ -13,7 +13,7 @@ export const passwordSchema = z
 // The public /register page is self-registration for students only
 // (BR-008/015: a student belongs to exactly one college). BR-011
 // ("only administrators may create... user accounts") governs
-// staff/dean/qa/admin accounts, which are provisioned from
+// staff/qa/admin/vpaa/vpaf/osas accounts, which are provisioned from
 // /admin/users (Phase 7) instead — see docs/schema-reconciliation.md
 // note added alongside this file for the reasoning.
 export const registerSchema = z

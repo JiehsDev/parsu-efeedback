@@ -4,6 +4,10 @@ import { Types } from "mongoose";
 
 export interface ReportFilters {
   officeRef?: string | null;
+  // Forced by the API route for vpaa/vpaf (their office category's office
+  // ids) — narrower than a single officeRef when the caller hasn't also
+  // picked one specific office. Never set by the client directly.
+  officeRefIn?: string[] | null;
   collegeRef?: string | null;
   categoryRef?: string | null;
   dateFrom?: string | null;
@@ -79,7 +83,11 @@ export async function queryReportData(filters: ReportFilters): Promise<ReportRow
   ];
 
   const match: Record<string, unknown> = { isArchived: false };
-  if (filters.officeRef) match.assignedOfficeRef = new Types.ObjectId(filters.officeRef);
+  if (filters.officeRef) {
+    match.assignedOfficeRef = new Types.ObjectId(filters.officeRef);
+  } else if (filters.officeRefIn?.length) {
+    match.assignedOfficeRef = { $in: filters.officeRefIn.map((id) => new Types.ObjectId(id)) };
+  }
   if (filters.collegeRef) match["student.collegeRef"] = new Types.ObjectId(filters.collegeRef);
   if (filters.categoryRef) match.categoryRef = new Types.ObjectId(filters.categoryRef);
   if (filters.status) match.status = filters.status;

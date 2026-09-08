@@ -23,16 +23,17 @@ export const createUserSchema = z
         path: ["officeRef"],
       });
     }
-    // BR-008/015: students and deans both need collegeRef — a dean is
-    // always scoped to exactly one college, never office-scoped like
-    // staff/QA are.
-    if (["student", "college_dean"].includes(data.role) && !data.collegeRef) {
+    // BR-008/015: a student is always scoped to exactly one college.
+    if (data.role === "student" && !data.collegeRef) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "collegeRef is required for this role",
         path: ["collegeRef"],
       });
     }
+    // administrator/vpaa/vpaf/osas are not tied to a single office/college
+    // — vpaa/vpaf/osas operate at the office-category/student scope
+    // instead (see src/lib/admin-scope.ts), not a single Office document.
   });
 
 export const updateUserSchema = z.object({

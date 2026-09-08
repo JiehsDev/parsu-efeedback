@@ -7,16 +7,16 @@ import { Attachment } from "@/models/Attachment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { createAttachmentSchema } from "@/features/attachments/schemas/attachment.schema";
 import { getSettings } from "@/features/settings/services/settings.service";
+import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 
 async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
-  const { role, id, officeRef, collegeRef } = session.user;
+  const { role, id, officeRef } = session.user;
   if (role === "administrator" || role === "qa_office") return true;
   if (role === "student") return String(complaint.studentRef) === id;
   if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
-  if (role === "college_dean") {
-    const { User } = await import("@/models/User");
-    const student = await User.findById(complaint.studentRef).lean();
-    return String((student as any)?.collegeRef) === collegeRef;
+  // QA-style access, scoped to each sub-admin's own category.
+  if (role === "vpaa" || role === "vpaf" || role === "osas") {
+    return isComplaintInAdminScope(getAdminScope(role), complaint);
   }
   return false;
 }

@@ -26,7 +26,7 @@ export function errorAlert(page: Page) {
  * Logs `page` into the real /login UI as `email` (every seeded account
  * shares PASSWORD, see src/app/api/dev/seed/route.ts) and waits for the
  * post-login redirect. Use this instead of a storageState fixture when a
- * spec needs an account not covered by tests/e2e/fixtures.ts's five
+ * spec needs an account not covered by tests/e2e/fixtures.ts's seven
  * pre-authenticated roles — e.g. a specific generated student, to control
  * which college/office a complaint routes/scopes to.
  */
@@ -35,17 +35,17 @@ export async function loginAs(page: Page, email: string, password = PASSWORD) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/(dashboard|student|staff|dean|qa|admin)/, { timeout: 30_000 });
+  await page.waitForURL(/\/(dashboard|student|staff|qa|admin)/, { timeout: 30_000 });
 }
 
 /**
  * Seed-generated students (src/app/api/dev/seed/route.ts, `generatedStudents`)
  * are created in a fixed order: STUDENTS_PER_COLLEGE (7) per college, in the
- * `colleges` array order [CECS (primary, dean@/student@'s college), CED,
- * CBM, COS, CAH], starting at studentSeq 20001. This resolves the first
- * generated student's email for a given 0-based college index, so specs
- * needing "a student definitely NOT in the dean's college" (index 0 = CECS)
- * can reach one deterministically without querying the DB directly.
+ * `colleges` array order [CECS (primary, student@'s college), CED, CBM, COS,
+ * CAH], starting at studentSeq 20001. This resolves the first generated
+ * student's email for a given 0-based college index, so specs needing "a
+ * student definitely NOT in CECS" (index 0) can reach one deterministically
+ * without querying the DB directly.
  */
 export function generatedStudentEmail(collegeIndex: number, offsetInCollege = 0): string {
   const seqStart = 20001 + collegeIndex * 7 + offsetInCollege;

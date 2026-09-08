@@ -8,7 +8,7 @@ import { Office } from "@/models/Office";
 export async function GET() {
   await connectToDatabase();
 
-  const colleges = await Office.find({ type: "college", isActive: true })
+  const colleges = await Office.find({ type: "college_office", isActive: true })
     .select("name code")
     .sort({ name: 1 })
     .lean();

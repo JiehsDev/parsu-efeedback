@@ -14,6 +14,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { AuditLog } from "@/models/AuditLog";
 import { RelativeTime } from "@/components/shared/RelativeTime";
 
@@ -104,6 +105,10 @@ export default async function AuditLogDetailPage({
 }) {
   const { id } = await params;
   if (!Types.ObjectId.isValid(id)) notFound();
+
+  // Audit Logs are administrator-only — not exposed to vpaa/vpaf/osas.
+  const session = await auth();
+  if (session?.user.role !== "administrator") notFound();
 
   await connectToDatabase();
   const log = await AuditLog.findById(id)

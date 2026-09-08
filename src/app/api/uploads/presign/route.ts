@@ -8,8 +8,8 @@ import { r2Client, isR2Configured } from "@/lib/r2";
 import { env } from "@/lib/env";
 import { Complaint } from "@/models/Complaint";
 import { presignUploadSchema } from "@/features/attachments/schemas/attachment.schema";
-import { User } from "@/models";
 import { getSettings } from "@/features/settings/services/settings.service";
+import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 
 export async function POST(req: NextRequest) {
   if (!isR2Configured() || !r2Client) {
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
   }
 
-  const { role, id: userId, officeRef, collegeRef } = session.user;
+  const { role, id: userId, officeRef } = session.user;
   let canAccess = false;
   if (role === "administrator" || role === "qa_office") {
     canAccess = true;
@@ -66,9 +66,9 @@ export async function POST(req: NextRequest) {
     canAccess = String((complaint as any).studentRef) === userId;
   } else if (role === "office_staff") {
     canAccess = String((complaint as any).assignedOfficeRef) === officeRef;
-  } else if (role === "college_dean") {
-    const student = await User.findById((complaint as any).studentRef).lean();
-    canAccess = Boolean(student) && String((student as any).collegeRef) === collegeRef;
+  } else if (role === "vpaa" || role === "vpaf" || role === "osas") {
+    // QA-style access, scoped to each sub-admin's own category.
+    canAccess = await isComplaintInAdminScope(getAdminScope(role), complaint as any);
   }
   if (!canAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -115,7 +115,7 @@ adminTest.describe("Complaint status lifecycle", () => {
       await studentContext.close();
 
       // --- 4. Admin reopens the closed complaint (no UI control for this —
-      // only staff/dean have a status form, and it's only ever visible when
+      // only staff have a status form, and it's only ever visible when
       // *that same user* is the assigned staff member — so this goes
       // straight through the API, same as the app's own admin surface
       // would have to). BR-043/044: reopenCount increments and is visible

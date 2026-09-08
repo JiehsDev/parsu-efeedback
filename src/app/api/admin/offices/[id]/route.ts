@@ -1,23 +1,38 @@
 // src/app/api/admin/offices/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { requireAdmin } from "@/lib/api-guards";
+import { requireScopedAdmin } from "@/lib/api-guards";
 import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { updateOfficeSchema } from "@/features/admin/schemas/office.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
+function outOfScope(scope: { kind: string }, office: { type: string } | null): boolean {
+  if (!office) return false;
+  return (
+    (scope.kind === "college_office" || scope.kind === "university_office") &&
+    office.type !== scope.kind
+  );
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
+  if (scope.kind === "student") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await connectToDatabase();
   const { id } = await params;
   const office = await Office.findById(id).lean();
   if (!office) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (outOfScope(scope, office as any)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   return NextResponse.json({ office });
 }
@@ -26,8 +41,12 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
+  if (scope.kind === "student") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await connectToDatabase();
   const { id } = await params;
@@ -40,6 +59,20 @@ export async function PATCH(
 
   const before = await Office.findById(id).lean();
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (outOfScope(scope, before as any)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  // vpaa/vpaf may not move an office out of their own category.
+  if (
+    (scope.kind === "college_office" || scope.kind === "university_office") &&
+    parsed.data.type !== undefined &&
+    parsed.data.type !== scope.kind
+  ) {
+    return NextResponse.json(
+      { error: "You can only manage offices in your own office category" },
+      { status: 403 },
+    );
+  }
 
   // Prevent an office from being its own ancestor
   if (parsed.data.parentOffice === id) {
@@ -69,14 +102,21 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
+  if (scope.kind === "student") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await connectToDatabase();
   const { id } = await params;
 
   const before = await Office.findById(id).lean();
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (outOfScope(scope, before as any)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Block deletion if any user still references this office — orphaning
   // officeRef/collegeRef would break RBAC scoping (architecture.md §6)

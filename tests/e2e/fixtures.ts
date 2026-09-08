@@ -3,8 +3,8 @@
 // Role-scoped `test` wrappers, each pre-configured with the storageState
 // saved by tests/e2e/auth.setup.ts. Import the one matching the role a spec
 // needs to act as (a single spec file can import more than one — e.g.
-// assign-scoping.spec.ts needs both staffTest and deanTest to prove
-// cross-office/cross-college scoping).
+// assign-scoping.spec.ts needs both staffTest and vpaaTest to prove
+// cross-office/cross-college-office scoping).
 //
 // `storageState` is a built-in Playwright "option" fixture — overriding it
 // with a plain path here is the documented way to give each exported `test`
@@ -23,8 +23,10 @@ function roleTest(fileName: string) {
 
 export const studentTest = roleTest("student.json");
 export const staffTest = roleTest("staff.json");
-export const deanTest = roleTest("dean.json");
 export const qaTest = roleTest("qa.json");
 export const adminTest = roleTest("admin.json");
+export const vpaaTest = roleTest("vpaa.json");
+export const vpafTest = roleTest("vpaf.json");
+export const osasTest = roleTest("osas.json");
 
 export { expect };

@@ -15,11 +15,11 @@ import { submitComplaint, loginAs, generatedStudentEmail } from "./helpers";
 
 adminTest.describe("Assignment scoping", () => {
   adminTest(
-    "BR-047/048/049/050/051/052: same-office/college assignment succeeds, cross-office/college is 403, admin is unrestricted, and reassignment produces distinct history entries",
+    "BR-047/048/049/050/051/052: same-office assignment succeeds, cross-office is 403, admin is unrestricted, and reassignment produces distinct history entries",
     async ({ page: adminPage, browser, request }) => {
       // --- Complaint A: filed by student@parsu.edu.ph (CECS college),
       // category "Grade Concern" routes to the Registrar's office — same
-      // office as staff@parsu.edu.ph, same college as dean@parsu.edu.ph. ---
+      // office as staff@parsu.edu.ph. ---
       const studentContext = await browser.newContext({
         storageState: "tests/e2e/.auth/student.json",
       });
@@ -80,24 +80,71 @@ adminTest.describe("Assignment scoping", () => {
       expect(crossOfficeRes.status()).toBe(403);
       await staffContext.close();
 
-      // --- Dean (CECS college) reassigns complaint A within their college:
-      // moves it from the Registrar's office to General Services — allowed,
-      // since the dean's scope is the *student's* college, not the office. ---
-      const deanContext = await browser.newContext({ storageState: "tests/e2e/.auth/dean.json" });
-      const deanPage = await deanContext.newPage();
-      await deanPage.goto(`/dean/complaints/${complaintA}`);
-      // ReassignForm's "Office" <label> isn't programmatically associated
-      // with its Select trigger (no htmlFor/id) — it's the first of the
-      // form's two comboboxes (Office, then Staff), so target by order.
-      await deanPage.getByRole("combobox").first().click();
-      await deanPage.getByRole("option", { name: "General Services Office", exact: true }).click();
-      await deanPage.getByPlaceholder("Reason for reassignment (optional)").fill("e2e-dean-reassign");
-      await deanPage.getByRole("button", { name: "Reassign" }).click();
-      await expect(deanPage.getByText("Reassigned").first()).toBeVisible();
+      // --- VPAA reassigns a complaint routed to a college office: moves it
+      // between two college offices — allowed, since both stay within
+      // VPAA's office category (college_office). "Faculty & Teaching
+      // Performance" routes to CECS (a college_office) per the seed data. ---
+      const collegeComplaintStudentContext = await browser.newContext({
+        storageState: "tests/e2e/.auth/student.json",
+      });
+      const collegeComplaintStudentPage = await collegeComplaintStudentContext.newPage();
+      const { id: collegeComplaint } = await submitComplaint(
+        collegeComplaintStudentPage,
+        "Faculty & Teaching Performance",
+        `E2E assign-scope college ${Date.now()}`,
+        "Automated E2E test complaint for VPAA office-category scoping. Safe to ignore.",
+      );
+      await collegeComplaintStudentContext.close();
 
-      // --- Dean cross-college attempt: a student from a DIFFERENT college
-      // (index 1 = College of Education, not CECS) files a complaint; the
-      // dean (CECS) is 403'd trying to touch it. ---
+      const vpaaContext = await browser.newContext({ storageState: "tests/e2e/.auth/vpaa.json" });
+      const officesForVpaaRes = await vpaaContext.request.get("/api/offices");
+      const { offices: officesForVpaa } = await officesForVpaaRes.json();
+      const primaryCollegeOffice = officesForVpaa.find(
+        (o: any) => o.name === "College of Engineering & Computational Sciences",
+      );
+      const otherCollegeOffice = officesForVpaa.find(
+        (o: any) => o.type === "college_office" && o.name !== "College of Engineering & Computational Sciences",
+      );
+      expect(primaryCollegeOffice).toBeTruthy();
+      expect(otherCollegeOffice).toBeTruthy();
+
+      // First human action: VPAA assigns a CECS staff member (no office
+      // change) — an "assigned" timeline entry, not "reassigned".
+      const staffInCollegeRes = await vpaaContext.request.get(
+        `/api/offices/${primaryCollegeOffice._id}/staff`,
+      );
+      const { staff: staffInCollege } = await staffInCollegeRes.json();
+      expect(staffInCollege.length).toBeGreaterThan(0);
+
+      const vpaaAssignStaffRes = await vpaaContext.request.post(
+        `/api/complaints/${collegeComplaint}/assign`,
+        { data: { assignedStaffRef: staffInCollege[0]._id } },
+      );
+      expect(vpaaAssignStaffRes.ok()).toBeTruthy();
+
+      // Second human action: VPAA moves the complaint to a different
+      // college office — allowed, since both stay within VPAA's office
+      // category (college_office) — a "reassigned" timeline entry.
+      const vpaaReassignRes = await vpaaContext.request.post(
+        `/api/complaints/${collegeComplaint}/assign`,
+        { data: { assignedOfficeRef: otherCollegeOffice._id, message: "e2e-vpaa-reassign" } },
+      );
+      expect(vpaaReassignRes.ok()).toBeTruthy();
+      const { complaint: vpaaAssigned } = await vpaaReassignRes.json();
+      expect(String(vpaaAssigned.assignedOfficeRef)).toBe(otherCollegeOffice._id);
+
+      // --- VPAA cross-category attempt: complaint B is assigned to a
+      // university_office (General Services) — outside VPAA's office
+      // category, so this is 403'd. ---
+      const crossCategoryRes = await vpaaContext.request.post(`/api/complaints/${complaintB}/assign`, {
+        data: { assignedStaffRef: "irrelevant-since-scope-check-runs-first" },
+      });
+      expect(crossCategoryRes.status()).toBe(403);
+      await vpaaContext.close();
+
+      // --- A student from a different college (index 1 = College of
+      // Education, not CECS) files a complaint routed to a university
+      // office — used below to prove admin's unrestricted access. ---
       const otherCollegeStudentEmail = generatedStudentEmail(1);
       const otherContext = await browser.newContext();
       const otherPage = await otherContext.newPage();
@@ -106,21 +153,12 @@ adminTest.describe("Assignment scoping", () => {
         otherPage,
         "Campus Wi-Fi & IT Infrastructure",
         `E2E assign-scope C ${Date.now()}`,
-        "Automated E2E test complaint for cross-college scoping. Safe to ignore.",
+        "Automated E2E test complaint for admin unrestricted-access scoping. Safe to ignore.",
       );
       await otherContext.close();
 
-      await deanPage.goto(`/dean/complaints/${complaintC}`);
-      await expect(deanPage.getByText("Page not found")).toBeVisible();
-
-      const crossCollegeRes = await deanPage.request.post(`/api/complaints/${complaintC}/assign`, {
-        data: { assignedStaffRef: "irrelevant-since-scope-check-runs-first" },
-      });
-      expect(crossCollegeRes.status()).toBe(403);
-      await deanContext.close();
-
-      // --- Admin is unrestricted: reassigns complaint C (cross-college,
-      // never touched by the dean) to an arbitrary office. ---
+      // --- Admin is unrestricted: reassigns complaint C to an arbitrary
+      // office regardless of category. ---
       const officesRes = await adminPage.request.get("/api/offices");
       const { offices } = await officesRes.json();
       const qaOffice = offices.find((o: any) => o.name === "Quality Assurance Office");
@@ -133,18 +171,18 @@ adminTest.describe("Assignment scoping", () => {
       const { complaint: adminAssigned } = await adminAssignRes.json();
       expect(String(adminAssigned.assignedOfficeRef)).toBe(qaOffice._id);
 
-      // --- BR-047/051/052: complaint A now has two distinct human
-      // assignment actions (staff self-assign, then dean reassign) — two
-      // separate timeline entries, proving two separate, immutable
-      // Assignment records rather than one mutated in place. ---
-      const finalRes = await adminPage.request.get(`/api/complaints/${complaintA}`);
+      // --- BR-047/051/052: the college complaint now has two distinct
+      // human assignment actions (VPAA staff-assign, then VPAA office
+      // reassign) — two separate timeline entries, proving two separate,
+      // immutable Assignment records rather than one mutated in place. ---
+      const finalRes = await adminPage.request.get(`/api/complaints/${collegeComplaint}`);
       const { timeline: finalTimeline } = await finalRes.json();
       const assignmentEvents = finalTimeline.filter(
         (e: any) => e.eventType === "assigned" || e.eventType === "reassigned",
       );
       expect(assignmentEvents.length).toBeGreaterThanOrEqual(2);
-      expect(assignmentEvents[0].eventType).toBe("assigned"); // staff self-assign
-      expect(assignmentEvents[1].eventType).toBe("reassigned"); // dean's office move
+      expect(assignmentEvents[0].eventType).toBe("assigned"); // VPAA staff-assign
+      expect(assignmentEvents[1].eventType).toBe("reassigned"); // VPAA's office move
     },
   );
 });

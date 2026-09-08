@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Archive, Building2, Inbox } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { ComplaintStatus } from "@/lib/constants";
@@ -10,6 +11,7 @@ import { CopyButton } from "@/components/shared/CopyButton";
 import { ListSearchInput } from "@/components/shared/ListSearchInput";
 import { ListSortSelect } from "@/components/shared/ListSortSelect";
 import { escapeRegExp } from "@/lib/utils";
+import { getAdminScope, complaintFilterForScope } from "@/lib/admin-scope";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest first" },
@@ -39,12 +41,17 @@ export default async function AdminComplaintsPage({
   searchParams: Promise<{ status?: string; priority?: string; q?: string; sort?: string; archived?: string }>;
 }) {
   await connectToDatabase();
+  const session = await auth();
+  const scope = getAdminScope(session!.user.role);
   const { status, priority, q, sort, archived } = await searchParams;
   const search = q?.trim();
   const sortOrder = sort === "oldest" ? 1 : -1;
   const showArchived = archived === "1";
 
-  const filter: Record<string, unknown> = { isArchived: showArchived };
+  const filter: Record<string, unknown> = {
+    isArchived: showArchived,
+    ...(await complaintFilterForScope(scope)),
+  };
   if (status) filter.status = status;
   if (priority) filter.priority = priority;
   if (search) {
@@ -88,7 +95,14 @@ export default async function AdminComplaintsPage({
             {showArchived ? "Archived Complaints" : "All Complaints"}
           </h1>
           <p className="mt-1.5 text-sm text-[var(--muted-foreground)]">
-            Institution-wide. {complaints.length} shown.
+            {scope.kind === "college_office"
+              ? "College offices"
+              : scope.kind === "university_office"
+                ? "University offices"
+                : scope.kind === "student"
+                  ? "All complaints"
+                  : "Institution-wide"}
+            . {complaints.length} shown.
           </p>
         </div>
         <Link

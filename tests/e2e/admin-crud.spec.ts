@@ -5,7 +5,7 @@
 // — getByLabel doesn't work here. tests/e2e/helpers.ts's fieldByLabel/
 // selectByLabel walk the DOM the way FormField actually renders (label
 // immediately followed by its field) instead.
-import { adminTest, staffTest, deanTest, expect } from "./fixtures";
+import { adminTest, staffTest, expect } from "./fixtures";
 import { fillFieldByLabel, selectByLabel } from "./helpers";
 
 function uniqueCode(prefix: string) {
@@ -67,7 +67,7 @@ staffTest.describe("Admin CRUD — non-admin API 403s", () => {
     request,
   }) => {
     const res = await request.post("/api/admin/offices", {
-      data: { name: "Should not be created", code: uniqueCode("NOPE"), type: "service_office" },
+      data: { name: "Should not be created", code: uniqueCode("NOPE"), type: "university_office" },
       maxRedirects: 0,
     });
     expect(res.status()).toBe(403);
@@ -152,13 +152,15 @@ adminTest.describe("Admin CRUD — users", () => {
     },
   );
 
-  deanTest("BR-011/097/085: a dean POSTing /api/admin/users directly is 403'd", async ({ request }) => {
+  staffTest("BR-011/097/085: office_staff POSTing /api/admin/users directly is 403'd", async ({
+    request,
+  }) => {
     const res = await request.post("/api/admin/users", {
       data: {
-        employeeOrStudentId: `E2E-DEAN-${Date.now()}`,
+        employeeOrStudentId: `E2E-STAFF-${Date.now()}`,
         firstName: "Should",
         lastName: "NotBeCreated",
-        email: `e2e-dean-attempt-${Date.now()}@parsu.edu.ph`,
+        email: `e2e-staff-attempt-${Date.now()}@parsu.edu.ph`,
         password: "ParSU_test2026",
         role: "office_staff",
         officeRef: "000000000000000000000000",

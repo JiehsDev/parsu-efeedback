@@ -61,8 +61,8 @@ export default async function QaSlaCompliancePage({
     getSlaTrendSeries({ year, month, collegeId: collegeParam || null }),
   ]);
 
-  const colleges = allOffices.filter((o: any) => o.type === "college");
-  const serviceOffices = allOffices.filter((o: any) => o.type === "service_office");
+  const colleges = allOffices.filter((o: any) => o.type === "college_office");
+  const serviceOffices = allOffices.filter((o: any) => o.type === "university_office");
 
   const yearOptions = [currentYear, currentYear - 1, currentYear - 2].map((y) => ({
     value: String(y),

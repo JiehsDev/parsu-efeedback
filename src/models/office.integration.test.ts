@@ -18,7 +18,7 @@ describe("Office model — BR-014/015/019/020", () => {
   it("BR-019: enforces uniqueness case-insensitively (code is stored uppercase)", async () => {
     await Office.create({
       name: "Registrar",
-      type: "service_office",
+      type: "university_office",
       code: "reg-lower",
       isActive: true,
     });
@@ -26,7 +26,7 @@ describe("Office model — BR-014/015/019/020", () => {
     await expect(
       Office.create({
         name: "Registrar Duplicate",
-        type: "service_office",
+        type: "university_office",
         code: "REG-LOWER",
         isActive: true,
       }),
@@ -40,7 +40,7 @@ describe("Office model — BR-014/015/019/020", () => {
     const found = await User.findById(student._id).populate("collegeRef");
     expect(found).not.toBeNull();
     expect((found!.collegeRef as any).name).toBe("College of Science");
-    expect((found!.collegeRef as any).type).toBe("college");
+    expect((found!.collegeRef as any).type).toBe("college_office");
   });
 
   it("BR-020: isActive defaults to true and can be flipped to mark an office inactive", async () => {

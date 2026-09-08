@@ -15,12 +15,14 @@ import {
   UserRound,
 } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { User } from "@/models/User";
 import { Office } from "@/models/Office";
 import { UserStatusToggle } from "@/components/admin/UserStatusToggle";
 import { EditUserButton } from "@/components/admin/EditUserButton";
 import { ForceLogoutButton } from "@/components/admin/ForceLogoutButton";
 import { RelativeTime } from "@/components/shared/RelativeTime";
+import { getAdminScope } from "@/lib/admin-scope";
 
 function getInitials(firstName: string, lastName: string): string {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
@@ -41,6 +43,9 @@ export default async function AdminUserDetailPage({
   if (!Types.ObjectId.isValid(id)) notFound();
 
   await connectToDatabase();
+  const session = await auth();
+  const scope = getAdminScope(session!.user.role);
+
   const user = await User.findById(id)
     .select("-passwordHash")
     .populate("officeRef", "name code type")
@@ -50,6 +55,15 @@ export default async function AdminUserDetailPage({
   if (!user) notFound();
 
   const u = user as any;
+
+  if (scope.kind === "student" && u.role !== "student") notFound();
+  if (
+    (scope.kind === "college_office" || scope.kind === "university_office") &&
+    u.officeRef?.type !== scope.kind
+  ) {
+    notFound();
+  }
+
   const isLocked = u.lockedUntil && new Date(u.lockedUntil) > new Date();
 
   const offices = await Office.find().select("name type").lean();
@@ -113,7 +127,7 @@ export default async function AdminUserDetailPage({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <EditUserButton user={editableUser} offices={officeOptions} />
+          <EditUserButton user={editableUser} offices={officeOptions} scopeKind={scope.kind} />
           <UserStatusToggle
             userId={String(u._id)}
             userName={`${u.firstName} ${u.lastName}`}

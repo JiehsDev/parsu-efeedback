@@ -27,7 +27,7 @@ export const DONE_STATUSES = [
 // Priority is shown by exception only. Every complaint has one, but "low"
 // and "medium" are the overwhelming majority and flagging them would just
 // add a badge to every row — so only the two worth reacting to render.
-const PRIORITY_FLAG: Partial<Record<string, { label: string; className: string }>> = {
+export const PRIORITY_FLAG: Partial<Record<string, { label: string; className: string }>> = {
   high: {
     label: "High",
     className: "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]",

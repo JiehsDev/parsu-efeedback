@@ -12,6 +12,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
 import { User } from "@/models/User";
 import { Office } from "@/models/Office";
@@ -24,6 +25,7 @@ import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggle";
 import type { ComplaintStatus } from "@/lib/constants";
+import { getAdminScope } from "@/lib/admin-scope";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -38,6 +40,8 @@ export default async function AdminComplaintDetailPage({
   params: Promise<{ id: string }>;
 }) {
   await connectToDatabase();
+  const session = await auth();
+  const scope = getAdminScope(session!.user.role);
   const { id } = await params;
 
   // No isArchived filter here, unlike every role-scoped complaint page —
@@ -59,6 +63,15 @@ export default async function AdminComplaintDetailPage({
     ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
     ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
   ]);
+
+  // vpaa/vpaf are confined to complaints assigned to their office
+  // category; osas and administrator see every complaint.
+  if (
+    (scope.kind === "college_office" || scope.kind === "university_office") &&
+    (office as any)?.type !== scope.kind
+  ) {
+    notFound();
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">

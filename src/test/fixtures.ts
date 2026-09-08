@@ -10,7 +10,7 @@ export async function createTestOffice(overrides: Partial<any> = {}) {
   return Office.create({
     name: "Test Office",
     code: `OFF-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    type: "service_office",
+    type: "university_office",
     isActive: true,
     ...overrides,
   });
@@ -20,7 +20,7 @@ export async function createTestCollege(overrides: Partial<any> = {}) {
   return Office.create({
     name: "Test College",
     code: `COL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    type: "college",
+    type: "college_office",
     isActive: true,
     ...overrides,
   });

@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ROLE_OPTIONS = [
   { value: "student", label: "Students" },
   { value: "office_staff", label: "Staff" },
-  { value: "college_dean", label: "Deans" },
   { value: "qa_office", label: "QA Office" },
   { value: "administrator", label: "Administrators" },
+  { value: "vpaa", label: "VPAA" },
+  { value: "vpaf", label: "VPAF" },
+  { value: "osas", label: "OSAS" },
 ];
 
 interface OfficeOption {

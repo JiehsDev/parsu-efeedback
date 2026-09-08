@@ -8,6 +8,7 @@ import {
   FileBarChart,
   FileClock,
   Loader2,
+  Printer,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -91,9 +92,7 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
     if (showOfficeFilter) {
       fetch("/api/offices")
         .then((res) => res.json())
-        .then((data) =>
-          setOffices((data.offices ?? []).filter((o: Office) => o.type === "service_office")),
-        );
+        .then((data) => setOffices(data.offices ?? []));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -343,13 +342,24 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
                   </span>
                   <ReportStatusBadge status={r.status} />
                   {r.status === "ready" && (
-                    <a
-                      href={`/api/reports/${r._id}/download`}
-                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Download
-                    </a>
+                    <>
+                      <a
+                        href={`/api/reports/${r._id}/print`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                        Print
+                      </a>
+                      <a
+                        href={`/api/reports/${r._id}/download`}
+                        className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Download
+                      </a>
+                    </>
                   )}
                   <button
                     type="button"

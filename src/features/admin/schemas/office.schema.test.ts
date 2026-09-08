@@ -6,7 +6,7 @@ describe("office.schema — BR-014/019", () => {
   it("BR-019: requires a non-empty code and uppercases it", () => {
     const result = createOfficeSchema.safeParse({
       name: "Registrar",
-      type: "service_office",
+      type: "university_office",
       code: "reg-01",
     });
     expect(result.success).toBe(true);
@@ -18,7 +18,7 @@ describe("office.schema — BR-014/019", () => {
   it("BR-019: rejects an empty code", () => {
     const result = createOfficeSchema.safeParse({
       name: "Registrar",
-      type: "service_office",
+      type: "university_office",
       code: "",
     });
     expect(result.success).toBe(false);
@@ -36,7 +36,7 @@ describe("office.schema — BR-014/019", () => {
   it("accepts a valid college-type office", () => {
     const result = createOfficeSchema.safeParse({
       name: "College of Engineering",
-      type: "college",
+      type: "college_office",
       code: "COE",
     });
     expect(result.success).toBe(true);
@@ -45,7 +45,7 @@ describe("office.schema — BR-014/019", () => {
   it("isActive defaults to true when omitted", () => {
     const result = createOfficeSchema.safeParse({
       name: "Registrar",
-      type: "service_office",
+      type: "university_office",
       code: "REG-02",
     });
     expect(result.success).toBe(true);

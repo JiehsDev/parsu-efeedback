@@ -1,64 +1,26 @@
 // src/app/staff/sla/page.tsx
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { AlertTriangle, CheckCircle2, ChevronRight, Clock3, Timer } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Timer } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import type { ComplaintStatus } from "@/lib/constants";
+import {
+  ComplaintListRow,
+  ComplaintRowHeader,
+  slaClock,
+  type ComplaintRowData,
+} from "@/components/shared/ComplaintListRow";
 
-function timeRemaining(dueAt: Date | null): { text: string; isCritical: boolean } {
-  if (!dueAt) return { text: "—", isCritical: false };
-  const now = new Date();
-  const diffMs = new Date(dueAt).getTime() - now.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
+const DUE_SOON_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-  if (diffHours < 0) {
-    return { text: `Overdue by ${Math.abs(Math.round(diffHours))}h`, isCritical: true };
-  }
-  if (diffHours < 4) {
-    return { text: `${Math.round(diffHours)}h remaining`, isCritical: true };
-  }
-  if (diffHours < 24) {
-    return { text: `${Math.round(diffHours)}h remaining`, isCritical: false };
-  }
-  return { text: `${Math.round(diffHours / 24)}d remaining`, isCritical: false };
-}
-
-function GroupedList({ complaints }: { complaints: any[] }) {
+function GroupedList({ complaints }: { complaints: ComplaintRowData[] }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+      <ComplaintRowHeader />
       <ul className="divide-y divide-[var(--border)]">
-        {complaints.map((c) => {
-          const remaining = timeRemaining(c.slaResolutionDueAt);
-          return (
-            <li key={c._id}>
-              <Link
-                href={`/staff/complaints/${c._id}`}
-                className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[var(--muted)]/40"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-[var(--foreground)]">
-                    {c.title}
-                  </span>
-                  <span className="mt-0.5 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-                    <span className="font-mono">{c.ticketNumber}</span>
-                  </span>
-                </span>
-                <StatusBadge status={c.status as ComplaintStatus} />
-                <span
-                  className={`shrink-0 text-xs font-semibold ${
-                    remaining.isCritical ? "text-[var(--destructive)]" : "text-[var(--muted-foreground)]"
-                  }`}
-                >
-                  {remaining.text}
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
-              </Link>
-            </li>
-          );
-        })}
+        {complaints.map((c) => (
+          <ComplaintListRow key={String(c._id)} complaint={c} hrefPrefix="/staff/complaints" />
+        ))}
       </ul>
     </div>
   );
@@ -73,19 +35,34 @@ export default async function StaffSlaPage() {
 
   const complaints = await Complaint.find({
     assignedOfficeRef: officeRef,
-    status: { $nin: ["resolved", "closed", "withdrawn"] },
+    status: { $nin: ["resolved", "closed", "withdrawn"] as const },
     isArchived: false,
-  })
-    .sort({ slaResolutionDueAt: 1 })
-    .lean();
+  }).lean();
 
-  const overdue = complaints.filter((c: any) => c.isOverdue);
-  const dueSoon = complaints.filter((c: any) => {
-    if (c.isOverdue || !c.slaResolutionDueAt) return false;
-    const hours = (new Date(c.slaResolutionDueAt).getTime() - Date.now()) / (1000 * 60 * 60);
-    return hours < 24;
-  });
-  const onTrack = complaints.filter((c: any) => !overdue.includes(c) && !dueSoon.includes(c));
+  // Sort by the live SLA clock (response deadline pre-assignment, resolution
+  // deadline after — see slaClock()) rather than slaResolutionDueAt alone,
+  // since a submitted complaint may not have a resolution deadline yet.
+  const withClock = (complaints as unknown as ComplaintRowData[])
+    .map((c) => ({ complaint: c, clock: slaClock(c) }))
+    .sort((a, b) => {
+      const aTime = a.clock ? new Date(a.clock.dueAt).getTime() : Infinity;
+      const bTime = b.clock ? new Date(b.clock.dueAt).getTime() : Infinity;
+      return aTime - bTime;
+    });
+
+  const overdue: ComplaintRowData[] = [];
+  const dueSoon: ComplaintRowData[] = [];
+  const onTrack: ComplaintRowData[] = [];
+
+  for (const { complaint, clock } of withClock) {
+    if (clock?.overdue) {
+      overdue.push(complaint);
+    } else if (clock && new Date(clock.dueAt).getTime() - Date.now() < DUE_SOON_WINDOW_MS) {
+      dueSoon.push(complaint);
+    } else {
+      onTrack.push(complaint);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -94,7 +71,7 @@ export default async function StaffSlaPage() {
           SLA Tracker
         </h1>
         <p className="mt-1.5 text-sm text-[var(--muted-foreground)]">
-          Open complaints in your office, sorted by resolution deadline.
+          Open complaints in your office, sorted by deadline.
         </p>
       </div>
 

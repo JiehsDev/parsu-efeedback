@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const college = await Office.findOne({
     _id: collegeId,
-    type: "college",
+    type: "college_office",
     isActive: true,
   }).lean();
   if (!college) {

@@ -34,8 +34,8 @@ export interface SlaComplianceByOfficePoint {
 }
 
 // BR-089 "Category Distribution" — scoped by the same flat $match pattern
-// as getMonthlyTrends, so dean/qa/admin all reuse this with their own
-// pre-resolved scopeMatch.
+// as getMonthlyTrends, so vpaa/vpaf/osas/qa/admin all reuse this with their
+// own pre-resolved scopeMatch.
 export async function getCategoryBreakdown(
   scopeMatch: Record<string, unknown>,
 ): Promise<CategoryBreakdownPoint[]> {

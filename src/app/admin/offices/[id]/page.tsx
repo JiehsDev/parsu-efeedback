@@ -4,10 +4,12 @@ import Link from "next/link";
 import { Types } from "mongoose";
 import { ArrowLeft, Building2, GitBranch, Hash, Tag, UserRound, Users } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { OfficeStatusToggle } from "@/components/admin/OfficeStatusToggle";
 import { EditOfficeButton } from "@/components/admin/EditOfficeButton";
+import { getAdminScope } from "@/lib/admin-scope";
 
 export default async function AdminOfficeDetailPage({
   params,
@@ -18,17 +20,27 @@ export default async function AdminOfficeDetailPage({
   if (!Types.ObjectId.isValid(id)) notFound();
 
   await connectToDatabase();
+  const session = await auth();
+  const scope = getAdminScope(session!.user.role);
+  if (scope.kind === "student") notFound();
+
   const office = await Office.findById(id).lean();
   if (!office) notFound();
 
   const o = office as any;
+  if (
+    (scope.kind === "college_office" || scope.kind === "university_office") &&
+    o.type !== scope.kind
+  ) {
+    notFound();
+  }
 
-  // Both college_dean and student reference a college via collegeRef —
-  // this page is about staffing, not enrollment, so students are excluded
-  // here (a college can have hundreds; that list belongs on its own page,
-  // not mixed into "who works here").
+  // Students reference a college via collegeRef, not officeRef — this page
+  // is about staffing, not enrollment, so students are excluded here (a
+  // college can have hundreds; that list belongs on its own page, not
+  // mixed into "who works here"). Staff belong to any office (college or
+  // university) via officeRef uniformly.
   const ROLE_SORT_PRIORITY: Record<string, number> = {
-    college_dean: 0,
     qa_office: 1,
     administrator: 1,
     office_staff: 2,
@@ -37,13 +49,9 @@ export default async function AdminOfficeDetailPage({
   const [parentOffice, headUser, rawMembers] = await Promise.all([
     o.parentOffice ? Office.findById(o.parentOffice).select("name code").lean() : null,
     o.headUserRef ? User.findById(o.headUserRef).select("firstName lastName email").lean() : null,
-    o.type === "college"
-      ? User.find({ collegeRef: id, role: { $ne: "student" } })
-          .select("firstName lastName email role isActive")
-          .lean()
-      : User.find({ officeRef: id, role: { $ne: "student" } })
-          .select("firstName lastName email role isActive")
-          .lean(),
+    User.find({ officeRef: id, role: { $ne: "student" } })
+      .select("firstName lastName email role isActive")
+      .lean(),
   ]);
 
   const members = [...rawMembers].sort(
@@ -106,6 +114,7 @@ export default async function AdminOfficeDetailPage({
             headUserId={o.headUserRef ? String(o.headUserRef) : null}
             officeOptions={officeOptions}
             memberOptions={memberOptions}
+            scopeKind={scope.kind}
           />
           <OfficeStatusToggle officeId={String(o._id)} officeName={o.name} isActive={o.isActive} />
         </div>

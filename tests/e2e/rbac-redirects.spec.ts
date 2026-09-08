@@ -4,21 +4,31 @@
 // role visiting a route it isn't assigned (per ROLE_ROUTE_PREFIXES) is
 // redirected to its own home dashboard (homeRouteForRole). Each role fixture
 // here comes from tests/e2e/fixtures.ts (pre-authenticated storageState).
-import { studentTest, staffTest, deanTest, qaTest, adminTest, expect } from "./fixtures";
+import {
+  studentTest,
+  staffTest,
+  qaTest,
+  adminTest,
+  vpaaTest,
+  vpafTest,
+  osasTest,
+  expect,
+} from "./fixtures";
 
 const HOME: Record<string, string> = {
   student: "/student/dashboard",
   office_staff: "/staff/dashboard",
-  college_dean: "/dean/dashboard",
   qa_office: "/qa/dashboard",
   administrator: "/admin/dashboard",
+  vpaa: "/admin/dashboard",
+  vpaf: "/admin/dashboard",
+  osas: "/admin/dashboard",
 };
 
 const OTHER_ROUTES: Record<string, string[]> = {
-  student: ["/staff/dashboard", "/dean/dashboard", "/qa/dashboard", "/admin/dashboard"],
-  office_staff: ["/student/dashboard", "/dean/dashboard", "/qa/dashboard", "/admin/dashboard"],
-  college_dean: ["/student/dashboard", "/staff/dashboard", "/qa/dashboard", "/admin/dashboard"],
-  qa_office: ["/student/dashboard", "/staff/dashboard", "/dean/dashboard", "/admin/dashboard"],
+  student: ["/staff/dashboard", "/qa/dashboard", "/admin/dashboard"],
+  office_staff: ["/student/dashboard", "/qa/dashboard", "/admin/dashboard"],
+  qa_office: ["/student/dashboard", "/staff/dashboard", "/admin/dashboard"],
 };
 
 studentTest.describe("student — BR-092", () => {
@@ -43,17 +53,6 @@ staffTest.describe("office_staff — BR-093", () => {
   }
 });
 
-deanTest.describe("college_dean — BR-094", () => {
-  for (const route of OTHER_ROUTES.college_dean!) {
-    deanTest(`BR-094/091: dean visiting ${route} is redirected to its own dashboard`, async ({
-      page,
-    }) => {
-      await page.goto(route);
-      await expect(page).toHaveURL(new RegExp(HOME.college_dean!.replace(/\//g, "\\/")));
-    });
-  }
-});
-
 qaTest.describe("qa_office — BR-095", () => {
   for (const route of OTHER_ROUTES.qa_office!) {
     qaTest(`BR-095/091: qa visiting ${route} is redirected to its own dashboard`, async ({
@@ -74,7 +73,7 @@ adminTest.describe("administrator — BR-010/096", () => {
   // expected to actually redirect the admin away just like any other
   // mismatched role (a real gap against BR-096, not a test bug — see the
   // final report).
-  for (const route of ["/student/dashboard", "/staff/dashboard", "/dean/dashboard", "/qa/dashboard"]) {
+  for (const route of ["/student/dashboard", "/staff/dashboard", "/qa/dashboard"]) {
     adminTest(`BR-096/BR-010: administrator can reach ${route} without being redirected away`, async ({
       page,
     }) => {
@@ -83,3 +82,29 @@ adminTest.describe("administrator — BR-010/096", () => {
     });
   }
 });
+
+// vpaa/vpaf/osas: scoped sub-admin roles confined to /admin/** — unlike
+// administrator, they do NOT bypass every route, so a visit to another
+// role's prefix redirects them back to /admin/dashboard just like any
+// other non-admin role would be redirected to its own home.
+for (const [name, roleTest] of [
+  ["vpaa", vpaaTest],
+  ["vpaf", vpafTest],
+  ["osas", osasTest],
+] as const) {
+  roleTest.describe(`${name} — scoped sub-admin`, () => {
+    for (const route of ["/student/dashboard", "/staff/dashboard", "/qa/dashboard"]) {
+      roleTest(`${name} visiting ${route} is redirected to /admin/dashboard`, async ({ page }) => {
+        await page.goto(route);
+        await expect(page).toHaveURL(/\/admin\/dashboard/);
+      });
+    }
+
+    roleTest(`${name} can reach /admin/dashboard without being redirected away`, async ({
+      page,
+    }) => {
+      await page.goto("/admin/dashboard");
+      await expect(page).toHaveURL(/\/admin\/dashboard/);
+    });
+  });
+}

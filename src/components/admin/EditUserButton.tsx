@@ -9,17 +9,19 @@ import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const ROLES = ["student", "office_staff", "college_dean", "qa_office", "administrator"];
+const ALL_ROLES = ["student", "office_staff", "qa_office", "administrator", "vpaa", "vpaf", "osas"];
 
-// Same office-type narrowing the "Add User" form uses (src/app/admin/
-// users/page.tsx) — kept in sync so create and edit never disagree about
-// which roles need an office vs. a college.
-const ROLE_OFFICE_TYPE: Record<string, "college" | "service_office" | undefined> = {
-  student: "college",
-  college_dean: "college",
-  office_staff: "service_office",
-  qa_office: "service_office",
-};
+// Which roles/offices a sub-admin's scope permits editing into — mirrors
+// the server-side check in api/admin/users/[id]/route.ts's isUserInScope.
+type ScopeKind = "all" | "college_office" | "university_office" | "student";
+
+function roleOptionsForScope(scopeKind: ScopeKind): string[] {
+  if (scopeKind === "student") return ["student"];
+  if (scopeKind === "college_office" || scopeKind === "university_office") {
+    return ["office_staff", "qa_office"];
+  }
+  return ALL_ROLES;
+}
 
 interface EditableUser {
   _id: string;
@@ -37,7 +39,15 @@ interface OfficeOption {
   type: string;
 }
 
-export function EditUserButton({ user, offices }: { user: EditableUser; offices: OfficeOption[] }) {
+export function EditUserButton({
+  user,
+  offices,
+  scopeKind = "all",
+}: {
+  user: EditableUser;
+  offices: OfficeOption[];
+  scopeKind?: ScopeKind;
+}) {
   const router = useRouter();
   const { show: showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -54,7 +64,12 @@ export function EditUserButton({ user, offices }: { user: EditableUser; offices:
   });
 
   const needsOffice = form.role === "office_staff" || form.role === "qa_office";
-  const needsCollege = form.role === "student" || form.role === "college_dean";
+  const needsCollege = form.role === "student";
+  const roleOptions = roleOptionsForScope(scopeKind);
+  const officeOptionsForRole =
+    scopeKind === "college_office" || scopeKind === "university_office"
+      ? offices.filter((o) => o.type === scopeKind)
+      : offices;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -148,7 +163,7 @@ export function EditUserButton({ user, offices }: { user: EditableUser; offices:
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLES.map((r) => (
+                  {roleOptions.map((r) => (
                     <SelectItem key={r} value={r}>
                       {r.replace("_", " ")}
                     </SelectItem>
@@ -167,13 +182,11 @@ export function EditUserButton({ user, offices }: { user: EditableUser; offices:
                     <SelectValue placeholder="Select office" />
                   </SelectTrigger>
                   <SelectContent>
-                    {offices
-                      .filter((o) => o.type === ROLE_OFFICE_TYPE[form.role])
-                      .map((o) => (
-                        <SelectItem key={o._id} value={o._id}>
-                          {o.name}
-                        </SelectItem>
-                      ))}
+                    {officeOptionsForRole.map((o) => (
+                      <SelectItem key={o._id} value={o._id}>
+                        {o.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </FormField>
@@ -190,7 +203,7 @@ export function EditUserButton({ user, offices }: { user: EditableUser; offices:
                   </SelectTrigger>
                   <SelectContent>
                     {offices
-                      .filter((o) => o.type === "college")
+                      .filter((o) => o.type === "college_office")
                       .map((o) => (
                         <SelectItem key={o._id} value={o._id}>
                           {o.name}

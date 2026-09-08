@@ -8,7 +8,6 @@ import {
   getCategoryBreakdown,
   getPriorityBreakdown,
 } from "@/features/analytics/services/analytics.service";
-import { Types } from "mongoose";
 
 export async function GET() {
   const session = await auth();
@@ -16,49 +15,19 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // BR-095/096/094: analytics access itself is role-gated, separate from
-  // the underlying complaint-access scoping.
+  // BR-095/096: analytics access itself is role-gated, separate from the
+  // underlying complaint-access scoping. vpaa/vpaf/osas get their (scoped)
+  // analytics through /admin/dashboard instead of this institution-wide
+  // endpoint — see src/lib/admin-scope.ts.
   const { role } = session.user;
-  if (!["college_dean", "qa_office", "administrator"].includes(role)) {
+  if (!["qa_office", "administrator"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   await connectToDatabase();
 
-  let scopeMatch: Record<string, unknown> = { isArchived: false };
-  let collegeComparison = null;
-
-  if (role === "college_dean") {
-    // Dean is college-scoped — needs the student join, same pattern used
-    // elsewhere for dean-scoped queries. Since getMonthlyTrends takes a
-    // flat $match, we pre-filter complaint IDs for this college first.
-    if (!session.user.collegeRef) {
-      return NextResponse.json({ error: "No college assigned to this account" }, { status: 422 });
-    }
-
-    const { Complaint } = await import("@/models/Complaint");
-    const collegeRef = new Types.ObjectId(session.user.collegeRef);
-
-    const collegeComplaintIds = await Complaint.aggregate([
-      {
-        $lookup: {
-          from: "users",
-          localField: "studentRef",
-          foreignField: "_id",
-          as: "student",
-        },
-      },
-      { $unwind: "$student" },
-      { $match: { "student.collegeRef": collegeRef } },
-      { $project: { _id: 1 } },
-    ]);
-
-    scopeMatch = { _id: { $in: collegeComplaintIds.map((c: any) => c._id) }, isArchived: false };
-    // No college comparison for dean — out of their scope entirely.
-  } else {
-    // qa_office / administrator — institution-wide, includes comparison
-    collegeComparison = await getCollegeComparison();
-  }
+  const scopeMatch: Record<string, unknown> = { isArchived: false };
+  const collegeComparison = await getCollegeComparison();
 
   const [trends, categoryBreakdown, priorityBreakdown] = await Promise.all([
     getMonthlyTrends(scopeMatch),

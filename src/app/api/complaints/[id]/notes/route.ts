@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Notes are staff/dean/qa/admin only — never visible to or writable by students
+  // Notes are staff/qa/admin only — never visible to or writable by students
   if (session.user.role === "student") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

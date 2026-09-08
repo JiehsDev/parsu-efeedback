@@ -1,7 +1,7 @@
 // Student self-registration. See the comment above `registerSchema` in
 // ../schemas/register.schema.ts for why /register only ever creates
-// role: "student" accounts — BR-011 reserves staff/dean/qa/admin account
-// creation for administrators (Phase 7, /admin/users).
+// role: "student" accounts — BR-011 reserves staff/qa/admin/vpaa/vpaf/osas
+// account creation for administrators (Phase 7, /admin/users).
 
 import { connectToDatabase } from "@/lib/db";
 import { Office } from "@/models/Office";
@@ -34,8 +34,8 @@ export async function registerStudent(input: RegisterInput): Promise<{ id: strin
   await connectToDatabase();
 
   // BR-008: student belongs to exactly one college — must exist and
-  // actually be a college (not a service office).
-  const college = await Office.findOne({ _id: input.collegeId, type: "college" });
+  // actually be a college office (not a university office).
+  const college = await Office.findOne({ _id: input.collegeId, type: "college_office" });
   if (!college) {
     throw new InvalidCollegeError();
   }

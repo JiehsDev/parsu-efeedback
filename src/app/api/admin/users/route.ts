@@ -1,15 +1,18 @@
 // src/app/api/admin/users/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { requireAdmin } from "@/lib/api-guards";
+import { requireScopedAdmin } from "@/lib/api-guards";
 import { User } from "@/models/User";
+import { Office } from "@/models/Office";
 import { createUserSchema } from "@/features/admin/schemas/user.schema";
 import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import { userFilterForScope } from "@/lib/admin-scope";
 
 export async function GET(req: NextRequest) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
 
   await connectToDatabase();
 
@@ -23,7 +26,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(2000, Number(searchParams.get("limit") ?? 20));
   const role = searchParams.get("role");
 
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { ...(await userFilterForScope(scope)) };
   if (role) filter.role = role;
 
   const [users, total] = await Promise.all([
@@ -42,8 +45,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
 
   await connectToDatabase();
 
@@ -55,6 +59,32 @@ export async function POST(req: NextRequest) {
 
   const { password, ...rest } = parsed.data;
 
+  // vpaa/vpaf may only create staff-shaped users in their own office
+  // category; osas may only create students; only administrator may
+  // create administrator/vpaa/vpaf/osas accounts.
+  if (scope.kind === "student") {
+    if (rest.role !== "student") {
+      return NextResponse.json(
+        { error: "You can only create student accounts" },
+        { status: 403 },
+      );
+    }
+  } else if (scope.kind === "college_office" || scope.kind === "university_office") {
+    if (rest.role !== "office_staff" && rest.role !== "qa_office") {
+      return NextResponse.json(
+        { error: "You can only create staff accounts in your own office category" },
+        { status: 403 },
+      );
+    }
+    const targetOffice = rest.officeRef ? await Office.findById(rest.officeRef).select("type").lean() : null;
+    if ((targetOffice as any)?.type !== scope.kind) {
+      return NextResponse.json(
+        { error: "You can only assign staff to an office in your own office category" },
+        { status: 403 },
+      );
+    }
+  }
+
   const existing = await User.findOne({
     $or: [{ email: rest.email }, { employeeOrStudentId: rest.employeeOrStudentId }],
   });
@@ -63,25 +93,6 @@ export async function POST(req: NextRequest) {
       { error: "A user with this email or ID already exists" },
       { status: 409 },
     );
-  }
-
-  // One active dean per college — a college can't have two people both
-  // claiming to be its dean at the same time.
-  if (rest.role === "college_dean") {
-    const existingDean = await User.findOne({
-      role: "college_dean",
-      collegeRef: rest.collegeRef,
-      isActive: true,
-    }).lean();
-    if (existingDean) {
-      return NextResponse.json(
-        {
-          error:
-            "This college already has an active dean. Deactivate the existing dean first, or choose a different college.",
-        },
-        { status: 409 },
-      );
-    }
   }
 
   const passwordHash = await hashPassword(password);

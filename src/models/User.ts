@@ -26,7 +26,7 @@ const userSchema = new Schema(
     // BR-001: exactly one role per user
     role: { type: String, enum: USER_ROLES, required: true },
 
-    // BR-009: staff/dean belong to one office (their service office or college)
+    // BR-009: staff belong to one office (a university office or a college office)
     officeRef: { type: Schema.Types.ObjectId, ref: "Office", default: null },
 
     // BR-008 / BR-015: student belongs to exactly one college

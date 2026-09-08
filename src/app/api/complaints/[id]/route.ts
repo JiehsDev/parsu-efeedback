@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
-import { User } from "@/models/User";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import {
   updateComplaintStatusSchema,
@@ -16,14 +15,18 @@ import {
   notifyStatusUpdated,
   notifyComplaintResolved,
 } from "@/features/notifications/services/notification.service";
+import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
+
 async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
-  const { role, id, officeRef, collegeRef } = session.user;
+  const { role, id, officeRef } = session.user;
   if (role === "administrator" || role === "qa_office") return true;
   if (role === "student") return String(complaint.studentRef) === id;
   if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
-  if (role === "college_dean") {
-    const student = await User.findById(complaint.studentRef).lean();
-    return String((student as any)?.collegeRef) === collegeRef;
+  // QA-style read access, scoped to each sub-admin's own category — the
+  // PATCH handler below separately blocks these roles from ever reaching
+  // the mutation path, same as it does for qa_office.
+  if (role === "vpaa" || role === "vpaf" || role === "osas") {
+    return isComplaintInAdminScope(getAdminScope(role), complaint);
   }
   return false;
 }
@@ -62,7 +65,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // BR-101: the submitting student may edit their own complaint's content
   // or withdraw it, but only while it's still "submitted" — i.e. before
   // any staff has picked it up. This is a distinct capability from the
-  // staff/dean/admin status-update flow below, not a relaxed version of it.
+  // staff/admin status-update flow below, not a relaxed version of it.
   if (session.user.role === "student") {
     if (String(complaint.studentRef) !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -130,9 +133,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ complaint });
   }
 
-  // BR-095: qa_office is read-only institution-wide — only staff/dean/admin
-  // may mutate status.
-  if (session.user.role === "qa_office") {
+  // BR-095: qa_office is read-only institution-wide — only staff/admin may
+  // mutate status. vpaa/vpaf/osas are read-only here too (they get QA-style
+  // read access below, scoped to their own category) — day-to-day status
+  // changes stay staff's job; vpaa/vpaf's own mutation power is limited to
+  // reassignment/escalation via /api/complaints/[id]/assign.
+  if (["qa_office", "vpaa", "vpaf", "osas"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -149,7 +155,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const toStatus = parsed.data.status;
 
   // BR-101: withdrawing is the submitting student's own call, made through
-  // the branch above — not something staff/dean/admin can do to someone
+  // the branch above — not something staff/admin can do to someone
   // else's complaint via the generic status-update path.
   if (toStatus === "withdrawn") {
     return NextResponse.json(

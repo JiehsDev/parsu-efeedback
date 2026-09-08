@@ -16,15 +16,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const {
-    role,
-    id: userId,
-    officeRef: sessionOfficeRef,
-    collegeRef: sessionCollegeRef,
-  } = session.user;
+  const { role, id: userId, officeRef: sessionOfficeRef } = session.user;
 
-  // Per BR/permission table: student and qa_office can never assign
-  if (role === "student" || role === "qa_office") {
+  // Explicit allow-list (not a deny-list) so a new role added to
+  // USER_ROLES without an assign-scope branch here fails closed rather
+  // than falling through to the unguarded "apply changes" section below —
+  // osas in particular has no complaint-assignment authority at all.
+  if (!["office_staff", "vpaa", "vpaf", "administrator"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -55,8 +53,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (role === "office_staff") {
     // Limited: can only act on complaints already in their own office,
-    // and cannot move a complaint OUT of their office (that's a dean/admin
-    // escalation decision, not a staff one).
+    // and cannot move a complaint OUT of their office (that's a
+    // VPAA/VPAF/admin escalation decision, not a staff one).
     if (String(complaint.assignedOfficeRef) !== sessionOfficeRef) {
       return NextResponse.json(
         { error: "You can only manage complaints assigned to your office" },
@@ -85,27 +83,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  if (role === "college_dean") {
-    // Limited: complaint's student must belong to the dean's college
-    const student = await User.findById(complaint.studentRef).lean();
-    if (!student || String((student as any).collegeRef) !== sessionCollegeRef) {
+  if (role === "vpaa" || role === "vpaf") {
+    // Broad, like admin, but confined to one office category: vpaa may only
+    // touch complaints currently sitting in a college_office, vpaf only in
+    // a university_office. This is the college_dean escalation power's
+    // successor, generalized to both office categories.
+    const requiredType = role === "vpaa" ? "college_office" : "university_office";
+
+    const currentOffice = await Office.findById(complaint.assignedOfficeRef).lean();
+    if (!currentOffice || (currentOffice as any).type !== requiredType) {
       return NextResponse.json(
-        { error: "You can only manage complaints within your college" },
+        { error: "You can only manage complaints within your office category" },
         { status: 403 },
       );
     }
-    // Dean can reassign office — validate target office exists & is active
+    // May reassign — validate target office exists, is active, and stays
+    // within the same office category.
     if (assignedOfficeRef) {
       const targetOffice = await Office.findById(assignedOfficeRef).lean();
-      if (!targetOffice || !(targetOffice as any).isActive) {
+      if (
+        !targetOffice ||
+        !(targetOffice as any).isActive ||
+        (targetOffice as any).type !== requiredType
+      ) {
         return NextResponse.json(
-          { error: "Target office is invalid or inactive" },
+          { error: "Target office is invalid, inactive, or outside your office category" },
           { status: 400 },
         );
       }
     }
-    // Dean can assign staff — validate target staff belongs to the
-    // (new or existing) target office
+    // May assign staff — validate target staff belongs to the (new or
+    // existing) target office.
     if (assignedStaffRef) {
       const effectiveOfficeRef = assignedOfficeRef ?? String(complaint.assignedOfficeRef);
       const targetStaff = await User.findById(assignedStaffRef).lean();

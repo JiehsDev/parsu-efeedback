@@ -63,8 +63,8 @@ async function checkDeadline(
       update.assignedStaffRef = null;
     } else if (fromOffice) {
       // Default path: escalate to whoever heads the office that's already
-      // sitting on this complaint — the same role a dean plays for their
-      // college, just per-office instead of requiring separate config.
+      // sitting on this complaint — per-office, rather than requiring
+      // separate escalation config.
       const office = await Office.findById(fromOffice).select("headUserRef").lean();
       if ((office as any)?.headUserRef) {
         update.assignedStaffRef = (office as any).headUserRef;

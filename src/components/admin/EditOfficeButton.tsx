@@ -27,19 +27,26 @@ interface MemberOption {
   lastName: string;
 }
 
+type ScopeKind = "all" | "college_office" | "university_office" | "student";
+
 export function EditOfficeButton({
   office,
   parentOfficeId,
   headUserId,
   officeOptions,
   memberOptions,
+  scopeKind = "all",
 }: {
   office: EditableOffice;
   parentOfficeId: string | null;
   headUserId: string | null;
   officeOptions: OfficeOption[];
   memberOptions: MemberOption[];
+  scopeKind?: ScopeKind;
 }) {
+  // vpaa/vpaf may only manage offices in their own category — the Type
+  // field is locked rather than offering a choice they'd be rejected for.
+  const typeIsLocked = scopeKind === "college_office" || scopeKind === "university_office";
   const router = useRouter();
   const { show: showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -120,14 +127,21 @@ export function EditOfficeButton({
               />
             </FormField>
 
-            <FormField label="Type">
-              <Select value={form.type} onValueChange={(value) => setForm((p) => ({ ...p, type: value }))}>
+            <FormField
+              label="Type"
+              hint={typeIsLocked ? "Locked to your own office category" : undefined}
+            >
+              <Select
+                value={form.type}
+                onValueChange={(value) => setForm((p) => ({ ...p, type: value }))}
+                disabled={typeIsLocked}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="service_office">Service Office</SelectItem>
-                  <SelectItem value="college">College</SelectItem>
+                  <SelectItem value="university_office">University Office</SelectItem>
+                  <SelectItem value="college_office">College Office</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>

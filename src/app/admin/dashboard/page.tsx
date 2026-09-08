@@ -6,12 +6,14 @@ import {
   CheckCircle2,
   Inbox,
   Route,
+  Star,
   Timer,
   UserX,
   Users,
   XCircle,
 } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { User } from "@/models/User";
 import { Complaint } from "@/models/Complaint";
 import { Category } from "@/models/Category";
@@ -27,6 +29,12 @@ import { getSettings } from "@/features/settings/services/settings.service";
 import { isR2Configured } from "@/lib/r2";
 import { isResendConfigured } from "@/lib/resend";
 import { isRedisConfigured } from "@/lib/rate-limit";
+import {
+  getAdminScope,
+  complaintFilterForScope,
+  userFilterForScope,
+  officeFilterForScope,
+} from "@/lib/admin-scope";
 import { QaTrendChart } from "@/components/qa/charts/QaTrendChart";
 import { QaDonutChart } from "@/components/qa/charts/QaDonutChart";
 import { QaBarList } from "@/components/qa/charts/QaBarList";
@@ -39,9 +47,11 @@ const SLA_CRON_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const ROLE_LABELS: Record<string, string> = {
   student: "Students",
   office_staff: "Staff",
-  college_dean: "Deans",
   qa_office: "QA Office",
   administrator: "Admins",
+  vpaa: "VPAA",
+  vpaf: "VPAF",
+  osas: "OSAS",
 };
 
 const ROLE_COLORS = [
@@ -50,12 +60,20 @@ const ROLE_COLORS = [
   "var(--qa-amber)",
   "var(--qa-rose)",
   "var(--qa-slate)",
+  "var(--primary)",
+  "var(--secondary)",
 ];
 
 export default async function AdminDashboardPage() {
   await connectToDatabase();
 
-  const scopeMatch = { isArchived: false };
+  const session = await auth();
+  const scope = getAdminScope(session!.user.role);
+  const isAdmin = scope.kind === "all";
+
+  const scopeMatch = { isArchived: false, ...(await complaintFilterForScope(scope)) };
+  const userScopeFilter = await userFilterForScope(scope);
+  const officeScopeFilter = officeFilterForScope(scope);
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const [
@@ -66,6 +84,7 @@ export default async function AdminDashboardPage() {
     unroutedComplaints,
     unassignedComplaints,
     staleSubmitted,
+    avgRatingResult,
     trends,
     slaByOffice,
     roleCounts,
@@ -78,8 +97,8 @@ export default async function AdminDashboardPage() {
     officeWorkload,
     settings,
   ] = await Promise.all([
-    User.countDocuments({ isActive: true }),
-    User.countDocuments({ isActive: false }),
+    User.countDocuments({ ...userScopeFilter, isActive: true }),
+    User.countDocuments({ ...userScopeFilter, isActive: false }),
     Complaint.countDocuments({ ...scopeMatch, status: { $nin: ["resolved", "closed", "withdrawn"] } }),
     Complaint.countDocuments({
       ...scopeMatch,
@@ -98,23 +117,31 @@ export default async function AdminDashboardPage() {
       status: { $nin: ["resolved", "closed", "withdrawn"] },
     }),
     Complaint.countDocuments({ ...scopeMatch, status: "submitted", createdAt: { $lt: dayAgo } }),
+    // Ratings live on the Complaint doc itself (BR-067..BR-070), so they
+    // fall under the same office-scoped $match as every other complaint
+    // stat here — vpaa/vpaf only ever average their own office category's
+    // ratings, same as their Open/Overdue counts above.
+    Complaint.aggregate([
+      { $match: { ...scopeMatch, studentRating: { $ne: null } } },
+      { $group: { _id: null, avg: { $avg: "$studentRating" }, count: { $sum: 1 } } },
+    ]),
     getMonthlyTrends(scopeMatch),
-    getSlaComplianceByOffice(),
+    getSlaComplianceByOffice(scopeMatch),
     User.aggregate([
-      { $match: { isActive: true } },
+      { $match: { ...userScopeFilter, isActive: true } },
       { $group: { _id: "$role", count: { $sum: 1 } } },
     ]),
-    AuditLog.find()
-      .sort({ createdAt: -1 })
-      .limit(6)
-      .populate("actorRef", "firstName lastName")
-      .lean(),
-    Category.find({ isActive: true }).select("name").lean(),
-    RoutingRule.find({ isActive: true }).select("categoryRef").lean(),
-    SLARule.find({ isActive: true }).select("categoryRef").lean(),
-    Office.find({ type: "service_office", isActive: true }).select("name headUserRef").lean(),
+    isAdmin
+      ? AuditLog.find().sort({ createdAt: -1 }).limit(6).populate("actorRef", "firstName lastName").lean()
+      : [],
+    isAdmin ? Category.find({ isActive: true }).select("name").lean() : [],
+    isAdmin ? RoutingRule.find({ isActive: true }).select("categoryRef").lean() : [],
+    isAdmin ? SLARule.find({ isActive: true }).select("categoryRef").lean() : [],
+    scope.kind === "student"
+      ? []
+      : Office.find({ ...officeScopeFilter, isActive: true }).select("name headUserRef").lean(),
     User.aggregate([
-      { $match: { role: "office_staff", isActive: true, officeRef: { $ne: null } } },
+      { $match: { ...userScopeFilter, role: "office_staff", isActive: true, officeRef: { $ne: null } } },
       { $group: { _id: "$officeRef", count: { $sum: 1 } } },
     ]),
     Complaint.aggregate([
@@ -138,8 +165,11 @@ export default async function AdminDashboardPage() {
       { $sort: { volume: -1 } },
       { $limit: 8 },
     ]),
-    getSettings(),
+    isAdmin ? getSettings() : null,
   ]);
+
+  const avgRating = avgRatingResult[0]?.avg ?? null;
+  const ratingCount = avgRatingResult[0]?.count ?? 0;
 
   const STATS: StatCardData[] = [
     {
@@ -202,6 +232,17 @@ export default async function AdminDashboardPage() {
       chipBg: "bg-[var(--muted)]/40",
       chipText: "text-[var(--muted-foreground)]",
     },
+    {
+      label: "Avg. rating",
+      value: avgRating ? avgRating.toFixed(1) : "—",
+      hint: ratingCount > 0 ? `${ratingCount} ratings` : undefined,
+      icon: Star,
+      iconColor: "var(--qa-amber)",
+      tint: "bg-amber-500/15 text-amber-400",
+      chipBorder: "border-amber-500/30",
+      chipBg: "bg-amber-500/10",
+      chipText: "text-amber-400",
+    },
   ];
 
   const routedCategoryIds = new Set(activeRoutingRules.map((r: any) => String(r.categoryRef)));
@@ -225,7 +266,7 @@ export default async function AdminDashboardPage() {
     (o: any) => staffedOfficeIds.has(String(o._id)) && !o.headUserRef,
   );
 
-  const lastSlaCheckAt = (settings as any).lastSlaCheckAt as Date | null;
+  const lastSlaCheckAt = settings ? ((settings as any).lastSlaCheckAt as Date | null) : null;
   const slaCronIsFresh =
     lastSlaCheckAt !== null && Date.now() - new Date(lastSlaCheckAt).getTime() < SLA_CRON_STALE_AFTER_MS;
 
@@ -327,136 +368,141 @@ export default async function AdminDashboardPage() {
     <div className="flex h-full flex-col gap-4">
       <h1 className="text-xl font-bold tracking-tight text-[var(--foreground)]">Admin Dashboard</h1>
 
-      <div className="grid grid-cols-3 gap-1.5 sm:hidden">
+      <div className="grid grid-cols-2 gap-1.5 sm:hidden">
         {STATS.map((stat) => (
           <StatChip key={stat.label} stat={stat} />
         ))}
       </div>
 
-      <div className="hidden gap-2.5 sm:grid sm:grid-cols-3 xl:grid-cols-6">
+      <div className="hidden gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4">
         {STATS.map((stat) => (
           <StatCard key={stat.label} stat={stat} compact />
         ))}
       </div>
 
-      {/* CONFIG HEALTH (wide) · USER ROLES · RECENT ACTIVITY */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div
-          role="region"
-          aria-labelledby="admin-health-heading"
-          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-2"
-        >
-          <h2
-            id="admin-health-heading"
-            className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
+      {/* CONFIG HEALTH (wide) · USER ROLES · RECENT ACTIVITY — administrator-only:
+          for vpaa/vpaf/osas this whole row is skipped rather than left half
+          empty, since Users-by-role collapses to a single slice once it's
+          filtered to just their own office category / students. */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div
+            role="region"
+            aria-labelledby="admin-health-heading"
+            className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-2"
           >
-            Configuration health
-          </h2>
-          <ul className="mt-2.5 max-h-56 space-y-1.5 overflow-y-auto pr-1">
-            {CHECKS.map((check) => {
-              const rowContent = (
-                <>
-                  {check.ok ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 shrink-0 text-[var(--destructive)]" />
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-semibold text-[var(--foreground)]">
-                      {check.label}
-                    </span>
-                    <span className="block truncate text-[11px] text-[var(--muted-foreground)]">
-                      {check.detail}
-                    </span>
-                  </span>
-                  {check.href && (
-                    <ArrowRight className="h-3 w-3 shrink-0 text-[var(--muted-foreground)]" />
-                  )}
-                </>
-              );
-
-              return (
-                <li key={check.label}>
-                  {check.href ? (
-                    <Link
-                      href={check.href}
-                      className="flex items-center gap-2.5 rounded-lg px-1 py-1 transition-colors hover:bg-[var(--muted)]/50"
-                    >
-                      {rowContent}
-                    </Link>
-                  ) : (
-                    <div className="flex items-center gap-2.5 rounded-lg px-1 py-1">
-                      {rowContent}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        <div
-          role="region"
-          aria-labelledby="admin-roles-heading"
-          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
-        >
-          <h2
-            id="admin-roles-heading"
-            className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
-          >
-            Users by role
-          </h2>
-          {roleData.length === 0 ? (
-            <p className="mt-2 text-xs text-[var(--muted-foreground)]">No data yet.</p>
-          ) : (
-            <QaDonutChart data={roleData} centerLabel="active" subject="role" />
-          )}
-        </div>
-
-        <div
-          role="region"
-          aria-labelledby="admin-activity-heading"
-          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
-        >
-          <div className="flex items-center justify-between gap-2">
             <h2
-              id="admin-activity-heading"
+              id="admin-health-heading"
               className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
             >
-              Recent activity
+              Configuration health
             </h2>
-            <Link
-              href="/admin/audit-logs"
-              className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold text-[var(--primary)] hover:underline"
-            >
-              Full
-              <ArrowRight className="h-2.5 w-2.5" />
-            </Link>
-          </div>
-          {recentActivity.length === 0 ? (
-            <p className="mt-2 text-xs text-[var(--muted-foreground)]">No activity yet.</p>
-          ) : (
-            <ul className="mt-2.5 max-h-50 divide-y divide-[var(--border)] overflow-y-auto">
-              {recentActivity.map((log: any) => (
-                <li key={String(log._id)} className="py-1.5">
-                  <p className="truncate font-mono text-[10.5px] font-medium text-[var(--foreground)]">
-                    {log.action}
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
-                    <span className="truncate">
-                      {log.actorRef
-                        ? `${log.actorRef.firstName} ${log.actorRef.lastName}`
-                        : "System"}
+            <ul className="mt-2.5 max-h-56 space-y-1.5 overflow-y-auto pr-1">
+              {CHECKS.map((check) => {
+                const rowContent = (
+                  <>
+                    {check.ok ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 shrink-0 text-[var(--destructive)]" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-semibold text-[var(--foreground)]">
+                        {check.label}
+                      </span>
+                      <span className="block truncate text-[11px] text-[var(--muted-foreground)]">
+                        {check.detail}
+                      </span>
                     </span>
-                    <span>·</span>
-                    <RelativeTime date={log.createdAt} className="shrink-0" />
-                  </p>
-                </li>
-              ))}
+                    {check.href && (
+                      <ArrowRight className="h-3 w-3 shrink-0 text-[var(--muted-foreground)]" />
+                    )}
+                  </>
+                );
+
+                return (
+                  <li key={check.label}>
+                    {check.href ? (
+                      <Link
+                        href={check.href}
+                        className="flex items-center gap-2.5 rounded-lg px-1 py-1 transition-colors hover:bg-[var(--muted)]/50"
+                      >
+                        {rowContent}
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-2.5 rounded-lg px-1 py-1">
+                        {rowContent}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
-          )}
+          </div>
+
+          <div
+            role="region"
+            aria-labelledby="admin-roles-heading"
+            className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+          >
+            <h2
+              id="admin-roles-heading"
+              className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
+            >
+              Users by role
+            </h2>
+            {roleData.length === 0 ? (
+              <p className="mt-2 text-xs text-[var(--muted-foreground)]">No data yet.</p>
+            ) : (
+              <QaDonutChart data={roleData} centerLabel="active" subject="role" />
+            )}
+          </div>
+
+          <div
+            role="region"
+            aria-labelledby="admin-activity-heading"
+            className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2
+                id="admin-activity-heading"
+                className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
+              >
+                Recent activity
+              </h2>
+              <Link
+                href="/admin/audit-logs"
+                className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold text-[var(--primary)] hover:underline"
+              >
+                Full
+                <ArrowRight className="h-2.5 w-2.5" />
+              </Link>
+            </div>
+            {recentActivity.length === 0 ? (
+              <p className="mt-2 text-xs text-[var(--muted-foreground)]">No activity yet.</p>
+            ) : (
+              <ul className="mt-2.5 max-h-50 divide-y divide-[var(--border)] overflow-y-auto">
+                {recentActivity.map((log: any) => (
+                  <li key={String(log._id)} className="py-1.5">
+                    <p className="truncate font-mono text-[10.5px] font-medium text-[var(--foreground)]">
+                      {log.action}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
+                      <span className="truncate">
+                        {log.actorRef
+                          ? `${log.actorRef.firstName} ${log.actorRef.lastName}`
+                          : "System"}
+                      </span>
+                      <span>·</span>
+                      <RelativeTime date={log.createdAt} className="shrink-0" />
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* SLA HEATMAP · TREND (wide) · OFFICE WORKLOAD */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -472,13 +518,17 @@ export default async function AdminDashboardPage() {
             >
               SLA by office
             </h2>
-            <Link
-              href="/qa/sla-compliance"
-              className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold text-[var(--primary)] hover:underline"
-            >
-              Full
-              <ArrowRight className="h-2.5 w-2.5" />
-            </Link>
+            {/* /qa/sla-compliance is qa_office-only per rbac.ts — not reachable
+                by any /admin/** role, scoped sub-admins included. */}
+            {isAdmin && (
+              <Link
+                href="/qa/sla-compliance"
+                className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold text-[var(--primary)] hover:underline"
+              >
+                Full
+                <ArrowRight className="h-2.5 w-2.5" />
+              </Link>
+            )}
           </div>
           <div className="mt-2.5">
             <SlaHeatmap data={slaByOffice} compact />

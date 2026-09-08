@@ -12,6 +12,7 @@ import {
 } from "@/features/reports/services/report-file.service";
 import { uploadReportFile } from "@/features/reports/services/report-upload.service";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import { getAdminScope, officeIdsForScope } from "@/lib/admin-scope";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { role, officeRef, collegeRef } = session.user;
+  const { role, officeRef } = session.user;
 
   if (role === "student") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -35,13 +36,21 @@ export async function POST(req: NextRequest) {
 
   const { reportType, format, filters } = parsed.data;
 
-  const scopedFilters = { ...filters };
+  const scopedFilters: typeof filters & { officeRefIn?: string[] | null } = { ...filters };
   if (role === "office_staff") {
     scopedFilters.officeRef = officeRef;
     scopedFilters.collegeRef = null;
-  } else if (role === "college_dean") {
-    scopedFilters.collegeRef = collegeRef;
-    scopedFilters.officeRef = filters.officeRef ?? null;
+  } else {
+    const scope = getAdminScope(role);
+    if (scope.kind === "college_office" || scope.kind === "university_office") {
+      const officeIds = (await officeIdsForScope(scope)) ?? [];
+      // Keep the client's chosen office only if it's actually within this
+      // role's office category; otherwise fall back to the whole category.
+      scopedFilters.officeRef = filters.officeRef && officeIds.includes(filters.officeRef)
+        ? filters.officeRef
+        : null;
+      scopedFilters.officeRefIn = officeIds;
+    }
   }
 
   // Everything — including report creation — now wrapped, so any failure

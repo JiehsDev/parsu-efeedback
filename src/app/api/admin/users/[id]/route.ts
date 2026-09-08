@@ -1,27 +1,50 @@
 // src/app/api/admin/users/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { requireAdmin } from "@/lib/api-guards";
+import { requireScopedAdmin } from "@/lib/api-guards";
 import { User } from "@/models/User";
+import { Office } from "@/models/Office";
 import { updateUserSchema } from "@/features/admin/schemas/user.schema";
 import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import type { AdminScope } from "@/lib/admin-scope";
+
+// vpaa/vpaf may only touch office_staff/qa_office users already in their
+// own office category; osas may only touch students; administrator is
+// unrestricted. Used both to gate access to an existing user and to
+// validate the effective role/office a PATCH would produce.
+async function isUserInScope(
+  scope: AdminScope,
+  user: { role: string; officeRef: unknown },
+): Promise<boolean> {
+  if (scope.kind === "all") return true;
+  if (scope.kind === "student") return user.role === "student";
+  if (user.role !== "office_staff" && user.role !== "qa_office") return false;
+  if (!user.officeRef) return false;
+  const office = await Office.findById(user.officeRef).select("type").lean();
+  return (office as any)?.type === scope.kind;
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
 
   await connectToDatabase();
   const { id } = await params;
   const user = await User.findById(id).select("-passwordHash").lean();
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!(await isUserInScope(scope, user as any))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   return NextResponse.json({ user });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
 
   await connectToDatabase();
   const { id } = await params;
@@ -34,28 +57,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const before = await User.findById(id).select("-passwordHash").lean();
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (
-    (parsed.data.role === "college_dean" || (before as any).role === "college_dean") &&
-    parsed.data.isActive !== false
-  ) {
-    const effectiveRole = parsed.data.role ?? (before as any).role;
-    const effectiveCollegeRef = parsed.data.collegeRef ?? (before as any).collegeRef;
+  if (!(await isUserInScope(scope, before as any))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-    if (effectiveRole === "college_dean" && effectiveCollegeRef) {
-      const conflict = await User.findOne({
-        role: "college_dean",
-        collegeRef: effectiveCollegeRef,
-        isActive: true,
-        _id: { $ne: id },
-      }).lean();
-      if (conflict) {
-        return NextResponse.json(
-          { error: "This college already has an active dean." },
-          { status: 409 },
-        );
-      }
+  if (scope.kind !== "all") {
+    const effectiveRole = parsed.data.role ?? (before as any).role;
+    const effectiveOfficeRef = parsed.data.officeRef ?? (before as any).officeRef;
+    const wouldStayInScope = await isUserInScope(scope, {
+      role: effectiveRole,
+      officeRef: effectiveOfficeRef,
+    });
+    if (!wouldStayInScope) {
+      return NextResponse.json(
+        { error: "This change would move the user outside your scope" },
+        { status: 403 },
+      );
     }
   }
+
   const { password, forceLogout, ...rest } = parsed.data;
   const update: Record<string, unknown> = { ...rest };
 
@@ -89,8 +109,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdmin();
+  const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
+  const { scope } = guard;
 
   await connectToDatabase();
   const { id } = await params;
@@ -102,6 +123,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const before = await User.findById(id).select("-passwordHash").lean();
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!(await isUserInScope(scope, before as any))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Soft-delete preferred: deactivate rather than hard-delete, since Users
   // are referenced everywhere (complaints, notes, audit logs)

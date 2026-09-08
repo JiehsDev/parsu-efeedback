@@ -9,7 +9,6 @@ import { Assignment } from "@/models/Assignment";
 import { createComplaintSchema } from "@/features/complaints/schemas/complaint.schema";
 import { generateTicketNumber } from "@/features/complaints/services/ticket-number.service";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import type { PipelineStage } from "mongoose";
 import { resolveSlaRule, computeSlaDates } from "@/features/sla/services/sla.service";
 import { notifyComplaintSubmitted } from "@/features/notifications/services/notification.service";
 import {
@@ -146,76 +145,31 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status");
 
   const filter: Record<string, unknown> = { isArchived: false };
-  const { role, id, officeRef, collegeRef } = session.user;
+  const { role, id, officeRef } = session.user;
 
   if (role === "student") {
     filter.studentRef = id;
   } else if (role === "office_staff") {
     filter.assignedOfficeRef = officeRef;
-  } else if (role === "college_dean") {
-    // handled via aggregation below
   }
 
   if (status) filter.status = status;
 
-  let complaints: any[];
-  let total: number;
-
-  if (role === "college_dean") {
-    const pipeline: PipelineStage[] = [
-      {
+  const [complaints, total] = await Promise.all([
+    Complaint.find(filter)
+      .populate({
         // Student identity is kept out of this response — ID + college
         // only, not name.
-        $lookup: {
-          from: "users",
-          let: { studentId: "$studentRef" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$_id", "$$studentId"] } } },
-            { $project: { employeeOrStudentId: 1, collegeRef: 1 } },
-          ],
-          as: "student",
-        },
-      },
-      { $unwind: "$student" },
-      {
-        $lookup: {
-          from: "offices",
-          localField: "student.collegeRef",
-          foreignField: "_id",
-          as: "college",
-        },
-      },
-      { $unwind: { path: "$college", preserveNullAndEmptyArrays: true } },
-      {
-        $match: {
-          "student.collegeRef": collegeRef,
-          isArchived: false,
-          ...(status ? { status } : {}),
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-    ];
-    complaints = await Complaint.aggregate(pipeline);
-    total = complaints.length;
-  } else {
-    [complaints, total] = await Promise.all([
-      Complaint.find(filter)
-        .populate({
-          // Student identity is kept out of this response — ID + college
-          // only, not name.
-          path: "studentRef",
-          select: "employeeOrStudentId collegeRef",
-          populate: { path: "collegeRef", select: "name" },
-        })
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      Complaint.countDocuments(filter),
-    ]);
-  }
+        path: "studentRef",
+        select: "employeeOrStudentId collegeRef",
+        populate: { path: "collegeRef", select: "name" },
+      })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Complaint.countDocuments(filter),
+  ]);
 
   return NextResponse.json({ complaints, total, page, limit });
 }

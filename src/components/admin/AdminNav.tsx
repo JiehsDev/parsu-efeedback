@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   LogOut,
   Megaphone,
+  MessageSquareText,
   ScrollText,
   Settings,
   Tag,
@@ -20,13 +21,33 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import type { UserRole } from "@/lib/constants";
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  student: "Student",
+  office_staff: "Staff",
+  qa_office: "QA Office",
+  administrator: "Administrator",
+  vpaa: "VPAA",
+  vpaf: "VPAF",
+  osas: "OSAS",
+};
 
 const PRIMARY_NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/admin/complaints", label: "Complaints", icon: Inbox },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/offices", label: "Offices", icon: Building2 },
+  // osas manages students only, not Offices — CRUD there is meaningless.
+  { href: "/admin/offices", label: "Offices", icon: Building2, hideFor: ["osas"] as UserRole[] },
+  // Feedback has no office/college link — it's purely a student concern, so
+  // only osas (among the sub-admins) gets it, not vpaa/vpaf.
+  {
+    href: "/admin/feedback",
+    label: "Feedback",
+    icon: MessageSquareText,
+    hideFor: ["vpaa", "vpaf"] as UserRole[],
+  },
 ];
 
 // A sidebar has room to just list these instead of tucking them behind a
@@ -52,8 +73,11 @@ function getInitials(name: string) {
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-export function AdminNav({ userName }: { userName: string }) {
+export function AdminNav({ userName, role }: { userName: string; role: UserRole }) {
   const pathname = usePathname();
+  const isScopedSubAdmin = role === "vpaa" || role === "vpaf" || role === "osas";
+  const roleLabel = ROLE_LABELS[role] ?? "Administrator";
+  const primaryItems = PRIMARY_NAV_ITEMS.filter((item) => !item.hideFor?.includes(role));
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -109,13 +133,19 @@ export function AdminNav({ userName }: { userName: string }) {
       </Link>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
-        {PRIMARY_NAV_ITEMS.map(renderItem)}
+        {primaryItems.map(renderItem)}
 
-        <p className="mt-3 mb-1 px-3 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
-          <span className="hidden lg:inline">Configuration</span>
-          <span className="lg:hidden">···</span>
-        </p>
-        {CONFIG_NAV_ITEMS.map(renderItem)}
+        {/* Categories/Routing/SLA Rules/Announcements/Audit Logs/Settings
+            stay administrator-only — not shown to any scoped sub-admin. */}
+        {!isScopedSubAdmin && (
+          <>
+            <p className="mt-3 mb-1 px-3 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+              <span className="hidden lg:inline">Configuration</span>
+              <span className="lg:hidden">···</span>
+            </p>
+            {CONFIG_NAV_ITEMS.map(renderItem)}
+          </>
+        )}
       </nav>
 
       <div className="shrink-0 border-t border-[var(--border)]/70 p-2.5">
@@ -148,7 +178,7 @@ export function AdminNav({ userName }: { userName: string }) {
                   {userName}
                 </span>
                 <span className="block truncate text-[10.5px] text-[var(--muted-foreground)]">
-                  Administrator
+                  {roleLabel}
                 </span>
               </span>
             </button>
@@ -162,7 +192,7 @@ export function AdminNav({ userName }: { userName: string }) {
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">
                     {userName}
                   </p>
-                  <p className="text-xs text-[var(--muted-foreground)]">Administrator</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">{roleLabel}</p>
                 </div>
                 <div className="p-1">
                   <Link

@@ -16,28 +16,33 @@ import type { UserRole } from "@/lib/constants";
 // Order matters only in that the first matching prefix wins; keep
 // longer/more-specific prefixes above shorter ones if that ever matters
 // (not currently the case — every role has a disjoint top-level segment).
-const ROLE_ROUTE_PREFIXES: Array<{ prefix: string; role: UserRole }> = [
-  { prefix: "/student", role: "student" },
-  { prefix: "/staff", role: "office_staff" },
-  { prefix: "/dean", role: "college_dean" },
-  { prefix: "/qa", role: "qa_office" },
-  { prefix: "/admin", role: "administrator" },
-  { prefix: "/api/admin", role: "administrator" },
+//
+// /admin and /api/admin admit administrator plus the three scoped
+// sub-admin roles (vpaa/vpaf/osas) — they all land on the same admin
+// pages/routes, which apply their own data-level scoping per role
+// (see src/lib/admin-scope.ts). administrator's unrestricted-everywhere
+// behavior (BR-010/096) is handled separately below, not by this table.
+const ROLE_ROUTE_PREFIXES: Array<{ prefix: string; roles: UserRole[] }> = [
+  { prefix: "/student", roles: ["student"] },
+  { prefix: "/staff", roles: ["office_staff"] },
+  { prefix: "/qa", roles: ["qa_office"] },
+  { prefix: "/admin", roles: ["administrator", "vpaa", "vpaf", "osas"] },
+  { prefix: "/api/admin", roles: ["administrator", "vpaa", "vpaf", "osas"] },
 ];
 
 /**
- * Returns the role required for a given pathname, or `null` if the path
+ * Returns the roles allowed on a given pathname, or `null` if the path
  * isn't role-gated (e.g. shared API routes like /api/complaints, which
  * every authenticated role may hit — the handler itself scopes by role,
  * per architecture.md section 4).
  */
-export function requiredRoleForPath(pathname: string): UserRole | null {
+export function requiredRoleForPath(pathname: string): UserRole[] | null {
   // Check the more specific /api/admin prefix before the generic role
   // prefixes so it isn't mistakenly left unmatched (no role folder is
   // literally named "api").
-  for (const { prefix, role } of ROLE_ROUTE_PREFIXES) {
+  for (const { prefix, roles } of ROLE_ROUTE_PREFIXES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
-      return role;
+      return roles;
     }
   }
   return null;
@@ -54,8 +59,8 @@ export function isRouteAllowed(pathname: string, role: UserRole): boolean {
   // still applies unchanged below.
   if (role === "administrator") return true;
 
-  const requiredRole = requiredRoleForPath(pathname);
-  return requiredRole === null || requiredRole === role;
+  const allowedRoles = requiredRoleForPath(pathname);
+  return allowedRoles === null || allowedRoles.includes(role);
 }
 
 /**
@@ -69,11 +74,12 @@ export function homeRouteForRole(role: UserRole): string {
       return "/student/dashboard";
     case "office_staff":
       return "/staff/dashboard";
-    case "college_dean":
-      return "/dean/dashboard";
     case "qa_office":
       return "/qa/dashboard";
     case "administrator":
+    case "vpaa":
+    case "vpaf":
+    case "osas":
       return "/admin/dashboard";
   }
 }

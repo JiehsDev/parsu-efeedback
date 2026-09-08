@@ -14,6 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { Category } from "@/models/Category";
 import { Office } from "@/models/Office";
 import { RoutingRule } from "@/models/RoutingRule";
@@ -30,6 +31,11 @@ export default async function AdminCategoryDetailPage({
 }) {
   const { id } = await params;
   if (!Types.ObjectId.isValid(id)) notFound();
+
+  // Categories/Routing/SLA Rules are administrator-only — not exposed to
+  // vpaa/vpaf/osas.
+  const session = await auth();
+  if (session?.user.role !== "administrator") notFound();
 
   await connectToDatabase();
   const category = await Category.findById(id).lean();

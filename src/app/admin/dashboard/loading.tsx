@@ -8,8 +8,8 @@ export default function Loading() {
     <div className="flex h-full flex-col gap-4">
       <Skeleton className="h-6 w-40" />
 
-      <div className="grid grid-cols-3 gap-1.5 sm:hidden">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-1.5 sm:hidden">
+        {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-1.5 py-2.5">
             <Skeleton className="mx-auto h-5 w-6" />
             <Skeleton className="mx-auto mt-1.5 h-2.5 w-10" />
@@ -17,8 +17,8 @@ export default function Loading() {
         ))}
       </div>
 
-      <div className="hidden gap-2.5 sm:grid sm:grid-cols-3 xl:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="hidden gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3">
             <div className="flex items-center justify-between">
               <Skeleton className="h-2.5 w-14" />

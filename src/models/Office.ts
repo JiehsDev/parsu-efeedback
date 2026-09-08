@@ -1,8 +1,10 @@
 // Mongoose model: Office (collection: offices)
-// Unified hierarchy for colleges and service offices — BR-014..BR-020.
-// A "college" (BR-014/015/016) is just an Office with type: "college";
-// keeping one collection avoids duplicating the same shape twice and lets
-// routing/SLA rules target either kind uniformly.
+// Unified hierarchy for college offices and university offices —
+// BR-014..BR-020. A "college office" (BR-014/015/016, e.g. CBM/CECS/COED)
+// is just an Office with type: "college_office"; a "university office"
+// (e.g. Registrar, Cashier) is type: "university_office". Keeping one
+// collection avoids duplicating the same shape twice and lets
+// routing/SLA rules and staff assignment target either kind uniformly.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
 import { OFFICE_TYPES } from "@/lib/constants";
