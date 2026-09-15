@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } else if (scope.kind === "college_office" || scope.kind === "university_office") {
-    if (rest.role !== "office_staff" && rest.role !== "qa_office") {
+    if (rest.role !== "office_staff") {
       return NextResponse.json(
         { error: "You can only create staff accounts in your own office category" },
         { status: 403 },

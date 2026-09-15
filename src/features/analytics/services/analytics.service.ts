@@ -1,5 +1,6 @@
 // src/features/analytics/services/analytics.service.ts
 import { Complaint } from "@/models/Complaint";
+import { Assignment } from "@/models/Assignment";
 import { Types } from "mongoose";
 import type { PipelineStage } from "mongoose";
 
@@ -33,8 +34,98 @@ export interface SlaComplianceByOfficePoint {
   percent: number;
 }
 
+export interface AnalyticsSummary {
+  totalComplaints: number;
+  overdueComplaints: number;
+  resolvedComplaints: number;
+  unresolvedComplaints: number;
+  averageFirstResponseHours: number | null;
+  averageResolutionHours: number | null;
+  slaComplianceRate: number;
+  byStatus: Array<{ status: string; volume: number }>;
+  officePerformance: SlaComplianceByOfficePoint[];
+}
+
+function roundHours(ms: number) {
+  return Math.round((ms / 3_600_000) * 100) / 100;
+}
+
+export async function getAnalyticsSummary(
+  scopeMatch: Record<string, unknown>,
+): Promise<AnalyticsSummary> {
+  const match = { isArchived: false, ...scopeMatch };
+
+  const [complaints, byStatus, officePerformance] = await Promise.all([
+    Complaint.find(match)
+      .select("_id submittedAt resolvedAt slaResolutionDueAt status isOverdue")
+      .lean(),
+    Complaint.aggregate([
+      { $match: match },
+      { $group: { _id: "$status", volume: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]),
+    getSlaComplianceByOffice(scopeMatch),
+  ]);
+
+  const totalComplaints = complaints.length;
+  const resolved = complaints.filter((c: any) => c.status === "resolved" || c.status === "closed");
+  const unresolvedComplaints = complaints.filter(
+    (c: any) => c.status !== "resolved" && c.status !== "closed" && c.status !== "withdrawn",
+  ).length;
+  const overdueComplaints = complaints.filter((c: any) => c.isOverdue).length;
+
+  const resolutionDurations = resolved
+    .filter((c: any) => c.resolvedAt && c.submittedAt)
+    .map((c: any) => new Date(c.resolvedAt).getTime() - new Date(c.submittedAt).getTime())
+    .filter((ms) => ms >= 0);
+
+  const complaintIds = complaints.map((c: any) => c._id);
+  const firstHumanAssignments = await Assignment.aggregate([
+    {
+      $match: {
+        complaintRef: { $in: complaintIds },
+        assignedByRef: { $ne: null },
+      },
+    },
+    { $sort: { createdAt: 1 } },
+    { $group: { _id: "$complaintRef", firstResponseAt: { $first: "$createdAt" } } },
+  ]);
+  const submittedById = new Map(complaints.map((c: any) => [String(c._id), c.submittedAt]));
+  const firstResponseDurations = firstHumanAssignments
+    .map((a: any) => {
+      const submittedAt = submittedById.get(String(a._id));
+      return submittedAt
+        ? new Date(a.firstResponseAt).getTime() - new Date(submittedAt as any).getTime()
+        : -1;
+    })
+    .filter((ms: number) => ms >= 0);
+
+  const compliantResolved = resolved.filter(
+    (c: any) =>
+      c.resolvedAt &&
+      c.slaResolutionDueAt &&
+      new Date(c.resolvedAt).getTime() <= new Date(c.slaResolutionDueAt).getTime(),
+  ).length;
+
+  return {
+    totalComplaints,
+    overdueComplaints,
+    resolvedComplaints: resolved.length,
+    unresolvedComplaints,
+    averageFirstResponseHours: firstResponseDurations.length
+      ? roundHours(firstResponseDurations.reduce((sum, ms) => sum + ms, 0) / firstResponseDurations.length)
+      : null,
+    averageResolutionHours: resolutionDurations.length
+      ? roundHours(resolutionDurations.reduce((sum, ms) => sum + ms, 0) / resolutionDurations.length)
+      : null,
+    slaComplianceRate: resolved.length ? Math.round((compliantResolved / resolved.length) * 100) : 0,
+    byStatus: byStatus.map((row: any) => ({ status: row._id, volume: row.volume })),
+    officePerformance,
+  };
+}
+
 // BR-089 "Category Distribution" — scoped by the same flat $match pattern
-// as getMonthlyTrends, so vpaa/vpaf/osas/qa/admin all reuse this with their
+// as getMonthlyTrends, so vpaa/vpaf/osas/admin all reuse this with their
 // own pre-resolved scopeMatch.
 export async function getCategoryBreakdown(
   scopeMatch: Record<string, unknown>,

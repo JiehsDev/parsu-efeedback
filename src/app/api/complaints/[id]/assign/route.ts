@@ -9,7 +9,16 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Assignment } from "@/models/Assignment";
 import { assignComplaintSchema } from "@/features/complaints/schemas/assign.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import { notifyComplaintAssigned } from "@/features/notifications/services/notification.service";
+import {
+  notifyComplaintAssigned,
+  notifyComplaintRoutedToOffice,
+  notifyStatusUpdated,
+} from "@/features/notifications/services/notification.service";
+import {
+  getOsasAllowedDestinationOffices,
+  getOsasEscalationOffice,
+  isComplaintInOsasActionScope,
+} from "@/lib/osas-complaint-scope";
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) {
@@ -22,14 +31,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // USER_ROLES without an assign-scope branch here fails closed rather
   // than falling through to the unguarded "apply changes" section below —
   // osas in particular has no complaint-assignment authority at all.
-  if (!["office_staff", "vpaa", "vpaf", "administrator"].includes(role)) {
+  if (!["office_staff", "vpaa", "vpaf", "osas", "administrator"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   await connectToDatabase();
   const { id } = await params;
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
   const parsed = assignComplaintSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -47,7 +61,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   }
 
-  const { assignedOfficeRef, assignedStaffRef } = parsed.data;
+  const { assignedOfficeRef, assignedStaffRef, action } = parsed.data;
+  const isEscalationAction = action === "escalate";
 
   // --- Scope checks per role ---
 
@@ -86,8 +101,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (role === "vpaa" || role === "vpaf") {
     // Broad, like admin, but confined to one office category: vpaa may only
     // touch complaints currently sitting in a college_office, vpaf only in
-    // a university_office. This is the college_dean escalation power's
-    // successor, generalized to both office categories.
+    // a university_office. College/dean handling is represented through
+    // college offices and their head users, not a separate software role.
     const requiredType = role === "vpaa" ? "college_office" : "university_office";
 
     const currentOffice = await Office.findById(complaint.assignedOfficeRef).lean();
@@ -116,6 +131,54 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // existing) target office.
     if (assignedStaffRef) {
       const effectiveOfficeRef = assignedOfficeRef ?? String(complaint.assignedOfficeRef);
+      const targetStaff = await User.findById(assignedStaffRef).lean();
+      if (
+        !targetStaff ||
+        (targetStaff as any).role !== "office_staff" ||
+        String((targetStaff as any).officeRef) !== effectiveOfficeRef
+      ) {
+        return NextResponse.json(
+          { error: "Target staff must belong to the target office" },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
+  if (role === "osas") {
+    if (!(await isComplaintInOsasActionScope(complaint))) {
+      return NextResponse.json(
+        { error: "OSAS can only reassign complaints within student-affairs scope" },
+        { status: 403 },
+      );
+    }
+
+    const allowedDestinations = await getOsasAllowedDestinationOffices(complaint);
+    const allowedDestinationIds = new Set(allowedDestinations.map((office: any) => String(office._id)));
+    const effectiveOfficeRef = assignedOfficeRef ?? String(complaint.assignedOfficeRef ?? "");
+    if (!effectiveOfficeRef || !allowedDestinationIds.has(effectiveOfficeRef)) {
+      return NextResponse.json(
+        { error: "Destination office is outside OSAS reassignment scope" },
+        { status: 400 },
+      );
+    }
+
+    const targetOffice = await Office.findById(effectiveOfficeRef).lean();
+    if (!targetOffice || !(targetOffice as any).isActive) {
+      return NextResponse.json({ error: "Target office is invalid or inactive" }, { status: 400 });
+    }
+
+    if (isEscalationAction) {
+      const escalationOffice = await getOsasEscalationOffice(complaint);
+      if (!escalationOffice || String((escalationOffice as any)._id) !== effectiveOfficeRef) {
+        return NextResponse.json(
+          { error: "OSAS escalation must use the configured VPAA/escalation destination" },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (assignedStaffRef) {
       const targetStaff = await User.findById(assignedStaffRef).lean();
       if (
         !targetStaff ||
@@ -168,8 +231,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     complaint.assignedStaffRef = assignedStaffRef as any;
   }
 
+  if (isEscalationAction) {
+    complaint.status = "escalated";
+  }
+
   // Auto-advance status on first assignment out of "submitted"
-  if (complaint.status === "submitted") {
+  if (!isEscalationAction && complaint.status === "submitted") {
     complaint.status = "assigned";
   }
 
@@ -177,10 +244,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await ComplaintTimeline.create({
     complaintRef: complaint._id,
-    eventType: officeChanged ? "reassigned" : "assigned",
+    eventType: isEscalationAction ? "escalated" : officeChanged ? "reassigned" : "assigned",
     actorRef: userId,
-    fromValue: String(before.assignedOfficeRef ?? ""),
-    toValue: String(complaint.assignedOfficeRef ?? ""),
+    fromValue: isEscalationAction ? before.status : String(before.assignedOfficeRef ?? ""),
+    toValue: isEscalationAction ? "escalated" : String(complaint.assignedOfficeRef ?? ""),
     message: parsed.data.message ?? "",
   });
 
@@ -197,7 +264,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await writeAuditLog({
     actorId: userId,
-    action: officeChanged ? "complaint.reassign" : "complaint.assign",
+    action:
+      role === "osas" && isEscalationAction
+        ? "OSAS_COMPLAINT_ESCALATED"
+        : role === "osas"
+          ? "OSAS_COMPLAINT_REASSIGNED"
+          : officeChanged
+            ? "complaint.reassign"
+            : "complaint.assign",
     entityType: "Complaint",
     entityId: complaint._id,
     beforeState: before,
@@ -205,6 +279,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       assignedOfficeRef: complaint.assignedOfficeRef,
       assignedStaffRef: complaint.assignedStaffRef,
       status: complaint.status,
+      reason: parsed.data.message ?? "",
+      escalatedAt: isEscalationAction ? new Date() : undefined,
     },
     ipAddress: req.headers.get("x-forwarded-for"),
     userAgent: req.headers.get("user-agent"),
@@ -215,6 +291,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ticketNumber: complaint.ticketNumber,
     complaintId: complaint._id.toString(),
   });
+  if (officeChanged && complaint.assignedOfficeRef) {
+    await notifyComplaintRoutedToOffice({
+      officeId: String(complaint.assignedOfficeRef),
+      ticketNumber: complaint.ticketNumber,
+      complaintId: complaint._id.toString(),
+    });
+  }
+  if (isEscalationAction) {
+    await notifyStatusUpdated({
+      studentId: String(complaint.studentRef),
+      ticketNumber: complaint.ticketNumber,
+      complaintId: complaint._id.toString(),
+      fromStatus: before.status,
+      toStatus: "escalated",
+    });
+  }
 
   return NextResponse.json({ complaint });
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
+  BarChart3,
   CheckCircle2,
   Inbox,
   Route,
@@ -22,6 +23,7 @@ import { SLARule } from "@/models/SLARule";
 import { Office } from "@/models/Office";
 import { AuditLog } from "@/models/AuditLog";
 import {
+  getAnalyticsSummary,
   getMonthlyTrends,
   getSlaComplianceByOffice,
 } from "@/features/analytics/services/analytics.service";
@@ -35,10 +37,10 @@ import {
   userFilterForScope,
   officeFilterForScope,
 } from "@/lib/admin-scope";
-import { QaTrendChart } from "@/components/qa/charts/QaTrendChart";
-import { QaDonutChart } from "@/components/qa/charts/QaDonutChart";
-import { QaBarList } from "@/components/qa/charts/QaBarList";
-import { SlaHeatmap } from "@/components/qa/SlaHeatmap";
+import { QaTrendChart } from "@/components/analytics/QaTrendChart";
+import { QaDonutChart } from "@/components/analytics/QaDonutChart";
+import { QaBarList } from "@/components/analytics/QaBarList";
+import { SlaHeatmap } from "@/components/analytics/SlaHeatmap";
 import { StatCard, StatChip, type StatCardData } from "@/components/shared/StatCard";
 import { RelativeTime } from "@/components/shared/RelativeTime";
 
@@ -47,7 +49,6 @@ const SLA_CRON_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const ROLE_LABELS: Record<string, string> = {
   student: "Students",
   office_staff: "Staff",
-  qa_office: "QA Office",
   administrator: "Admins",
   vpaa: "VPAA",
   vpaf: "VPAF",
@@ -86,6 +87,7 @@ export default async function AdminDashboardPage() {
     staleSubmitted,
     avgRatingResult,
     trends,
+    analyticsSummary,
     slaByOffice,
     roleCounts,
     recentActivity,
@@ -126,6 +128,7 @@ export default async function AdminDashboardPage() {
       { $group: { _id: null, avg: { $avg: "$studentRating" }, count: { $sum: 1 } } },
     ]),
     getMonthlyTrends(scopeMatch),
+    getAnalyticsSummary(scopeMatch),
     getSlaComplianceByOffice(scopeMatch),
     User.aggregate([
       { $match: { ...userScopeFilter, isActive: true } },
@@ -170,6 +173,7 @@ export default async function AdminDashboardPage() {
 
   const avgRating = avgRatingResult[0]?.avg ?? null;
   const ratingCount = avgRatingResult[0]?.count ?? 0;
+  const formatHours = (hours: number | null) => (hours === null ? "—" : `${hours}h`);
 
   const STATS: StatCardData[] = [
     {
@@ -242,6 +246,59 @@ export default async function AdminDashboardPage() {
       chipBorder: "border-amber-500/30",
       chipBg: "bg-amber-500/10",
       chipText: "text-amber-400",
+    },
+  ];
+
+  const SUMMARY_STATS: StatCardData[] = [
+    {
+      label: "Resolved",
+      value: analyticsSummary.resolvedComplaints,
+      icon: CheckCircle2,
+      iconColor: "var(--qa-success)",
+      tint: "bg-emerald-500/15 text-emerald-400",
+      chipBorder: "border-emerald-500/30",
+      chipBg: "bg-emerald-500/10",
+      chipText: "text-emerald-400",
+    },
+    {
+      label: "Unresolved",
+      value: analyticsSummary.unresolvedComplaints,
+      icon: Inbox,
+      iconColor: "var(--primary)",
+      tint: "bg-[var(--primary)]/15 text-[var(--primary)]",
+      chipBorder: "border-[var(--primary)]/30",
+      chipBg: "bg-[var(--primary)]/10",
+      chipText: "text-[var(--primary)]",
+    },
+    {
+      label: "Avg. first response",
+      value: formatHours(analyticsSummary.averageFirstResponseHours),
+      icon: Timer,
+      iconColor: "var(--qa-amber)",
+      tint: "bg-amber-500/15 text-amber-400",
+      chipBorder: "border-amber-500/30",
+      chipBg: "bg-amber-500/10",
+      chipText: "text-amber-400",
+    },
+    {
+      label: "Avg. resolution",
+      value: formatHours(analyticsSummary.averageResolutionHours),
+      icon: BarChart3,
+      iconColor: "var(--secondary)",
+      tint: "bg-[var(--secondary)]/15 text-[var(--secondary)]",
+      chipBorder: "border-[var(--secondary)]/30",
+      chipBg: "bg-[var(--secondary)]/10",
+      chipText: "text-[var(--secondary)]",
+    },
+    {
+      label: "SLA compliance",
+      value: `${analyticsSummary.slaComplianceRate}%`,
+      icon: CheckCircle2,
+      iconColor: "var(--qa-success)",
+      tint: "bg-emerald-500/15 text-emerald-400",
+      chipBorder: "border-emerald-500/30",
+      chipBg: "bg-emerald-500/10",
+      chipText: "text-emerald-400",
     },
   ];
 
@@ -384,6 +441,24 @@ export default async function AdminDashboardPage() {
           for vpaa/vpaf/osas this whole row is skipped rather than left half
           empty, since Users-by-role collapses to a single slice once it's
           filtered to just their own office category / students. */}
+      <div
+        role="region"
+        aria-labelledby="admin-resolution-metrics-heading"
+        className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+      >
+        <h2
+          id="admin-resolution-metrics-heading"
+          className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
+        >
+          Resolution metrics
+        </h2>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+          {SUMMARY_STATS.map((stat) => (
+            <StatCard key={stat.label} stat={stat} compact />
+          ))}
+        </div>
+      </div>
+
       {isAdmin && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div
@@ -518,17 +593,6 @@ export default async function AdminDashboardPage() {
             >
               SLA by office
             </h2>
-            {/* /qa/sla-compliance is qa_office-only per rbac.ts — not reachable
-                by any /admin/** role, scoped sub-admins included. */}
-            {isAdmin && (
-              <Link
-                href="/qa/sla-compliance"
-                className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold text-[var(--primary)] hover:underline"
-              >
-                Full
-                <ArrowRight className="h-2.5 w-2.5" />
-              </Link>
-            )}
           </div>
           <div className="mt-2.5">
             <SlaHeatmap data={slaByOffice} compact />

@@ -25,7 +25,6 @@ import type { UserRole } from "@/lib/constants";
 const ROLE_ROUTE_PREFIXES: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/student", roles: ["student"] },
   { prefix: "/staff", roles: ["office_staff"] },
-  { prefix: "/qa", roles: ["qa_office"] },
   { prefix: "/admin", roles: ["administrator", "vpaa", "vpaf", "osas"] },
   { prefix: "/api/admin", roles: ["administrator", "vpaa", "vpaf", "osas"] },
 ];
@@ -74,8 +73,6 @@ export function homeRouteForRole(role: UserRole): string {
       return "/student/dashboard";
     case "office_staff":
       return "/staff/dashboard";
-    case "qa_office":
-      return "/qa/dashboard";
     case "administrator":
     case "vpaa":
     case "vpaf":

@@ -15,6 +15,8 @@ const EVENT_LABELS: Record<string, string> = {
   rated: "Rated by student",
   edited: "Details updated by student",
   withdrawn: "Withdrawn by student",
+  information_requested: "Additional information requested",
+  information_submitted: "Additional information submitted",
 };
 
 export function TimelineEvent({ event }: { event: any }) {

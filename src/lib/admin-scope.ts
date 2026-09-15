@@ -71,7 +71,7 @@ export async function complaintFilterForScope(scope: AdminScope): Promise<Record
  * QA-style read access, folded into vpaa/vpaf/osas rather than kept as a
  * separate role: vpaa/vpaf may read (not mutate) any complaint sitting in
  * their office category — same "full detail, notes, attachments" access
- * qa_office/administrator get — and osas reads every complaint (its scope
+ * administrator gets — and osas reads every complaint (its scope
  * spans both office categories, framed by student attributes). Used by the
  * shared /api/complaints/[id]/** routes (also hit by the admin complaint
  * detail page's NotesSection/AttachmentGallery), not just /admin/**.

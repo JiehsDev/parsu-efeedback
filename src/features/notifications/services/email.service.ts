@@ -9,6 +9,10 @@ import ComplaintResolved from "../../../../emails/ComplaintResolved";
 import SLAWarning from "../../../../emails/SLAWarning";
 import Escalation from "../../../../emails/Escalation";
 import PasswordReset from "../../../../emails/PasswordReset";
+import InformationRequested from "../../../../emails/InformationRequested";
+import InformationSubmitted from "../../../../emails/InformationSubmitted";
+
+const EMAIL_SEND_TIMEOUT_MS = env.NODE_ENV === "production" ? 10_000 : 1_000;
 
 export async function sendPasswordResetEmail(params: {
   to: string;
@@ -32,12 +36,17 @@ async function sendEmail(to: string, subject: string, react: React.ReactElement)
 
   try {
     const html = await render(react);
-    await resend.emails.send({
-      from: env.RESEND_FROM_EMAIL,
-      to: actualRecipient,
-      subject: actualSubject,
-      html,
-    });
+    await Promise.race([
+      resend.emails.send({
+        from: env.RESEND_FROM_EMAIL,
+        to: actualRecipient,
+        subject: actualSubject,
+        html,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Email send timed out")), EMAIL_SEND_TIMEOUT_MS),
+      ),
+    ]);
   } catch (error) {
     logger.error("Failed to send email", {
       to: actualRecipient,
@@ -48,8 +57,12 @@ async function sendEmail(to: string, subject: string, react: React.ReactElement)
   }
 }
 
-function complaintUrl(complaintId: string) {
-  return `${env.NEXT_PUBLIC_APP_URL}/complaints/${complaintId}`;
+export function complaintUrlForRole(
+  complaintId: string,
+  role: "student" | "office_staff" | "administrator" | "vpaa" | "vpaf" | "osas",
+) {
+  const prefix = role === "student" ? "/student" : role === "office_staff" ? "/staff" : "/admin";
+  return `${env.NEXT_PUBLIC_APP_URL}${prefix}/complaints/${complaintId}`;
 }
 
 export async function sendComplaintSubmittedEmail(params: {
@@ -64,7 +77,7 @@ export async function sendComplaintSubmittedEmail(params: {
     ComplaintSubmitted({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,
-      complaintUrl: complaintUrl(params.complaintId),
+      complaintUrl: complaintUrlForRole(params.complaintId, "student"),
     }),
   );
 }
@@ -82,7 +95,10 @@ export async function sendComplaintAssignedEmail(params: {
     ComplaintAssigned({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,
-      complaintUrl: complaintUrl(params.complaintId),
+      complaintUrl: complaintUrlForRole(
+        params.complaintId,
+        params.isStaffRecipient ? "office_staff" : "student",
+      ),
       isStaffRecipient: params.isStaffRecipient,
     }),
   );
@@ -104,7 +120,7 @@ export async function sendComplaintUpdatedEmail(params: {
       ticketNumber: params.ticketNumber,
       fromStatus: params.fromStatus,
       toStatus: params.toStatus,
-      complaintUrl: complaintUrl(params.complaintId),
+      complaintUrl: complaintUrlForRole(params.complaintId, "student"),
     }),
   );
 }
@@ -121,7 +137,7 @@ export async function sendComplaintResolvedEmail(params: {
     ComplaintResolved({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,
-      complaintUrl: complaintUrl(params.complaintId),
+      complaintUrl: complaintUrlForRole(params.complaintId, "student"),
     }),
   );
 }
@@ -139,7 +155,7 @@ export async function sendSlaWarningEmail(params: {
     SLAWarning({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,
-      complaintUrl: complaintUrl(params.complaintId),
+      complaintUrl: complaintUrlForRole(params.complaintId, "office_staff"),
       warningThresholdPercent: params.warningThresholdPercent,
     }),
   );
@@ -157,7 +173,43 @@ export async function sendEscalationEmail(params: {
     Escalation({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,
-      complaintUrl: complaintUrl(params.complaintId),
+      complaintUrl: complaintUrlForRole(params.complaintId, "office_staff"),
+    }),
+  );
+}
+
+export async function sendInformationRequestedEmail(params: {
+  to: string;
+  recipientName: string;
+  ticketNumber: string;
+  requestMessage: string;
+  complaintId: string;
+}) {
+  await sendEmail(
+    params.to,
+    `Additional information required for ${params.ticketNumber}`,
+    InformationRequested({
+      recipientName: params.recipientName,
+      ticketNumber: params.ticketNumber,
+      requestMessage: params.requestMessage,
+      complaintUrl: complaintUrlForRole(params.complaintId, "student"),
+    }),
+  );
+}
+
+export async function sendInformationSubmittedEmail(params: {
+  to: string;
+  recipientName: string;
+  ticketNumber: string;
+  complaintId: string;
+}) {
+  await sendEmail(
+    params.to,
+    `Additional information submitted for ${params.ticketNumber}`,
+    InformationSubmitted({
+      recipientName: params.recipientName,
+      ticketNumber: params.ticketNumber,
+      complaintUrl: complaintUrlForRole(params.complaintId, "office_staff"),
     }),
   );
 }

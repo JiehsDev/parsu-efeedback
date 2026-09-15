@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Feedback } from "@/models/Feedback";
 import { createFeedbackSchema } from "@/features/feedback/schemas/feedback.schema";
+import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -24,6 +25,19 @@ export async function POST(req: NextRequest) {
     ...parsed.data,
   });
 
+  await writeAuditLog({
+    actorId: session.user.id,
+    action: "feedback.create",
+    entityType: "Feedback",
+    entityId: feedback._id,
+    afterState: {
+      category: feedback.category,
+      isAnonymous: feedback.isAnonymous,
+    },
+    ipAddress: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
+  });
+
   return NextResponse.json({ feedback }, { status: 201 });
 }
 
@@ -35,7 +49,7 @@ export async function GET() {
 
   await connectToDatabase();
 
-  const feedback = await Feedback.find({ studentRef: session.user.id })
+  const feedback = await Feedback.find({ studentRef: session.user.id, isArchived: false })
     .sort({ createdAt: -1 })
     .lean();
 

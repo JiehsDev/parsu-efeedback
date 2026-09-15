@@ -9,6 +9,7 @@ import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { OfficeStatusToggle } from "@/components/admin/OfficeStatusToggle";
 import { EditOfficeButton } from "@/components/admin/EditOfficeButton";
+import { OfficeHeadManager } from "@/components/admin/OfficeHeadManager";
 import { getAdminScope } from "@/lib/admin-scope";
 
 export default async function AdminOfficeDetailPage({
@@ -21,6 +22,7 @@ export default async function AdminOfficeDetailPage({
 
   await connectToDatabase();
   const session = await auth();
+  const isAdministrator = session!.user.role === "administrator";
   const scope = getAdminScope(session!.user.role);
   if (scope.kind === "student") notFound();
 
@@ -41,14 +43,13 @@ export default async function AdminOfficeDetailPage({
   // mixed into "who works here"). Staff belong to any office (college or
   // university) via officeRef uniformly.
   const ROLE_SORT_PRIORITY: Record<string, number> = {
-    qa_office: 1,
     administrator: 1,
     office_staff: 2,
   };
 
   const [parentOffice, headUser, rawMembers] = await Promise.all([
     o.parentOffice ? Office.findById(o.parentOffice).select("name code").lean() : null,
-    o.headUserRef ? User.findById(o.headUserRef).select("firstName lastName email").lean() : null,
+    o.headUserRef ? User.findById(o.headUserRef).select("firstName lastName email isActive").lean() : null,
     User.find({ officeRef: id, role: { $ne: "student" } })
       .select("firstName lastName email role isActive")
       .lean(),
@@ -66,7 +67,13 @@ export default async function AdminOfficeDetailPage({
   // never silently drops whoever is presently assigned.
   const memberOptions = members
     .filter((m: any) => m.isActive || String(m._id) === String(o.headUserRef))
-    .map((m: any) => ({ _id: String(m._id), firstName: m.firstName, lastName: m.lastName }));
+    .map((m: any) => ({
+      _id: String(m._id),
+      firstName: m.firstName,
+      lastName: m.lastName,
+      email: m.email,
+      isActive: m.isActive,
+    }));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -115,6 +122,7 @@ export default async function AdminOfficeDetailPage({
             officeOptions={officeOptions}
             memberOptions={memberOptions}
             scopeKind={scope.kind}
+            canManageHead={isAdministrator}
           />
           <OfficeStatusToggle officeId={String(o._id)} officeName={o.name} isActive={o.isActive} />
         </div>
@@ -164,8 +172,22 @@ export default async function AdminOfficeDetailPage({
                   ? `${(headUser as any).firstName} ${(headUser as any).lastName}`
                   : "Not assigned"}
               </dd>
+              {headUser && (
+                <dd className="mt-1 text-xs text-[var(--muted-foreground)]">
+                  {(headUser as any).email} · {(headUser as any).isActive ? "Active" : "Inactive"}
+                </dd>
+              )}
             </div>
           </dl>
+          {isAdministrator && (
+            <div className="mt-5 border-t border-[var(--border)] pt-4">
+              <OfficeHeadManager
+                officeId={String(o._id)}
+                currentHeadId={o.headUserRef ? String(o.headUserRef) : null}
+                memberOptions={memberOptions}
+              />
+            </div>
+          )}
         </div>
 
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
@@ -174,7 +196,7 @@ export default async function AdminOfficeDetailPage({
               <Users className="h-[18px] w-[18px]" />
             </span>
             <p className="text-sm font-semibold text-[var(--foreground)]">
-              Members ({members.length})
+              Staff ({members.length})
             </p>
           </div>
           {members.length === 0 ? (
@@ -201,6 +223,11 @@ export default async function AdminOfficeDetailPage({
                         <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                           {m.role.replace("_", " ")}
                         </span>
+                        {String(m._id) === String(o.headUserRef) && (
+                          <span className="shrink-0 rounded-full bg-[var(--primary)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">
+                            Head
+                          </span>
+                        )}
                       </span>
                       <span className="block truncate text-xs text-[var(--muted-foreground)]">
                         {m.email}
@@ -209,6 +236,11 @@ export default async function AdminOfficeDetailPage({
                     {!m.isActive && (
                       <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)]">
                         Inactive
+                      </span>
+                    )}
+                    {m.isActive && (
+                      <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                        Active
                       </span>
                     )}
                   </Link>

@@ -8,10 +8,11 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { createAttachmentSchema } from "@/features/attachments/schemas/attachment.schema";
 import { getSettings } from "@/features/settings/services/settings.service";
 import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
+import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
 async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
   const { role, id, officeRef } = session.user;
-  if (role === "administrator" || role === "qa_office") return true;
+  if (role === "administrator") return true;
   if (role === "student") return String(complaint.studentRef) === id;
   if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
   // QA-style access, scoped to each sub-admin's own category.
@@ -66,6 +67,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     eventType: "attachment_added",
     actorRef: session.user.id,
     message: parsed.data.fileName,
+  });
+
+  await writeAuditLog({
+    actorId: session.user.id,
+    action: "attachment.create",
+    entityType: "Attachment",
+    entityId: attachment._id,
+    afterState: {
+      complaintRef: id,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+    },
+    ipAddress: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
   });
 
   return NextResponse.json({ attachment }, { status: 201 });

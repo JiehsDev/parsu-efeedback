@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { requireScopedAdmin } from "@/lib/api-guards";
 import { Office } from "@/models/Office";
+import { User } from "@/models/User";
 import { createOfficeSchema } from "@/features/admin/schemas/office.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { officeFilterForScope } from "@/lib/admin-scope";
@@ -24,8 +25,23 @@ export async function GET(req: NextRequest) {
   const filter: Record<string, unknown> = { ...officeFilterForScope(scope) };
   if (type) filter.type = type;
 
-  const offices = await Office.find(filter).sort({ name: 1 }).lean();
-  return NextResponse.json({ offices });
+  const offices = await Office.find(filter)
+    .populate("parentOffice", "name code")
+    .populate("headUserRef", "firstName lastName email isActive")
+    .sort({ name: 1 })
+    .lean();
+  const staffCounts = await User.aggregate([
+    { $match: { role: { $ne: "student" }, officeRef: { $ne: null } } },
+    { $group: { _id: "$officeRef", count: { $sum: 1 } } },
+  ]);
+  const countByOffice = new Map(staffCounts.map((row: any) => [String(row._id), row.count]));
+
+  return NextResponse.json({
+    offices: offices.map((office: any) => ({
+      ...office,
+      staffCount: countByOffice.get(String(office._id)) ?? 0,
+    })),
+  });
 }
 
 export async function POST(req: NextRequest) {

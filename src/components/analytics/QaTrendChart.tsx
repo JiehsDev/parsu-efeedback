@@ -1,4 +1,4 @@
-// src/components/qa/charts/QaTrendChart.tsx
+// src/components/analytics/QaTrendChart.tsx
 interface TrendPoint {
   month: string;
   volume: number;

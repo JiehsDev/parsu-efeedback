@@ -1,18 +1,32 @@
 // src/app/student/complaints/[id]/page.tsx
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, CheckCircle2, Flag, Hash, History, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  Calendar,
+  CheckCircle2,
+  Flag,
+  Hash,
+  History,
+  Star,
+} from "lucide-react";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { Office } from "@/models/Office";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
+import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
 import { RatingForm } from "@/components/student/RatingForm";
 import { EditWithdrawComplaint } from "@/components/student/EditWithdrawComplaint";
 import type { ComplaintStatus } from "@/lib/constants";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
 import { CopyButton } from "@/components/shared/CopyButton";
+import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
+import { InformationRequest } from "@/models/InformationRequest";
+import { InformationResponseForm } from "@/components/student/InformationResponseForm";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -32,9 +46,15 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
     notFound();
   }
 
-  const timeline = await ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean();
-
   const c = complaint as any;
+  const [timeline, assignedOffice, assignmentHistory, openInformationRequest] = await Promise.all([
+    ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+    c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).select("name").lean() : null,
+    getAssignmentHistoryEntries(id),
+    InformationRequest.findOne({ complaintRef: id, status: "open" })
+      .sort({ requestedAt: -1 })
+      .lean(),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -65,7 +85,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
         <div className="space-y-5">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
             <p className="text-sm font-medium text-[var(--foreground)]">Description</p>
-            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[var(--foreground)]/90">
+            <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-[var(--foreground)]/90">
               {c.description}
             </p>
           </div>
@@ -79,11 +99,22 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
             />
           )}
 
+          {c.status === "pending_information" && openInformationRequest && assignedOffice && (
+            <InformationResponseForm
+              complaintId={String(c._id)}
+              requestMessage={(openInformationRequest as any).requestMessage}
+              requestedAt={(openInformationRequest as any).requestedAt}
+              officeName={(assignedOffice as any).name}
+            />
+          )}
+
           {c.status === "resolved" && c.studentRating === null && (
             <RatingForm complaintId={String(c._id)} />
           )}
 
           <AttachmentGallery complaintId={String(c._id)} />
+
+          <AssignmentHistoryPanel entries={assignmentHistory} simplified />
 
           <div>
             <div className="mb-3 flex items-center gap-2">
@@ -117,11 +148,20 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
                   <Flag className="h-3.5 w-3.5" />
                   Priority
                 </dt>
-                <dd className="mt-1.5 flex items-center gap-1.5 capitalize text-[var(--foreground)]">
+                <dd className="mt-1.5 flex items-center gap-1.5 text-[var(--foreground)] capitalize">
                   <span
                     className={`h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[c.priority] ?? "bg-[var(--muted-foreground)]"}`}
                   />
                   {c.priority}
+                </dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Responsible Office
+                </dt>
+                <dd className="mt-1.5 text-[var(--foreground)]">
+                  {assignedOffice ? (assignedOffice as any).name : "Not assigned yet"}
                 </dd>
               </div>
               <div>

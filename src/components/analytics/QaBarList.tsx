@@ -1,4 +1,4 @@
-// src/components/qa/charts/QaBarList.tsx
+// src/components/analytics/QaBarList.tsx
 export interface QaBarPoint {
   label: string;
   value: number;

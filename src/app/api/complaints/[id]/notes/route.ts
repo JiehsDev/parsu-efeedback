@@ -6,12 +6,14 @@ import { Complaint } from "@/models/Complaint";
 import { ComplaintNote } from "@/models/ComplaintNote";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { addNoteSchema } from "@/features/complaints/schemas/complaint.schema";
+import { canAccessInternalComplaintNotes } from "@/lib/complaint-access";
+import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Notes are staff/qa/admin only — never visible to or writable by students
+  // Notes are internal only, never visible to or writable by students.
   if (session.user.role === "student") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -27,6 +29,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!(await canAccessInternalComplaintNotes(session, complaint))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const note = await ComplaintNote.create({
     complaintRef: id,
@@ -41,6 +46,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     message: "Internal note added",
   });
 
+  await writeAuditLog({
+    actorId: session.user.id,
+    action: "complaint_note.create",
+    entityType: "ComplaintNote",
+    entityId: note._id,
+    afterState: { complaintRef: id, isInternal: true },
+    ipAddress: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
+  });
+
   return NextResponse.json({ note }, { status: 201 });
 }
 
@@ -53,6 +68,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   await connectToDatabase();
   const { id } = await params;
+
+  const complaint = await Complaint.findById(id).lean();
+  if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!(await canAccessInternalComplaintNotes(session, complaint))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const notes = await ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean();
   return NextResponse.json({ notes });

@@ -9,7 +9,7 @@ import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const ALL_ROLES = ["student", "office_staff", "qa_office", "administrator", "vpaa", "vpaf", "osas"];
+const ALL_ROLES = ["student", "office_staff", "administrator", "vpaa", "vpaf", "osas"];
 
 // Which roles/offices a sub-admin's scope permits editing into — mirrors
 // the server-side check in api/admin/users/[id]/route.ts's isUserInScope.
@@ -18,7 +18,7 @@ type ScopeKind = "all" | "college_office" | "university_office" | "student";
 function roleOptionsForScope(scopeKind: ScopeKind): string[] {
   if (scopeKind === "student") return ["student"];
   if (scopeKind === "college_office" || scopeKind === "university_office") {
-    return ["office_staff", "qa_office"];
+    return ["office_staff"];
   }
   return ALL_ROLES;
 }
@@ -63,7 +63,7 @@ export function EditUserButton({
     password: "",
   });
 
-  const needsOffice = form.role === "office_staff" || form.role === "qa_office";
+  const needsOffice = form.role === "office_staff";
   const needsCollege = form.role === "student";
   const roleOptions = roleOptionsForScope(scopeKind);
   const officeOptionsForRole =

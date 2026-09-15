@@ -17,6 +17,9 @@ interface OfficeRow {
   code: string;
   type: string;
   isActive: boolean;
+  parentOffice?: { _id: string; name: string; code: string } | null;
+  headUserRef?: { _id: string; firstName: string; lastName: string; email: string; isActive: boolean } | null;
+  staffCount?: number;
 }
 
 type ScopeKind = "all" | "college_office" | "university_office" | "student";
@@ -147,7 +150,14 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
                     </span>
                   </span>
                   <span className="mt-0.5 block text-xs capitalize text-[var(--muted-foreground)]">
-                    {o.type.replace("_", " ")}
+                    {o.type.replace("_", " ")} · {o.parentOffice?.name ?? "No parent"} · Staff:{" "}
+                    {o.staffCount ?? 0}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                    Head:{" "}
+                    {o.headUserRef
+                      ? `${o.headUserRef.firstName} ${o.headUserRef.lastName} (${o.headUserRef.email})`
+                      : "Not assigned"}
                   </span>
                 </span>
                 <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />

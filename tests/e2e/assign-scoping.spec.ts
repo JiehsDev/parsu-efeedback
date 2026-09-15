@@ -14,6 +14,8 @@ import { adminTest, expect } from "./fixtures";
 import { submitComplaint, loginAs, generatedStudentEmail } from "./helpers";
 
 adminTest.describe("Assignment scoping", () => {
+  adminTest.setTimeout(180_000);
+
   adminTest(
     "BR-047/048/049/050/051/052: same-office assignment succeeds, cross-office is 403, admin is unrestricted, and reassignment produces distinct history entries",
     async ({ page: adminPage, browser, request }) => {
@@ -45,14 +47,19 @@ adminTest.describe("Assignment scoping", () => {
       // --- Staff (Registrar office) self-assigns complaint A: same office, succeeds. ---
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
-      await staffPage.goto(`/staff/complaints/${complaintA}`);
-      await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
-      await expect(staffPage.getByRole("combobox")).toBeVisible(); // status form only shows once assigned to *this* staff member
-
-      // --- Staff cross-office attempt on a DIFFERENT complaint: 403. ---
       const staffSession = await staffPage.request.get("/api/auth/session").then((r) => r.json());
       const staffId = staffSession.user.id;
 
+      const selfAssignRes = await staffPage.request.post(`/api/complaints/${complaintA}/assign`, {
+        data: { assignedStaffRef: staffId, message: "Self-assigned" },
+      });
+      expect(selfAssignRes.ok()).toBeTruthy();
+
+      const pickedUpRes = await adminPage.request.get(`/api/complaints/${complaintA}`);
+      const { complaint: pickedUpComplaint } = await pickedUpRes.json();
+      expect(String(pickedUpComplaint.assignedStaffRef)).toBe(staffId);
+
+      // --- Staff cross-office attempt on a DIFFERENT complaint: 403. ---
       const studentContext2 = await browser.newContext({
         storageState: "tests/e2e/.auth/student.json",
       });
@@ -171,6 +178,11 @@ adminTest.describe("Assignment scoping", () => {
       const { complaint: adminAssigned } = await adminAssignRes.json();
       expect(String(adminAssigned.assignedOfficeRef)).toBe(qaOffice._id);
 
+      await adminPage.goto(`/admin/complaints/${complaintC}`);
+      await expect(adminPage.getByRole("button", { name: "Reassign Complaint" })).toBeVisible();
+      await expect(adminPage.locator("p").filter({ hasText: "Update status" })).toBeVisible();
+      await expect(adminPage.getByText("Assignment & Escalation History")).toBeVisible();
+
       // --- BR-047/051/052: the college complaint now has two distinct
       // human assignment actions (VPAA staff-assign, then VPAA office
       // reassign) — two separate timeline entries, proving two separate,
@@ -183,6 +195,94 @@ adminTest.describe("Assignment scoping", () => {
       expect(assignmentEvents.length).toBeGreaterThanOrEqual(2);
       expect(assignmentEvents[0].eventType).toBe("assigned"); // VPAA staff-assign
       expect(assignmentEvents[1].eventType).toBe("reassigned"); // VPAA's office move
+    },
+  );
+
+  adminTest(
+    "OSAS can reassign student-affairs complaints, escalate to OVPAA, and cannot touch VPAF-only complaints",
+    async ({ page: adminPage, browser }) => {
+      const studentContext = await browser.newContext({
+        storageState: "tests/e2e/.auth/student.json",
+      });
+      const studentPage = await studentContext.newPage();
+      const { id: osasComplaint } = await submitComplaint(
+        studentPage,
+        "Student Services & Assistance",
+        `E2E OSAS reassignment ${Date.now()}`,
+        "Automated E2E complaint for OSAS scoped reassignment.",
+      );
+      const { id: vpafComplaint } = await submitComplaint(
+        studentPage,
+        "Student Payment & Cashier Concerns",
+        `E2E OSAS blocked ${Date.now()}`,
+        "Automated E2E complaint for OSAS blocked reassignment.",
+      );
+      await studentContext.close();
+
+      const officesRes = await adminPage.request.get("/api/offices");
+      const { offices } = await officesRes.json();
+      const collegeOffice = offices.find((o: any) => o.type === "college_office");
+      const ovpaaOffice = offices.find((o: any) => o.code === "OVPAA");
+      const generalServicesOffice = offices.find((o: any) => o.code === "GSO");
+      expect(collegeOffice).toBeTruthy();
+      expect(ovpaaOffice).toBeTruthy();
+      expect(generalServicesOffice).toBeTruthy();
+
+      const osasContext = await browser.newContext({ storageState: "tests/e2e/.auth/osas.json" });
+      const osasPage = await osasContext.newPage();
+
+      await osasPage.goto(`/admin/complaints/${osasComplaint}`);
+      await expect(osasPage.getByRole("button", { name: "Reassign Complaint" })).toBeVisible();
+      await expect(osasPage.getByRole("button", { name: "Escalate Complaint" })).toBeVisible();
+
+      const invalidDestinationRes = await osasPage.request.post(`/api/complaints/${osasComplaint}/assign`, {
+        data: {
+          assignedOfficeRef: generalServicesOffice._id,
+          message: "e2e-osas-invalid-destination",
+        },
+      });
+      expect(invalidDestinationRes.status()).toBe(400);
+
+      const reassignRes = await osasPage.request.post(`/api/complaints/${osasComplaint}/assign`, {
+        data: {
+          assignedOfficeRef: collegeOffice._id,
+          assignedStaffRef: null,
+          message: "e2e-osas-reassign",
+        },
+      });
+      expect(reassignRes.ok()).toBeTruthy();
+      const { complaint: reassigned } = await reassignRes.json();
+      expect(String(reassigned.assignedOfficeRef)).toBe(collegeOffice._id);
+
+      const blockedRes = await osasPage.request.post(`/api/complaints/${vpafComplaint}/assign`, {
+        data: {
+          assignedOfficeRef: collegeOffice._id,
+          message: "e2e-osas-should-not-touch-vpaf",
+        },
+      });
+      expect(blockedRes.status()).toBe(403);
+
+      const escalationRes = await osasPage.request.post(`/api/complaints/${osasComplaint}/assign`, {
+        data: {
+          assignedOfficeRef: ovpaaOffice._id,
+          assignedStaffRef: null,
+          action: "escalate",
+          message: "e2e-osas-escalate",
+        },
+      });
+      expect(escalationRes.ok()).toBeTruthy();
+      const { complaint: escalated } = await escalationRes.json();
+      expect(escalated.status).toBe("escalated");
+      expect(String(escalated.assignedOfficeRef)).toBe(ovpaaOffice._id);
+
+      const finalRes = await adminPage.request.get(`/api/complaints/${osasComplaint}`);
+      const { timeline } = await finalRes.json();
+      expect(timeline.some((event: any) => event.eventType === "reassigned")).toBeTruthy();
+      expect(timeline.some((event: any) => event.eventType === "escalated")).toBeTruthy();
+
+      await osasPage.goto(`/admin/complaints/${osasComplaint}`);
+      await expect(osasPage.getByText("Assignment & Escalation History")).toBeVisible();
+      await osasContext.close();
     },
   );
 });

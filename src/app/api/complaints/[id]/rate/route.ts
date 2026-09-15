@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { rateComplaintSchema } from "@/features/complaints/schemas/complaint.schema";
+import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -43,6 +44,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     eventType: "rated",
     actorRef: session.user.id,
     toValue: String(parsed.data.studentRating),
+  });
+
+  await writeAuditLog({
+    actorId: session.user.id,
+    action: "complaint.rate",
+    entityType: "Complaint",
+    entityId: id,
+    afterState: {
+      studentRating: parsed.data.studentRating,
+      hasComment: Boolean(parsed.data.studentRatingComment),
+    },
+    ipAddress: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
   });
 
   return NextResponse.json({ complaint });

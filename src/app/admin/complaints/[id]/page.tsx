@@ -20,12 +20,23 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { ComplaintNote } from "@/models/ComplaintNote";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
+import { AssignmentDialog } from "@/components/shared/AssignmentDialog";
+import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
 import { NotesSection } from "@/components/shared/NotesSection";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggle";
+import { StatusUpdateForm } from "@/components/staff/StatusUpdateForm";
 import type { ComplaintStatus } from "@/lib/constants";
-import { getAdminScope } from "@/lib/admin-scope";
+import { getAdminScope, officeFilterForScope } from "@/lib/admin-scope";
+import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
+import { InformationRequest } from "@/models/InformationRequest";
+import { InformationRequestPanel } from "@/components/staff/InformationRequestPanel";
+import {
+  getOsasAllowedDestinationOffices,
+  getOsasEscalationOffice,
+  isComplaintInOsasActionScope,
+} from "@/lib/osas-complaint-scope";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -41,7 +52,9 @@ export default async function AdminComplaintDetailPage({
 }) {
   await connectToDatabase();
   const session = await auth();
-  const scope = getAdminScope(session!.user.role);
+  const role = session!.user.role;
+  const scope = getAdminScope(role);
+  const isAdmin = role === "administrator";
   const { id } = await params;
 
   // No isArchived filter here, unlike every role-scoped complaint page —
@@ -52,7 +65,18 @@ export default async function AdminComplaintDetailPage({
 
   const c = complaint as any;
 
-  const [student, office, timeline, notes] = await Promise.all([
+  const [
+    student,
+    office,
+    timeline,
+    notes,
+    assignedStaff,
+    activeOffices,
+    assignmentHistory,
+    osasCanAssign,
+    osasEscalationOffice,
+    informationRequests,
+  ] = await Promise.all([
     // Student identity is kept out of the admin view — ID + college only,
     // not name, so a complaint reads a little more anonymous.
     User.findById(c.studentRef)
@@ -62,6 +86,21 @@ export default async function AdminComplaintDetailPage({
     c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).lean() : null,
     ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
     ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+    c.assignedStaffRef
+      ? User.findById(c.assignedStaffRef).select("firstName lastName").lean()
+      : null,
+    role === "osas"
+      ? getOsasAllowedDestinationOffices(c)
+      : scope.kind === "student"
+        ? []
+        : Office.find({ ...officeFilterForScope(scope), isActive: true })
+            .select("name type")
+            .sort({ name: 1 })
+            .lean(),
+    getAssignmentHistoryEntries(id),
+    role === "osas" ? isComplaintInOsasActionScope(c) : false,
+    role === "osas" ? getOsasEscalationOffice(c) : null,
+    InformationRequest.find({ complaintRef: id }).sort({ requestedAt: -1 }).lean(),
   ]);
 
   // vpaa/vpaf are confined to complaints assigned to their office
@@ -101,11 +140,13 @@ export default async function AdminComplaintDetailPage({
             )}
           </div>
         </div>
-        <ArchiveComplaintToggle
-          complaintId={String(c._id)}
-          ticketNumber={c.ticketNumber}
-          isArchived={c.isArchived}
-        />
+        {isAdmin && (
+          <ArchiveComplaintToggle
+            complaintId={String(c._id)}
+            ticketNumber={c.ticketNumber}
+            isArchived={c.isArchived}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
@@ -184,6 +225,86 @@ export default async function AdminComplaintDetailPage({
               </div>
             </dl>
           </div>
+
+          {isAdmin && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
+
+          {(isAdmin || role === "vpaa" || role === "vpaf" || osasCanAssign || c.status === "pending_information") && (
+            <InformationRequestPanel
+              complaintId={String(c._id)}
+              status={c.status}
+              canRequest={isAdmin || role === "vpaa" || role === "vpaf" || osasCanAssign}
+              requests={JSON.parse(JSON.stringify(informationRequests))}
+            />
+          )}
+
+          {["administrator", "vpaa", "vpaf"].includes(role) && c.status !== "withdrawn" && (
+            <AssignmentDialog
+              complaintId={String(c._id)}
+              currentOfficeId={c.assignedOfficeRef ? String(c.assignedOfficeRef) : null}
+              currentOfficeName={office ? (office as any).name : null}
+              currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null}
+              currentStaffName={
+                assignedStaff
+                  ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
+                  : null
+              }
+              offices={(activeOffices as any[]).map((activeOffice) => ({
+                _id: String(activeOffice._id),
+                name: activeOffice.name,
+                type: activeOffice.type,
+              }))}
+              canChangeOffice
+            />
+          )}
+
+          {role === "osas" && osasCanAssign && c.status !== "withdrawn" && (
+            <>
+              <AssignmentDialog
+                complaintId={String(c._id)}
+                currentOfficeId={c.assignedOfficeRef ? String(c.assignedOfficeRef) : null}
+                currentOfficeName={office ? (office as any).name : null}
+                currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null}
+                currentStaffName={
+                  assignedStaff
+                    ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
+                    : null
+                }
+                offices={(activeOffices as any[]).map((activeOffice) => ({
+                  _id: String(activeOffice._id),
+                  name: activeOffice.name,
+                  type: activeOffice.type,
+                }))}
+                canChangeOffice
+                label="Reassign Complaint"
+                action="reassign"
+              />
+              {osasEscalationOffice && (
+                <AssignmentDialog
+                  complaintId={String(c._id)}
+                  currentOfficeId={c.assignedOfficeRef ? String(c.assignedOfficeRef) : null}
+                  currentOfficeName={office ? (office as any).name : null}
+                  currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null}
+                  currentStaffName={
+                    assignedStaff
+                      ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
+                      : null
+                  }
+                  offices={[
+                    {
+                      _id: String((osasEscalationOffice as any)._id),
+                      name: (osasEscalationOffice as any).name,
+                      type: (osasEscalationOffice as any).type,
+                    },
+                  ]}
+                  canChangeOffice
+                  label="Escalate Complaint"
+                  action="escalate"
+                />
+              )}
+            </>
+          )}
+
+          <AssignmentHistoryPanel entries={assignmentHistory} />
 
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
             <div className="flex items-center gap-2">

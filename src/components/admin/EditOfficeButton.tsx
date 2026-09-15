@@ -36,6 +36,7 @@ export function EditOfficeButton({
   officeOptions,
   memberOptions,
   scopeKind = "all",
+  canManageHead = false,
 }: {
   office: EditableOffice;
   parentOfficeId: string | null;
@@ -43,6 +44,7 @@ export function EditOfficeButton({
   officeOptions: OfficeOption[];
   memberOptions: MemberOption[];
   scopeKind?: ScopeKind;
+  canManageHead?: boolean;
 }) {
   // vpaa/vpaf may only manage offices in their own category — the Type
   // field is locked rather than offering a choice they'd be rejected for.
@@ -65,16 +67,18 @@ export function EditOfficeButton({
     setError(null);
     setIsSubmitting(true);
 
+    const payload: Record<string, unknown> = {
+      name: form.name,
+      code: form.code.toUpperCase(),
+      type: form.type,
+      parentOffice: form.parentOffice || null,
+    };
+    if (canManageHead) payload.headUserRef = form.headUserRef || null;
+
     const res = await fetch(`/api/admin/offices/${office._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.name,
-        code: form.code.toUpperCase(),
-        type: form.type,
-        parentOffice: form.parentOffice || null,
-        headUserRef: form.headUserRef || null,
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
     setIsSubmitting(false);
@@ -167,31 +171,33 @@ export function EditOfficeButton({
               </Select>
             </FormField>
 
-            <FormField
-              label="Office head"
-              hint={
-                memberOptions.length === 0
-                  ? "No staff assigned to this office yet"
-                  : "Only staff already assigned to this office can be head"
-              }
-            >
-              <Select
-                value={form.headUserRef}
-                onValueChange={(value) => setForm((p) => ({ ...p, headUserRef: value }))}
+            {canManageHead && (
+              <FormField
+                label="Office head"
+                hint={
+                  memberOptions.length === 0
+                    ? "No staff assigned to this office yet"
+                    : "Only staff already assigned to this office can be head"
+                }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not assigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Not assigned</SelectItem>
-                  {memberOptions.map((m) => (
-                    <SelectItem key={m._id} value={m._id}>
-                      {m.firstName} {m.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
+                <Select
+                  value={form.headUserRef}
+                  onValueChange={(value) => setForm((p) => ({ ...p, headUserRef: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Not assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Not assigned</SelectItem>
+                    {memberOptions.map((m) => (
+                      <SelectItem key={m._id} value={m._id}>
+                        {m.firstName} {m.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
 
             <button
               type="submit"

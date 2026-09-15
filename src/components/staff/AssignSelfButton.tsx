@@ -2,12 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, UserPlus } from "lucide-react";
 import { useToast } from "@/components/shared/Toast";
 
 export function AssignSelfButton({ complaintId }: { complaintId: string }) {
-  const router = useRouter();
   const { show: showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +31,10 @@ export function AssignSelfButton({ complaintId }: { complaintId: string }) {
     }
 
     showToast("Complaint assigned to you");
-    router.refresh();
+    // This detail page is a server component. A full reload guarantees the
+    // assignment and the new status are read from MongoDB before staff see
+    // the next action controls.
+    window.location.assign(`${window.location.pathname}?refresh=${Date.now()}`);
   }
 
   return (

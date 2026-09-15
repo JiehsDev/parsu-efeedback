@@ -16,14 +16,23 @@ import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { ComplaintNote } from "@/models/ComplaintNote";
+import { Office } from "@/models/Office";
+import { User } from "@/models/User";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
+import { AssignmentDialog } from "@/components/shared/AssignmentDialog";
+import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
 import { StatusUpdateForm } from "@/components/staff/StatusUpdateForm";
 import { NotesSection } from "@/components/shared/NotesSection";
 import { AssignSelfButton } from "@/components/staff/AssignSelfButton";
 import type { ComplaintStatus } from "@/lib/constants";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
 import { CopyButton } from "@/components/shared/CopyButton";
+import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
+import { InformationRequest } from "@/models/InformationRequest";
+import { InformationRequestPanel } from "@/components/staff/InformationRequestPanel";
+
+export const dynamic = "force-dynamic";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -43,6 +52,7 @@ export default async function StaffComplaintDetailPage({
   const { id } = await params;
 
   const complaint = await Complaint.findById(id)
+    .read("primary")
     .populate({
       // Student identity is kept out of the staff view — ID + college
       // only, not name, so a complaint reads a little more anonymous.
@@ -57,10 +67,21 @@ export default async function StaffComplaintDetailPage({
 
   const c = complaint as any;
 
-  const [timeline, notes] = await Promise.all([
-    ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
-    ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
-  ]);
+  const [timeline, notes, office, assignedStaff, assignmentHistory, informationRequests] =
+    await Promise.all([
+      ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+      ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+      Office.findById(session!.user.officeRef).select("name type").lean(),
+      c.assignedStaffRef
+        ? User.findById(c.assignedStaffRef).select("firstName lastName").lean()
+        : null,
+      getAssignmentHistoryEntries(id),
+      InformationRequest.find({ complaintRef: id }).sort({ requestedAt: -1 }).lean(),
+    ]);
+  const currentOfficeName = office ? (office as any).name : "Your office";
+  const currentStaffName = assignedStaff
+    ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
+    : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -174,9 +195,39 @@ export default async function StaffComplaintDetailPage({
             <AssignSelfButton complaintId={String(c._id)} />
           )}
 
+          {c.status !== "withdrawn" && (
+            <AssignmentDialog
+              complaintId={String(c._id)}
+              currentOfficeId={session!.user.officeRef ?? null}
+              currentOfficeName={currentOfficeName}
+              currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null}
+              currentStaffName={currentStaffName}
+              offices={[
+                {
+                  _id: session!.user.officeRef!,
+                  name: currentOfficeName,
+                  type: (office as any)?.type,
+                },
+              ]}
+              canChangeOffice={false}
+              label="Assign Staff"
+            />
+          )}
+
           {String(c.assignedStaffRef) === session!.user.id && (
             <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />
           )}
+
+          {(String(c.assignedStaffRef ?? "") === session!.user.id || c.status === "pending_information") && (
+            <InformationRequestPanel
+              complaintId={String(c._id)}
+              status={c.status}
+              canRequest={String(c.assignedStaffRef ?? "") === session!.user.id}
+              requests={JSON.parse(JSON.stringify(informationRequests))}
+            />
+          )}
+
+          <AssignmentHistoryPanel entries={assignmentHistory} />
 
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
             <div className="flex items-center gap-2">

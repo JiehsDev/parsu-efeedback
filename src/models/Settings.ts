@@ -21,7 +21,14 @@ const settingsSchema = new Schema(
     uploadAllowedMimeTypes: {
       type: [String],
       required: true,
-      default: ["image/png", "image/jpeg", "application/pdf"],
+      default: [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ],
     },
 
     authMaxFailedLoginAttempts: { type: Number, required: true, default: 5 },

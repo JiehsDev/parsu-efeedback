@@ -2,6 +2,7 @@
 import { connectToDatabase } from "@/lib/db";
 import { Notification } from "@/models/Notification";
 import { User } from "@/models/User";
+import { Office } from "@/models/Office";
 import type { NotificationType } from "@/lib/constants";
 import {
   sendComplaintSubmittedEmail,
@@ -10,6 +11,8 @@ import {
   sendComplaintResolvedEmail,
   sendSlaWarningEmail,
   sendEscalationEmail,
+  sendInformationRequestedEmail,
+  sendInformationSubmittedEmail,
 } from "./email.service";
 
 async function getRecipient(userId: string) {
@@ -109,6 +112,49 @@ export async function notifyComplaintAssigned(params: {
       });
     }
   }
+}
+
+export async function notifyComplaintRoutedToOffice(params: {
+  officeId: string;
+  ticketNumber: string;
+  complaintId: string;
+}) {
+  await connectToDatabase();
+
+  const office = await Office.findById(params.officeId).select("name headUserRef").lean();
+  const staff = await User.find({
+    role: "office_staff",
+    officeRef: params.officeId,
+    isActive: true,
+  })
+    .select("_id")
+    .lean();
+
+  const recipientIds = new Set(staff.map((member: any) => String(member._id)));
+  if ((office as any)?.headUserRef) recipientIds.add(String((office as any).headUserRef));
+
+  await Promise.all(
+    [...recipientIds].map(async (userId) => {
+      await createNotification({
+        userRef: userId,
+        type: "complaint_assigned",
+        title: "New complaint routed to your office",
+        body: `Complaint ${params.ticketNumber} has been routed to ${(office as any)?.name ?? "your office"}.`,
+        relatedComplaintRef: params.complaintId,
+      });
+
+      const recipient = await getRecipient(userId);
+      if (recipient) {
+        await sendComplaintAssignedEmail({
+          to: recipient.email,
+          recipientName: recipient.name,
+          ticketNumber: params.ticketNumber,
+          complaintId: params.complaintId,
+          isStaffRecipient: true,
+        });
+      }
+    }),
+  );
 }
 
 export async function notifyStatusUpdated(params: {
@@ -215,4 +261,56 @@ export async function notifyEscalation(params: {
       complaintId: params.complaintId,
     });
   }
+}
+
+export async function notifyInformationRequested(params: {
+  studentId: string;
+  ticketNumber: string;
+  complaintId: string;
+  requestMessage: string;
+}) {
+  await createNotification({
+    userRef: params.studentId,
+    type: "status_updated",
+    title: "Additional information requested",
+    body: `Additional information is required for complaint ${params.ticketNumber}.`,
+    relatedComplaintRef: params.complaintId,
+  });
+  const recipient = await getRecipient(params.studentId);
+  if (recipient) {
+    await sendInformationRequestedEmail({
+      to: recipient.email,
+      recipientName: recipient.name,
+      ticketNumber: params.ticketNumber,
+      requestMessage: params.requestMessage,
+      complaintId: params.complaintId,
+    });
+  }
+}
+
+export async function notifyInformationSubmitted(params: {
+  staffIds: string[];
+  ticketNumber: string;
+  complaintId: string;
+}) {
+  await Promise.all(
+    [...new Set(params.staffIds)].map(async (staffId) => {
+      await createNotification({
+        userRef: staffId,
+        type: "status_updated",
+        title: "Additional information submitted",
+        body: `The student submitted additional information for complaint ${params.ticketNumber}.`,
+        relatedComplaintRef: params.complaintId,
+      });
+      const recipient = await getRecipient(staffId);
+      if (recipient) {
+        await sendInformationSubmittedEmail({
+          to: recipient.email,
+          recipientName: recipient.name,
+          ticketNumber: params.ticketNumber,
+          complaintId: params.complaintId,
+        });
+      }
+    }),
+  );
 }

@@ -9,7 +9,14 @@ export default defineConfig({
     environment: "node",
     globals: true,
     testTimeout: 20000, // mongodb-memory-server first boot can be slow
-    exclude: ["**/node_modules/**", "tests/e2e/**"], // e2e/*.spec.ts belong to Playwright, not Vitest
+    include: ["src/**/*.test.ts", "src/**/*.integration.test.ts"],
+    exclude: [
+      "**/node_modules/**",
+      ".claude/**",
+      "**/.claude/**",
+      "tests/e2e/**",
+      "**/*.spec.ts",
+    ],
   },
   resolve: {
     alias: {

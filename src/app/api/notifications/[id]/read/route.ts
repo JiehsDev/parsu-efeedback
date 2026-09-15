@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Notification } from "@/models/Notification";
+import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
 export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -23,6 +24,15 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
 
   notification.isRead = true;
   await notification.save();
+
+  await writeAuditLog({
+    actorId: session.user.id,
+    action: "notification.read",
+    entityType: "Notification",
+    entityId: id,
+    beforeState: { isRead: false },
+    afterState: { isRead: true },
+  });
 
   return NextResponse.json({ notification });
 }

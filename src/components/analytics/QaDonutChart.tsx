@@ -1,4 +1,4 @@
-// src/components/qa/charts/QaDonutChart.tsx
+// src/components/analytics/QaDonutChart.tsx
 "use client";
 
 import { useState } from "react";

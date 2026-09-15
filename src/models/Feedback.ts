@@ -11,6 +11,7 @@ const feedbackSchema = new Schema(
     category: { type: String, required: true },
     message: { type: String, required: true },
     isAnonymous: { type: Boolean, required: true, default: false },
+    isArchived: { type: Boolean, required: true, default: false },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
@@ -19,7 +20,7 @@ const feedbackSchema = new Schema(
 
 feedbackSchema.plugin(refIntegrityPlugin); // BR-099
 
-feedbackSchema.index({ studentRef: 1, createdAt: -1 });
+feedbackSchema.index({ studentRef: 1, isArchived: 1, createdAt: -1 });
 
 export type FeedbackDocument = InferSchemaType<typeof feedbackSchema>;
 export const Feedback: Model<FeedbackDocument> =

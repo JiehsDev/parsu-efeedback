@@ -77,7 +77,7 @@ adminTest.describe("Complaint submission — auto-routing visible to admin", () 
       await studentContext.close();
 
       await page.goto(`/admin/complaints/${complaintId}`);
-      await expect(page.getByText(EXPECTED_OFFICE_NAME)).toBeVisible();
+      await expect(page.getByRole("definition").filter({ hasText: EXPECTED_OFFICE_NAME })).toBeVisible();
     },
   );
 });

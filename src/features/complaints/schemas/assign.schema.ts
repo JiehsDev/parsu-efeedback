@@ -6,6 +6,7 @@ export const assignComplaintSchema = z
     assignedOfficeRef: z.string().min(1).optional(),
     assignedStaffRef: z.string().min(1).nullable().optional(),
     message: z.string().trim().optional(),
+    action: z.enum(["assign", "reassign", "escalate"]).optional(),
   })
   .refine((data) => data.assignedOfficeRef !== undefined || data.assignedStaffRef !== undefined, {
     message: "At least one of assignedOfficeRef or assignedStaffRef must be provided",

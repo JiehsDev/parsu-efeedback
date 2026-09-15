@@ -6,7 +6,7 @@
 // storageState) for the two pieces this config wires together.
 //
 // Role scoping is NOT done via Playwright "projects" — it's done per-test
-// via the studentTest/staffTest/deanTest/qaTest/adminTest wrappers exported
+// via the studentTest/staffTest/adminTest/vpaaTest/vpafTest/osasTest wrappers exported
 // from tests/e2e/fixtures.ts (test.extend with a storageState fixture). That
 // lets one spec file freely mix roles (e.g. assign as staff, then verify as
 // student) without juggling multiple project runs. The "unauthenticated"

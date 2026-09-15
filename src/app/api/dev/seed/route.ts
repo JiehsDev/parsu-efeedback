@@ -66,7 +66,7 @@ const COMPLAINT_TEMPLATES: Record<string, { title: string; description: string }
     { title: "Incorrect grade posted for major subject", description: "The final grade shown in the portal does not match what was announced in class. Requesting a review of the computation." },
     { title: "Missing grade after semester ended", description: "It has been weeks since the semester ended and my grade for this subject is still not reflected in the system." },
   ],
-  "Classroom & Laboratory Equipment": [
+  "Classroom & Laboratory Facilities": [
     { title: "Air conditioner not working in lecture hall", description: "The AC unit has been broken for over a week, making the room uncomfortably hot during afternoon classes." },
     { title: "Projector malfunctioning in computer laboratory", description: "The projector flickers and shuts off randomly, disrupting lab sessions and demonstrations." },
   ],
@@ -82,7 +82,7 @@ const COMPLAINT_TEMPLATES: Record<string, { title: string; description: string }
     { title: "TOR request pending beyond stated processing time", description: "I requested my Transcript of Records over three weeks ago and have not received any update." },
     { title: "Certification of enrollment delayed", description: "My request for a certification document has exceeded the posted turnaround time with no explanation." },
   ],
-  "Staff Responsiveness": [
+  "Staff Service & Responsiveness": [
     { title: "Unhelpful response from front desk personnel", description: "I was dismissed without a clear answer when asking about my document request status." },
     { title: "Slow response to email inquiries", description: "Multiple follow-up emails regarding my concern have gone unanswered for over a week." },
   ],
@@ -94,25 +94,37 @@ const COMPLAINT_TEMPLATES: Record<string, { title: string; description: string }
     { title: "Frequent absences affecting course progress", description: "The instructor has missed several sessions this term without makeup classes being scheduled." },
     { title: "Concerns about instruction quality", description: "Lecture materials are unclear and questions during class are often left unaddressed." },
   ],
-  "Curriculum & Scheduling": [
+  "Curriculum & Class Scheduling": [
     { title: "Class schedule conflict with required subject", description: "Two required subjects for my program are scheduled at the same time this semester." },
     { title: "Overcrowded section affecting learning", description: "The section has significantly more students than the room can comfortably accommodate." },
   ],
-  "Consultation & Advising": [
+  "Academic Advising & Consultation": [
     { title: "Faculty unavailable during posted consultation hours", description: "I visited during the posted consultation schedule twice but the instructor was not present." },
     { title: "Lack of guidance on academic requirements", description: "I was unable to get clear advice on remaining requirements for my program." },
+  ],
+  "Library Services & Resources": [
+    { title: "Limited access to reference materials", description: "Several required references for our course are not available for borrowing or online access." },
+    { title: "Library hours not consistently followed", description: "The library has closed earlier than its posted hours on multiple occasions this month." },
   ],
   "Campus Safety & Security": [
     { title: "Poorly lit pathway near parking area", description: "The walkway near the parking area has no working lights, making it unsafe at night." },
     { title: "Lost item not properly logged by security", description: "I reported a lost item at the security desk but there is no record of it being logged." },
   ],
-  "Student Services": [
+  "Student Services & Assistance": [
     { title: "Canteen food quality concerns", description: "Several students have noticed inconsistent food quality and hygiene at the campus canteen." },
-    { title: "Clinic understaffed during peak hours", description: "The health clinic had no available staff when I sought assistance during a walk-in visit." },
+    { title: "Delay in processing student organization request", description: "Our student organization's activity request has been pending approval well past the usual turnaround." },
   ],
-  "Financial Assistance & Scholarships": [
+  "Health & Medical Services": [
+    { title: "Clinic understaffed during peak hours", description: "The health clinic had no available staff when I sought assistance during a walk-in visit." },
+    { title: "Limited stock of basic first aid supplies", description: "The campus clinic frequently runs out of basic medical supplies needed for minor concerns." },
+  ],
+  "Scholarships & Financial Assistance": [
     { title: "Scholarship disbursement delayed", description: "My scholarship allowance for this semester has not been released despite meeting all requirements." },
     { title: "Unclear grant renewal guidelines", description: "The requirements for renewing my grant were not clearly communicated before the deadline." },
+  ],
+  "Student Payment & Cashier Concerns": [
+    { title: "Delayed posting of tuition payment", description: "My tuition payment was made over a week ago but is still not reflected in my account, blocking enrollment finalization." },
+    { title: "Incorrect fee assessment on statement of account", description: "The assessed fees on my SOA do not match the published fee schedule for my program and year level." },
   ],
 };
 
@@ -157,9 +169,33 @@ export async function GET() {
       type: "university_office",
       parentOffice: null,
     });
+    // Name/scope per the OSAS reference note: student scholarships,
+    // student complaints/discipline, organizations, activities, and
+    // boarding houses/dormitories.
     const osasOffice = await Office.create({
-      name: "Office of the University OSAS",
+      name: "Office of Student Affairs and Services (OSAS)",
       code: "OSAS",
+      type: "university_office",
+      parentOffice: null,
+    });
+
+    // Handles institution-wide academic policy concerns (curriculum,
+    // academic advising, academic calendar/scheduling, library) per the
+    // OVPAA reference doc — distinct from a college's own faculty/teaching
+    // complaints, which stay routed to the concerned college office.
+    const ovpaaOffice = await Office.create({
+      name: "Office of the Vice President for Academic Affairs (OVPAA)",
+      code: "OVPAA",
+      type: "university_office",
+      parentOffice: null,
+    });
+
+    // Mirrors OVPAA but for the finance/administration side (cashier,
+    // payments) — no dedicated reference doc was provided for this one,
+    // but the "vpaf" role already existed to oversee university offices.
+    const ovpafOffice = await Office.create({
+      name: "Office of the Vice President for Administration and Finance (OVPAF)",
+      code: "OVPAF",
       type: "university_office",
       parentOffice: null,
     });
@@ -232,9 +268,9 @@ export async function GET() {
     // category picker reflects realistic, in-scope complaint types instead
     // of a single placeholder.
     const additionalCategories = [
-      // --- Campus Facilities ---
+      // --- Campus Facilities (General Services Office) ---
       {
-        name: "Classroom & Laboratory Equipment",
+        name: "Classroom & Laboratory Facilities",
         description:
           "Broken air conditioners/fans, malfunctioning projectors, damaged desks or chairs",
         defaultOfficeRef: generalServicesOffice._id,
@@ -252,7 +288,9 @@ export async function GET() {
         defaultOfficeRef: generalServicesOffice._id,
         defaultPriority: "medium",
       },
-      // --- Administrative Services ---
+      // --- Registrar's Office (records custody/issuance, per the URO
+      // reference doc: OTR/certification issuance, grade-correction
+      // encoding, registration paraphernalia, staff code of conduct) ---
       {
         name: "Document Request Delays",
         description:
@@ -261,7 +299,7 @@ export async function GET() {
         defaultPriority: "medium",
       },
       {
-        name: "Staff Responsiveness",
+        name: "Staff Service & Responsiveness",
         description: "Unhelpful, slow, or unprofessional conduct from office personnel",
         defaultOfficeRef: registrarOffice._id,
         defaultPriority: "medium",
@@ -273,7 +311,9 @@ export async function GET() {
         defaultOfficeRef: registrarOffice._id,
         defaultPriority: "low",
       },
-      // --- Academic Matters ---
+      // --- Faculty/teaching complaints stay routed to the concerned
+      // college office (not OVPAA) so a college's own performance is
+      // tracked at the college level. ---
       {
         name: "Faculty & Teaching Performance",
         description:
@@ -282,20 +322,56 @@ export async function GET() {
         defaultPriority: "high",
       },
       {
-        name: "Curriculum & Scheduling",
+        name: "Faculty & Teaching Performance - College of Education",
+        description: "Teaching quality, faculty attendance, and classroom conduct concerns for CED",
+        defaultOfficeRef: otherColleges[0]!._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Faculty & Teaching Performance - College of Business & Management",
+        description: "Teaching quality, faculty attendance, and classroom conduct concerns for CBM",
+        defaultOfficeRef: otherColleges[1]!._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Faculty & Teaching Performance - College of Science",
+        description: "Teaching quality, faculty attendance, and classroom conduct concerns for COS",
+        defaultOfficeRef: otherColleges[2]!._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Faculty & Teaching Performance - College of Arts and Humanities",
+        description: "Teaching quality, faculty attendance, and classroom conduct concerns for CAH",
+        defaultOfficeRef: otherColleges[3]!._id,
+        defaultPriority: "high",
+      },
+      // --- OVPAA (institution-wide academic policy: curriculum, advising,
+      // library — per the OVPAA reference doc's "types of inquiries
+      // handled" list) ---
+      {
+        name: "Curriculum & Class Scheduling",
         description:
           "Class scheduling conflicts, overcrowded sections, missing prerequisite subjects",
-        defaultOfficeRef: primaryCollege._id,
+        defaultOfficeRef: ovpaaOffice._id,
         defaultPriority: "medium",
       },
       {
-        name: "Consultation & Advising",
+        name: "Academic Advising & Consultation",
         description:
           "Faculty unavailability during posted consultation hours, lack of academic guidance",
-        defaultOfficeRef: primaryCollege._id,
+        defaultOfficeRef: ovpaaOffice._id,
         defaultPriority: "low",
       },
-      // --- Student Welfare ---
+      {
+        name: "Library Services & Resources",
+        description: "Limited access to references, inconsistent library operating hours",
+        defaultOfficeRef: ovpaaOffice._id,
+        defaultPriority: "low",
+      },
+      // --- OSAS (student affairs: scholarships, complaints/discipline,
+      // organizations, activities, dormitories/boarding houses, plus
+      // safety/health as student-welfare concerns — per the OSAS
+      // reference note) ---
       {
         name: "Campus Safety & Security",
         description:
@@ -304,16 +380,28 @@ export async function GET() {
         defaultPriority: "high",
       },
       {
-        name: "Student Services",
-        description:
-          "Canteen hygiene/food quality, health services/clinic operations, guidance and counseling",
+        name: "Student Services & Assistance",
+        description: "Canteen hygiene/food quality, student organization/activity concerns",
         defaultOfficeRef: osasOffice._id,
         defaultPriority: "medium",
       },
       {
-        name: "Financial Assistance & Scholarships",
+        name: "Health & Medical Services",
+        description: "Clinic staffing/availability, first-aid supply concerns",
+        defaultOfficeRef: osasOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Scholarships & Financial Assistance",
         description: "Delayed disbursement of scholarships, unclear grant guidelines",
         defaultOfficeRef: osasOffice._id,
+        defaultPriority: "medium",
+      },
+      // --- OVPAF (administration & finance: payments, cashier concerns) ---
+      {
+        name: "Student Payment & Cashier Concerns",
+        description: "Tuition payment posting delays, fee assessment discrepancies",
+        defaultOfficeRef: ovpafOffice._id,
         defaultPriority: "medium",
       },
     ] as const;
@@ -407,11 +495,77 @@ export async function GET() {
         isActive: true,
       },
       {
+        firstName: "Andrea",
+        lastName: "Castillo",
+        email: "dean.ced@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0419",
+        officeRef: otherColleges[0]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Christian",
+        lastName: "Mendoza",
+        email: "dean.cbm@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0420",
+        officeRef: otherColleges[1]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Rosa",
+        lastName: "Navarro",
+        email: "dean.cos@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0421",
+        officeRef: otherColleges[2]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Katrina",
+        lastName: "Ocampo",
+        email: "dean.cah@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0422",
+        officeRef: otherColleges[3]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Carlos",
+        lastName: "Mercado",
+        email: "staff6@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0417",
+        officeRef: ovpaaOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Bea",
+        lastName: "Salonga",
+        email: "staff7@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0418",
+        officeRef: ovpafOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
         firstName: "Elena",
         lastName: "Reyes",
         email: "qa@parsu.edu.ph",
         passwordHash: commonPasswordHash,
-        role: "qa_office",
+        role: "office_staff",
         employeeOrStudentId: "EMP-0099",
         officeRef: qaOffice._id,
         tokenVersion: 1,
@@ -508,6 +662,28 @@ export async function GET() {
       const key = u.officeRef.toString();
       if (!staffByOffice.has(key)) staffByOffice.set(key, []);
       staffByOffice.get(key)!.push(u);
+    }
+
+    // Every seeded office has one active staff account designated as its
+    // head/dean. This keeps office administration and the login matrix
+    // usable immediately after the development seed completes.
+    const officeHeadAssignments = [
+      [primaryCollege._id, "staff5@parsu.edu.ph"],
+      [otherColleges[0]!._id, "dean.ced@parsu.edu.ph"],
+      [otherColleges[1]!._id, "dean.cbm@parsu.edu.ph"],
+      [otherColleges[2]!._id, "dean.cos@parsu.edu.ph"],
+      [otherColleges[3]!._id, "dean.cah@parsu.edu.ph"],
+      [registrarOffice._id, "staff@parsu.edu.ph"],
+      [osasOffice._id, "staff2@parsu.edu.ph"],
+      [ovpaaOffice._id, "staff6@parsu.edu.ph"],
+      [ovpafOffice._id, "staff7@parsu.edu.ph"],
+      [qaOffice._id, "qa@parsu.edu.ph"],
+      [generalServicesOffice._id, "staff4@parsu.edu.ph"],
+    ] as const;
+    for (const [officeId, email] of officeHeadAssignments) {
+      const head = insertedUsers.find((u) => u.email === email);
+      if (!head) throw new Error(`Could not find seeded head account ${email}`);
+      await Office.updateOne({ _id: officeId }, { $set: { headUserRef: head._id } });
     }
 
     // 4. Bulk-reserve a contiguous block of ticket numbers (one atomic
@@ -658,8 +834,27 @@ export async function GET() {
       offices: {
         primaryCollege: primaryCollege._id,
         registrarOffice: registrarOffice._id,
+        osasOffice: osasOffice._id,
+        ovpaaOffice: ovpaaOffice._id,
+        ovpafOffice: ovpafOffice._id,
         qaOffice: qaOffice._id,
+        generalServicesOffice: generalServicesOffice._id,
         complaintCategory: complaintCategory._id,
+      },
+      verifyRoutingAccounts: {
+        note:
+          "Log in as each office_staff account below (password ParSU_test2026) and confirm complaints for that office appear on their dashboard.",
+        registrar: ["staff@parsu.edu.ph", "staff3@parsu.edu.ph"],
+        osas: ["staff2@parsu.edu.ph"],
+        generalServices: ["staff4@parsu.edu.ph"],
+        cecs: ["staff5@parsu.edu.ph"],
+        ced: ["dean.ced@parsu.edu.ph"],
+        cbm: ["dean.cbm@parsu.edu.ph"],
+        cos: ["dean.cos@parsu.edu.ph"],
+        cah: ["dean.cah@parsu.edu.ph"],
+        ovpaa: ["staff6@parsu.edu.ph"],
+        ovpaf: ["staff7@parsu.edu.ph"],
+        qualityAssurance: ["qa@parsu.edu.ph"],
       },
     });
   } catch (error: any) {

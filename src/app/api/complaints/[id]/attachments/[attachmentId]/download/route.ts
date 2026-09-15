@@ -17,7 +17,7 @@ const INLINE_SAFE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/gif", 
 
 async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
   const { role, id, officeRef } = session.user;
-  if (role === "administrator" || role === "qa_office") return true;
+  if (role === "administrator") return true;
   if (role === "student") return String(complaint.studentRef) === id;
   if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
   // QA-style access, scoped to each sub-admin's own category.

@@ -137,4 +137,19 @@ describe("Upload MIME/size policy — BR-060/061", () => {
     expect(settings!.uploadAllowedMimeTypes).toEqual(["application/pdf", "image/png"]);
     expect(settings!.uploadMaxFileSizeMb).toBe(5);
   });
+
+  it("BR-060/061: default Settings allow-list includes the approved project file types with a 10 MB max", async () => {
+    const settings = await new Settings().save();
+    expect(settings.uploadMaxFileSizeMb).toBe(10);
+    expect(settings.uploadAllowedMimeTypes).toEqual(
+      expect.arrayContaining([
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ]),
+    );
+  });
 });

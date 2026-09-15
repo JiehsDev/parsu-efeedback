@@ -19,12 +19,12 @@ import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 
 async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
   const { role, id, officeRef } = session.user;
-  if (role === "administrator" || role === "qa_office") return true;
+  if (role === "administrator") return true;
   if (role === "student") return String(complaint.studentRef) === id;
   if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
   // QA-style read access, scoped to each sub-admin's own category — the
   // PATCH handler below separately blocks these roles from ever reaching
-  // the mutation path, same as it does for qa_office.
+  // the mutation path.
   if (role === "vpaa" || role === "vpaf" || role === "osas") {
     return isComplaintInAdminScope(getAdminScope(role), complaint);
   }
@@ -72,7 +72,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if (complaint.status !== "submitted") {
       return NextResponse.json(
-        { error: "This complaint has already been picked up and can no longer be edited or withdrawn." },
+        {
+          error:
+            "This complaint has already been picked up and can no longer be edited or withdrawn.",
+        },
         { status: 400 },
       );
     }
@@ -133,12 +136,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ complaint });
   }
 
-  // BR-095: qa_office is read-only institution-wide — only staff/admin may
-  // mutate status. vpaa/vpaf/osas are read-only here too (they get QA-style
+  // Only staff/admin may mutate status. vpaa/vpaf/osas are read-only here too (they get scoped
   // read access below, scoped to their own category) — day-to-day status
   // changes stay staff's job; vpaa/vpaf's own mutation power is limited to
   // reassignment/escalation via /api/complaints/[id]/assign.
-  if (["qa_office", "vpaa", "vpaf", "osas"].includes(session.user.role)) {
+  if (["vpaa", "vpaf", "osas"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -153,6 +155,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const fromStatus = complaint.status as ComplaintStatus;
   const toStatus = parsed.data.status;
+
+  // pending_information has a dedicated request/response workflow. Keeping
+  // it out of the generic status endpoint prevents a staff member from
+  // creating a student-facing state without a request record.
+  if (toStatus === "pending_information" || fromStatus === "pending_information") {
+    return NextResponse.json(
+      { error: "Use the information request workflow for this status." },
+      { status: 400 },
+    );
+  }
 
   // BR-101: withdrawing is the submitting student's own call, made through
   // the branch above — not something staff/admin can do to someone

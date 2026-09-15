@@ -34,6 +34,16 @@ export const addNoteSchema = z.object({
   body: z.string().trim().min(1),
 });
 
+export const informationRequestSchema = z.object({
+  requestMessage: z.string().trim().min(1).max(2000),
+  context: z.string().trim().max(2000).optional().default(""),
+});
+
+export const informationResponseSchema = z.object({
+  responseMessage: z.string().trim().min(1).max(4000),
+  attachmentIds: z.array(z.string().min(1)).max(10).optional().default([]),
+});
+
 export const rateComplaintSchema = z.object({
   studentRating: z.number().int().min(1).max(5),
   studentRatingComment: z.string().trim().optional().default(""),

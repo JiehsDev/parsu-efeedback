@@ -49,7 +49,7 @@ export default async function AdminFeedbackPage({
   const { category, q } = await searchParams;
   const search = q?.trim();
 
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { isArchived: false };
   if (category) filter.category = category;
   if (search) filter.message = { $regex: escapeRegExp(search), $options: "i" };
 

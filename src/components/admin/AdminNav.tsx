@@ -26,7 +26,6 @@ import type { UserRole } from "@/lib/constants";
 const ROLE_LABELS: Record<UserRole, string> = {
   student: "Student",
   office_staff: "Staff",
-  qa_office: "QA Office",
   administrator: "Administrator",
   vpaa: "VPAA",
   vpaf: "VPAF",

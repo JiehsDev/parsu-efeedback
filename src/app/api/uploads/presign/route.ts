@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   const { role, id: userId, officeRef } = session.user;
   let canAccess = false;
-  if (role === "administrator" || role === "qa_office") {
+  if (role === "administrator") {
     canAccess = true;
   } else if (role === "student") {
     canAccess = String((complaint as any).studentRef) === userId;

@@ -4,6 +4,7 @@ import { connectTestDb, disconnectTestDb, clearTestDb } from "@/test/setup-db";
 import { ComplaintNote } from "@/models/ComplaintNote";
 import { Complaint } from "@/models/Complaint";
 import { createTestUser, createActivatableCategory } from "@/test/fixtures";
+import { canAccessInternalComplaintNotes } from "@/lib/complaint-access";
 
 beforeAll(connectTestDb);
 afterAll(disconnectTestDb);
@@ -26,7 +27,8 @@ describe("Internal notes — BR-063/064/065/066", () => {
       assignedOfficeRef: office._id,
     });
 
-    return { complaint, student, staff };
+    const outsider = await createTestUser({ role: "office_staff" });
+    return { complaint, student, staff, outsider };
   }
 
   it("BR-065: a note belongs to exactly one complaint", async () => {
@@ -78,5 +80,37 @@ describe("Internal notes — BR-063/064/065/066", () => {
     // in the E2E suite. Here we confirm the query itself works as staff.
     const notes = await ComplaintNote.find({ complaintRef: complaint._id }).lean();
     expect(notes).toHaveLength(1);
+  });
+
+  it("blocks students and unrelated office staff from internal notes while allowing assigned-office staff", async () => {
+    const { complaint, student, staff, outsider } = await setup();
+
+    expect(
+      await canAccessInternalComplaintNotes({ user: { role: "student", id: String(student._id) } }, complaint),
+    ).toBe(false);
+    expect(
+      await canAccessInternalComplaintNotes(
+        {
+          user: {
+            role: "office_staff",
+            id: String(outsider._id),
+            officeRef: String((outsider as any).officeRef ?? ""),
+          },
+        },
+        complaint,
+      ),
+    ).toBe(false);
+    expect(
+      await canAccessInternalComplaintNotes(
+        {
+          user: {
+            role: "office_staff",
+            id: String(staff._id),
+            officeRef: String(staff.officeRef),
+          },
+        },
+        complaint,
+      ),
+    ).toBe(true);
   });
 });

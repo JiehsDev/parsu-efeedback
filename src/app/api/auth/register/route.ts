@@ -5,6 +5,7 @@ import { User } from "@/models/User";
 import { Office } from "@/models/Office";
 import { registerSchema } from "@/features/auth/schemas/register.schema";
 import { hashPassword } from "@/lib/password";
+import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
@@ -45,6 +46,21 @@ export async function POST(req: NextRequest) {
     passwordHash,
     role: "student",
     isActive: true,
+  });
+
+  await writeAuditLog({
+    actorId: user._id.toString(),
+    action: "auth.register_student",
+    entityType: "User",
+    entityId: user._id,
+    afterState: {
+      role: "student",
+      email: user.email,
+      employeeOrStudentId: user.employeeOrStudentId,
+      collegeRef: user.collegeRef,
+    },
+    ipAddress: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
   });
 
   const { passwordHash: _omit, ...safeUser } = user.toObject();

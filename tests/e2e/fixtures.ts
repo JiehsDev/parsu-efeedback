@@ -23,7 +23,6 @@ function roleTest(fileName: string) {
 
 export const studentTest = roleTest("student.json");
 export const staffTest = roleTest("staff.json");
-export const qaTest = roleTest("qa.json");
 export const adminTest = roleTest("admin.json");
 export const vpaaTest = roleTest("vpaa.json");
 export const vpafTest = roleTest("vpaf.json");

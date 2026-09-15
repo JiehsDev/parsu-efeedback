@@ -6,6 +6,10 @@ import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { updateOfficeSchema } from "@/features/admin/schemas/office.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import {
+  assignOfficeHead,
+  removeOfficeHead,
+} from "@/features/admin/services/office-head.service";
 
 function outOfScope(scope: { kind: string }, office: { type: string } | null): boolean {
   if (!office) return false;
@@ -80,6 +84,50 @@ export async function PATCH(
       { error: "An office cannot be its own parent" },
       { status: 400 },
     );
+  }
+
+  if ("headUserRef" in parsed.data) {
+    if (guard.session.user.role !== "administrator") {
+      return NextResponse.json({ error: "Only administrators can manage office heads" }, { status: 403 });
+    }
+    const { headUserRef, ...officeUpdate } = parsed.data;
+    const afterBase =
+      Object.keys(officeUpdate).length > 0
+        ? await Office.findByIdAndUpdate(id, officeUpdate, { returnDocument: "after" }).lean()
+        : before;
+
+    const headResult = headUserRef
+      ? await assignOfficeHead({
+          officeId: id,
+          userId: headUserRef,
+          actorId: guard.session.user.id,
+          ipAddress: req.headers.get("x-forwarded-for"),
+          userAgent: req.headers.get("user-agent"),
+        })
+      : await removeOfficeHead({
+          officeId: id,
+          actorId: guard.session.user.id,
+          ipAddress: req.headers.get("x-forwarded-for"),
+          userAgent: req.headers.get("user-agent"),
+        });
+
+    if ("error" in headResult) {
+      return NextResponse.json({ error: headResult.error }, { status: headResult.status });
+    }
+
+    const after = headResult.office ?? afterBase;
+    await writeAuditLog({
+      actorId: guard.session.user.id,
+      action: "office.update",
+      entityType: "Office",
+      entityId: id,
+      beforeState: before,
+      afterState: after,
+      ipAddress: req.headers.get("x-forwarded-for"),
+      userAgent: req.headers.get("user-agent"),
+    });
+
+    return NextResponse.json({ office: after });
   }
 
   const after = await Office.findByIdAndUpdate(id, parsed.data, { returnDocument: "after" }).lean();

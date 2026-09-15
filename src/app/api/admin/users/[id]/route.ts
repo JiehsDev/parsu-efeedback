@@ -9,7 +9,7 @@ import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import type { AdminScope } from "@/lib/admin-scope";
 
-// vpaa/vpaf may only touch office_staff/qa_office users already in their
+// vpaa/vpaf may only touch office_staff users already in their
 // own office category; osas may only touch students; administrator is
 // unrestricted. Used both to gate access to an existing user and to
 // validate the effective role/office a PATCH would produce.
@@ -19,7 +19,7 @@ async function isUserInScope(
 ): Promise<boolean> {
   if (scope.kind === "all") return true;
   if (scope.kind === "student") return user.role === "student";
-  if (user.role !== "office_staff" && user.role !== "qa_office") return false;
+  if (user.role !== "office_staff") return false;
   if (!user.officeRef) return false;
   const office = await Office.findById(user.officeRef).select("type").lean();
   return (office as any)?.type === scope.kind;
@@ -92,6 +92,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .select("-passwordHash")
     .lean();
 
+  if (
+    after &&
+    (((before as any).isActive && (after as any).isActive === false) ||
+      String((before as any).officeRef ?? "") !== String((after as any).officeRef ?? "") ||
+      (before as any).role !== (after as any).role)
+  ) {
+    await Office.updateMany({ headUserRef: id }, { $set: { headUserRef: null } });
+  }
+
   const isForceLogoutOnly = forceLogout && !password && Object.keys(rest).length === 0;
 
   await writeAuditLog({
@@ -132,6 +141,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const after = await User.findByIdAndUpdate(id, { isActive: false }, { returnDocument: "after" })
     .select("-passwordHash")
     .lean();
+
+  await Office.updateMany({ headUserRef: id }, { $set: { headUserRef: null } });
 
   await writeAuditLog({
     actorId: guard.session.user.id,

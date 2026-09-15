@@ -15,7 +15,6 @@
 export const USER_ROLES = [
   "student",
   "office_staff",
-  "qa_office",
   "administrator",
   "vpaa",
   "vpaf",
@@ -78,6 +77,8 @@ export const TIMELINE_EVENT_TYPES = [
   "rated",
   "edited", // BR-101: student edited title/description/priority pre-pickup
   "withdrawn", // BR-101
+  "information_requested",
+  "information_submitted",
 ] as const;
 export type TimelineEventType = (typeof TIMELINE_EVENT_TYPES)[number];
 
@@ -98,12 +99,7 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 export const REPORT_FORMATS = ["pdf", "excel", "csv"] as const;
 export type ReportFormat = (typeof REPORT_FORMATS)[number];
 
-export const REPORT_STATUSES = [
-  "pending",
-  "generating",
-  "ready",
-  "failed",
-] as const;
+export const REPORT_STATUSES = ["pending", "generating", "ready", "failed"] as const;
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
 
 // --- Audit log actions are free-form strings (BR-076 just requires the

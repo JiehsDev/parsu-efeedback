@@ -12,7 +12,7 @@ import type { ComplaintStatus } from "@/lib/constants";
 export const ALLOWED_TRANSITIONS_CLIENT: Record<ComplaintStatus, ComplaintStatus[]> = {
   submitted: ["assigned"],
   assigned: ["in_progress", "escalated"],
-  in_progress: ["pending_information", "escalated", "resolved"],
+  in_progress: ["escalated", "resolved"],
   pending_information: ["in_progress"],
   escalated: ["in_progress", "assigned"],
   resolved: ["closed", "in_progress"],

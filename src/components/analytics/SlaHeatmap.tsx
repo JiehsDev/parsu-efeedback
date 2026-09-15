@@ -1,7 +1,7 @@
-// src/components/qa/SlaHeatmap.tsx
+// src/components/analytics/SlaHeatmap.tsx
 import type { SlaComplianceByOfficePoint } from "@/features/analytics/services/analytics.service";
 
-// Bands must stay in sync with the SLA Compliance page (src/app/qa/sla-compliance/page.tsx)
+// Bands used by dashboard SLA compliance summaries.
 // so the two surfaces never disagree about what counts as "compliant."
 function toneFor(percent: number) {
   if (percent >= 80) return { bg: "var(--qa-success-soft)", text: "var(--qa-success)" };

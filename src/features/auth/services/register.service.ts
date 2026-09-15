@@ -1,6 +1,6 @@
 // Student self-registration. See the comment above `registerSchema` in
 // ../schemas/register.schema.ts for why /register only ever creates
-// role: "student" accounts — BR-011 reserves staff/qa/admin/vpaa/vpaf/osas
+// role: "student" accounts — BR-011 reserves staff/admin/vpaa/vpaf/osas
 // account creation for administrators (Phase 7, /admin/users).
 
 import { connectToDatabase } from "@/lib/db";

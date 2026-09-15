@@ -10,7 +10,10 @@ import { createComplaintSchema } from "@/features/complaints/schemas/complaint.s
 import { generateTicketNumber } from "@/features/complaints/services/ticket-number.service";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { resolveSlaRule, computeSlaDates } from "@/features/sla/services/sla.service";
-import { notifyComplaintSubmitted } from "@/features/notifications/services/notification.service";
+import {
+  notifyComplaintRoutedToOffice,
+  notifyComplaintSubmitted,
+} from "@/features/notifications/services/notification.service";
 import {
   resolveRoutingOffice,
   RoutingError,
@@ -124,6 +127,12 @@ export async function POST(req: NextRequest) {
 
   await notifyComplaintSubmitted({
     studentId: session.user.id,
+    ticketNumber: complaint.ticketNumber,
+    complaintId: complaint._id.toString(),
+  });
+
+  await notifyComplaintRoutedToOffice({
+    officeId: resolvedOfficeRef,
     ticketNumber: complaint.ticketNumber,
     complaintId: complaint._id.toString(),
   });

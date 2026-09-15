@@ -15,11 +15,11 @@ export const createUserSchema = z
     isActive: z.boolean().optional().default(true),
   })
   .superRefine((data, ctx) => {
-    // BR-009: office_staff/qa_office need officeRef
-    if (["office_staff", "qa_office"].includes(data.role) && !data.officeRef) {
+    // BR-009: office_staff need officeRef
+    if (data.role === "office_staff" && !data.officeRef) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "officeRef is required for staff and QA roles",
+        message: "officeRef is required for staff roles",
         path: ["officeRef"],
       });
     }

@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { Assignment } from "@/models/Assignment";
 import { SLARule } from "@/models/SLARule";
 import { Office } from "@/models/Office";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
@@ -13,6 +14,7 @@ import type { ComplaintStatus, PriorityLevel } from "@/lib/constants";
 import {
   notifySlaWarning,
   notifyEscalation,
+  notifyStatusUpdated,
 } from "@/features/notifications/services/notification.service";
 
 const ACTIVE_STATUSES: ComplaintStatus[] = [
@@ -84,6 +86,21 @@ async function checkDeadline(
 
     if (!updated) return { escalated: false, warned: false };
 
+    const assignmentChanged =
+      String((updated as any).assignedOfficeRef ?? "") !== String(fromOffice ?? "") ||
+      String((updated as any).assignedStaffRef ?? "") !==
+        String(complaint.assignedStaffRef ?? "");
+
+    if (assignmentChanged && (updated as any).assignedOfficeRef) {
+      await Assignment.create({
+        complaintRef: complaint._id,
+        assignedByRef: null,
+        assignedToRef: (updated as any).assignedStaffRef ?? null,
+        sourceOfficeRef: fromOffice ?? null,
+        destinationOfficeRef: (updated as any).assignedOfficeRef,
+      });
+    }
+
     await ComplaintTimeline.create({
       complaintRef: complaint._id,
       eventType: "escalated",
@@ -105,6 +122,9 @@ async function checkDeadline(
       afterState: {
         status: "escalated",
         assignedOfficeRef: (updated as any)?.assignedOfficeRef,
+        assignedStaffRef: (updated as any)?.assignedStaffRef,
+        escalationReason: "SLA_BREACH",
+        escalatedAt: now,
       },
     });
 
@@ -112,6 +132,14 @@ async function checkDeadline(
       staffId: (updated as any).assignedStaffRef ? String((updated as any).assignedStaffRef) : null,
       ticketNumber: complaint.ticketNumber,
       complaintId: String(complaint._id),
+    });
+
+    await notifyStatusUpdated({
+      studentId: String(complaint.studentRef),
+      ticketNumber: complaint.ticketNumber,
+      complaintId: String(complaint._id),
+      fromStatus,
+      toStatus: "escalated",
     });
 
     return { escalated: true, warned: false };

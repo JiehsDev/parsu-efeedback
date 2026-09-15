@@ -1,9 +1,13 @@
 // src/app/admin/notifications/page.tsx
 import { Bell } from "lucide-react";
+import { auth } from "@/lib/auth";
 import { NotificationsPanel } from "@/components/shared/NotificationsPanel";
 import { BroadcastComposer } from "@/components/admin/BroadcastComposer";
 
-export default function AdminNotificationsPage() {
+export default async function AdminNotificationsPage() {
+  const session = await auth();
+  const canBroadcast = session?.user.role === "administrator";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -14,7 +18,7 @@ export default function AdminNotificationsPage() {
           Notifications
         </h1>
       </div>
-      <BroadcastComposer />
+      {canBroadcast && <BroadcastComposer />}
       <NotificationsPanel complaintBasePath="/admin/complaints" />
     </div>
   );

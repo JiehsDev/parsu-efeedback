@@ -55,7 +55,6 @@ const ALL_ROLE_FILTER_OPTIONS = [
   { value: "", label: "All positions" },
   { value: "student", label: "Student" },
   { value: "office_staff", label: "Staff" },
-  { value: "qa_office", label: "QA Office" },
   { value: "administrator", label: "Administrator" },
   { value: "vpaa", label: "VPAA" },
   { value: "vpaf", label: "VPAF" },
@@ -67,9 +66,9 @@ const ALL_ROLE_FILTER_OPTIONS = [
 function roleOptionsForScope(scopeKind: ScopeKind): string[] {
   if (scopeKind === "student") return ["student"];
   if (scopeKind === "college_office" || scopeKind === "university_office") {
-    return ["office_staff", "qa_office"];
+    return ["office_staff"];
   }
-  return ["student", "office_staff", "qa_office", "administrator", "vpaa", "vpaf", "osas"];
+  return ["student", "office_staff", "administrator", "vpaa", "vpaf", "osas"];
 }
 
 function defaultRoleForScope(scopeKind: ScopeKind): string {
@@ -143,7 +142,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const needsOffice = form.role === "office_staff" || form.role === "qa_office";
+  const needsOffice = form.role === "office_staff";
   const needsCollege = form.role === "student";
 
   async function handleCreate(event: React.FormEvent) {
