@@ -43,22 +43,39 @@ export function InformationRequestPanel({
     }
     setSubmitting(true);
     setError(null);
-    const res = await fetch(`/api/complaints/${complaintId}/information-request`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ requestMessage, context }),
-    });
-    const data = await res.json();
-    setSubmitting(false);
-    if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "Could not request information.");
-      return;
+    try {
+      const res = await fetch(`/api/complaints/${complaintId}/information-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestMessage, context }),
+      });
+      const responseText = await res.text();
+      let data: { error?: unknown } = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = {};
+      }
+
+      if (!res.ok) {
+        setError(
+          typeof data.error === "string"
+            ? data.error
+            : `Could not request information (${res.status}). Please try again.`,
+        );
+        return;
+      }
+
+      showToast("Information requested from student");
+      setOpen(false);
+      setRequestMessage("");
+      setContext("");
+      router.refresh();
+    } catch {
+      setError("Could not reach the server. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    showToast("Information requested from student");
-    setOpen(false);
-    setRequestMessage("");
-    setContext("");
-    router.refresh();
   }
 
   if (status === "pending_information" && active) {

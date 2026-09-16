@@ -76,6 +76,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   const pathname = usePathname();
   const isScopedSubAdmin = role === "vpaa" || role === "vpaf" || role === "osas";
   const roleLabel = ROLE_LABELS[role] ?? "Administrator";
+  const workspaceLabel = isScopedSubAdmin ? `ParSU ${roleLabel}` : "ParSU Admin";
   const primaryItems = PRIMARY_NAV_ITEMS.filter((item) => !item.hideFor?.includes(role));
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -127,7 +128,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
           P
         </span>
         <span className="hidden text-[13px] font-bold tracking-tight text-[var(--foreground)] lg:inline">
-          ParSU Admin
+          {workspaceLabel}
         </span>
       </Link>
 

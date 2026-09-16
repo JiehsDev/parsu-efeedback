@@ -49,15 +49,21 @@ export function AssignmentHistoryPanel({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <p className="text-sm font-medium text-[var(--foreground)]">
-                    {entry.kind === "escalation" ? "Escalated" : "Assigned"}
+                    {entry.kind === "escalation"
+                      ? "Escalated"
+                      : entry.reason
+                        ? "Reassigned"
+                        : "Assigned"}
                   </p>
                   <time className="text-xs text-[var(--muted-foreground)]">
                     {new Date(entry.createdAt).toLocaleString()}
                   </time>
                 </div>
                 <p className="mt-1 text-sm text-[var(--foreground)]/90">
-                  {entry.sourceOfficeName ? `${entry.sourceOfficeName} -> ` : ""}
-                  {entry.destinationOfficeName ?? "Unassigned office"}
+                  {entry.sourceOfficeName
+                    ? `Reassigned from ${entry.sourceOfficeName} to `
+                    : "Assigned to "}
+                  {entry.destinationOfficeName ?? "unassigned office"}
                 </p>
                 {!simplified && (
                   <div className="mt-1 space-y-0.5 text-xs text-[var(--muted-foreground)]">
@@ -68,7 +74,7 @@ export function AssignmentHistoryPanel({
                 )}
                 {(entry.message || entry.reason) && (
                   <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
-                    {entry.message ?? entry.reason}
+                    {entry.reason ? `Reason: ${entry.reason}` : entry.message}
                   </p>
                 )}
               </div>

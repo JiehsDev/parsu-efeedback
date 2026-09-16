@@ -10,6 +10,14 @@ export const assignComplaintSchema = z
   })
   .refine((data) => data.assignedOfficeRef !== undefined || data.assignedStaffRef !== undefined, {
     message: "At least one of assignedOfficeRef or assignedStaffRef must be provided",
-  });
+  })
+  .refine(
+    (data) =>
+      (data.action !== "reassign" && data.action !== "escalate") || Boolean(data.message?.trim()),
+    {
+      message: "A reason is required for reassignment or escalation",
+      path: ["message"],
+    },
+  );
 
 export type AssignComplaintInput = z.infer<typeof assignComplaintSchema>;

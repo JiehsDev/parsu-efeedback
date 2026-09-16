@@ -29,6 +29,13 @@ interface StaffOption {
 }
 
 const OFFICE_LEVEL = "__office_level__";
+const REASSIGNMENT_REASONS = [
+  "Misrouted complaint",
+  "Requires another office",
+  "Staff workload transfer",
+  "Office coordination",
+  "Other",
+] as const;
 
 export function AssignmentDialog({
   complaintId,
@@ -55,16 +62,25 @@ export function AssignmentDialog({
   const { show: showToast } = useToast();
   const confirm = useConfirm();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOfficeId, setSelectedOfficeId] = useState(currentOfficeId ?? offices[0]?._id ?? "");
+  const [selectedOfficeId, setSelectedOfficeId] = useState(
+    currentOfficeId ?? offices[0]?._id ?? "",
+  );
   const [selectedStaffId, setSelectedStaffId] = useState<string>(currentStaffId ?? OFFICE_LEVEL);
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
+  const [reason, setReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const requiresReason = action === "reassign" || action === "escalate";
 
   const title =
-    label ?? (action === "escalate" ? "Escalate Complaint" : currentOfficeId || currentStaffId ? "Reassign Complaint" : "Assign Complaint");
+    label ??
+    (action === "escalate"
+      ? "Escalate Complaint"
+      : currentOfficeId || currentStaffId
+        ? "Reassign Complaint"
+        : "Assign Complaint");
   const selectedOfficeName = useMemo(
     () => offices.find((office) => office._id === selectedOfficeId)?.name ?? "selected office",
     [offices, selectedOfficeId],
@@ -84,13 +100,23 @@ export function AssignmentDialog({
     if (!isOpen) return;
     setSelectedOfficeId(currentOfficeId ?? offices[0]?._id ?? "");
     setSelectedStaffId(currentStaffId ?? OFFICE_LEVEL);
-    setMessage("");
+    setReason("");
+    setCustomReason("");
     setError(null);
   }, [currentOfficeId, currentStaffId, isOpen, offices]);
 
   async function submit() {
     if (!selectedOfficeId) {
       setError("Select an office before saving.");
+      return;
+    }
+    const transferReason = requiresReason
+      ? reason === "Other"
+        ? customReason.trim()
+        : reason
+      : customReason.trim();
+    if (requiresReason && !transferReason) {
+      setError("Select a reason before saving.");
       return;
     }
 
@@ -107,10 +133,11 @@ export function AssignmentDialog({
     setError(null);
     setIsSubmitting(true);
     const payload: Record<string, unknown> = {
-      message: message.trim() || undefined,
+      message: transferReason || undefined,
       action,
     };
-    if (canChangeOffice || selectedOfficeId !== currentOfficeId) payload.assignedOfficeRef = selectedOfficeId;
+    if (canChangeOffice || selectedOfficeId !== currentOfficeId)
+      payload.assignedOfficeRef = selectedOfficeId;
     payload.assignedStaffRef = selectedStaffId === OFFICE_LEVEL ? null : selectedStaffId;
 
     const res = await fetch(`/api/complaints/${complaintId}/assign`, {
@@ -170,7 +197,11 @@ export function AssignmentDialog({
 
             <FormField
               label="Destination office"
-              hint={!canChangeOffice ? "Office staff may only assign within their own office." : undefined}
+              hint={
+                !canChangeOffice
+                  ? "Office staff may only assign within their own office."
+                  : undefined
+              }
             >
               <Select
                 value={selectedOfficeId}
@@ -193,7 +224,10 @@ export function AssignmentDialog({
               </Select>
             </FormField>
 
-            <FormField label="Assigned staff" hint="Leave at office level if no individual owner is selected.">
+            <FormField
+              label="Assigned staff"
+              hint="Leave at office level if no individual owner is selected."
+            >
               <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Office level" />
@@ -215,23 +249,64 @@ export function AssignmentDialog({
               )}
             </FormField>
 
-            <FormField label="Message" hint="Optional note for the timeline.">
-              <textarea
-                rows={3}
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                className={inputClass}
-                placeholder="Reason for assignment or reassignment"
-              />
+            <FormField
+              label={requiresReason ? "Reason for reassignment" : "Assignment note"}
+              hint={
+                requiresReason
+                  ? "Required for the transfer record."
+                  : "Optional note for the timeline."
+              }
+            >
+              {requiresReason ? (
+                <div className="space-y-2">
+                  <Select value={reason} onValueChange={setReason}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REASSIGNMENT_REASONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {reason === "Other" && (
+                    <textarea
+                      rows={3}
+                      value={customReason}
+                      onChange={(event) => setCustomReason(event.target.value)}
+                      className={inputClass}
+                      placeholder="Enter the reason"
+                    />
+                  )}
+                </div>
+              ) : (
+                <textarea
+                  rows={3}
+                  value={customReason}
+                  onChange={(event) => setCustomReason(event.target.value)}
+                  className={inputClass}
+                  placeholder="Optional note for the assignment"
+                />
+              )}
             </FormField>
 
             <button
               type="button"
               onClick={submit}
-              disabled={isSubmitting || !selectedOfficeId}
+              disabled={
+                isSubmitting ||
+                !selectedOfficeId ||
+                (requiresReason && (!reason || (reason === "Other" && !customReason.trim())))
+              }
               className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserCheck className="h-4 w-4" />
+              )}
               {isSubmitting ? "Saving..." : title}
             </button>
           </div>

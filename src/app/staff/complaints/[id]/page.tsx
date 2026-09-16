@@ -210,7 +210,8 @@ export default async function StaffComplaintDetailPage({
                 },
               ]}
               canChangeOffice={false}
-              label="Assign Staff"
+              label={c.assignedStaffRef ? "Reassign Complaint" : "Assign Staff"}
+              action={c.assignedStaffRef ? "reassign" : "assign"}
             />
           )}
 
@@ -218,7 +219,8 @@ export default async function StaffComplaintDetailPage({
             <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />
           )}
 
-          {(String(c.assignedStaffRef ?? "") === session!.user.id || c.status === "pending_information") && (
+          {(String(c.assignedStaffRef ?? "") === session!.user.id ||
+            c.status === "pending_information") && (
             <InformationRequestPanel
               complaintId={String(c._id)}
               status={c.status}

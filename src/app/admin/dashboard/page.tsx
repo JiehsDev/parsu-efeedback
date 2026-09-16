@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  BriefcaseBusiness,
   CheckCircle2,
   Inbox,
   Route,
@@ -101,7 +102,10 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     User.countDocuments({ ...userScopeFilter, isActive: true }),
     User.countDocuments({ ...userScopeFilter, isActive: false }),
-    Complaint.countDocuments({ ...scopeMatch, status: { $nin: ["resolved", "closed", "withdrawn"] } }),
+    Complaint.countDocuments({
+      ...scopeMatch,
+      status: { $nin: ["resolved", "closed", "withdrawn"] },
+    }),
     Complaint.countDocuments({
       ...scopeMatch,
       isOverdue: true,
@@ -135,16 +139,29 @@ export default async function AdminDashboardPage() {
       { $group: { _id: "$role", count: { $sum: 1 } } },
     ]),
     isAdmin
-      ? AuditLog.find().sort({ createdAt: -1 }).limit(6).populate("actorRef", "firstName lastName").lean()
+      ? AuditLog.find()
+          .sort({ createdAt: -1 })
+          .limit(6)
+          .populate("actorRef", "firstName lastName")
+          .lean()
       : [],
     isAdmin ? Category.find({ isActive: true }).select("name").lean() : [],
     isAdmin ? RoutingRule.find({ isActive: true }).select("categoryRef").lean() : [],
     isAdmin ? SLARule.find({ isActive: true }).select("categoryRef").lean() : [],
     scope.kind === "student"
       ? []
-      : Office.find({ ...officeScopeFilter, isActive: true }).select("name headUserRef").lean(),
+      : Office.find({ ...officeScopeFilter, isActive: true })
+          .select("name headUserRef")
+          .lean(),
     User.aggregate([
-      { $match: { ...userScopeFilter, role: "office_staff", isActive: true, officeRef: { $ne: null } } },
+      {
+        $match: {
+          ...userScopeFilter,
+          role: "office_staff",
+          isActive: true,
+          officeRef: { $ne: null },
+        },
+      },
       { $group: { _id: "$officeRef", count: { $sum: 1 } } },
     ]),
     Complaint.aggregate([
@@ -305,7 +322,9 @@ export default async function AdminDashboardPage() {
   const routedCategoryIds = new Set(activeRoutingRules.map((r: any) => String(r.categoryRef)));
   const hasDefaultSlaRule = activeSlaRules.some((r: any) => r.categoryRef === null);
   const slaCoveredCategoryIds = new Set(
-    activeSlaRules.filter((r: any) => r.categoryRef !== null).map((r: any) => String(r.categoryRef)),
+    activeSlaRules
+      .filter((r: any) => r.categoryRef !== null)
+      .map((r: any) => String(r.categoryRef)),
   );
   const staffedOfficeIds = new Set(staffByOffice.map((s: any) => String(s._id)));
 
@@ -315,7 +334,9 @@ export default async function AdminDashboardPage() {
   const categoriesMissingSla = hasDefaultSlaRule
     ? []
     : activeCategories.filter((c: any) => !slaCoveredCategoryIds.has(String(c._id)));
-  const officesMissingStaff = activeOffices.filter((o: any) => !staffedOfficeIds.has(String(o._id)));
+  const officesMissingStaff = activeOffices.filter(
+    (o: any) => !staffedOfficeIds.has(String(o._id)),
+  );
   // Staffed offices only — an unstaffed office is already flagged above,
   // and a head officer is who SLA escalations default to for whichever
   // office already holds a complaint (src/app/api/cron/sla-check/route.ts).
@@ -325,7 +346,8 @@ export default async function AdminDashboardPage() {
 
   const lastSlaCheckAt = settings ? ((settings as any).lastSlaCheckAt as Date | null) : null;
   const slaCronIsFresh =
-    lastSlaCheckAt !== null && Date.now() - new Date(lastSlaCheckAt).getTime() < SLA_CRON_STALE_AFTER_MS;
+    lastSlaCheckAt !== null &&
+    Date.now() - new Date(lastSlaCheckAt).getTime() < SLA_CRON_STALE_AFTER_MS;
 
   const CHECKS: {
     label: string;
@@ -420,10 +442,48 @@ export default async function AdminDashboardPage() {
     .sort((a, b) => b.value - a.value);
 
   const officeWorkloadData = officeWorkload.map((o: any) => ({ label: o._id, value: o.volume }));
+  const roleLabel = ROLE_LABELS[session!.user.role] ?? "Administrator";
+  const scopeLabel =
+    scope.kind === "college_office"
+      ? "Academic and college offices"
+      : scope.kind === "university_office"
+        ? "University administrative offices"
+        : scope.kind === "student"
+          ? "Student-affairs scope"
+          : "Institution-wide operations";
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <h1 className="text-xl font-bold tracking-tight text-[var(--foreground)]">Admin Dashboard</h1>
+      <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-[var(--primary)] uppercase">
+            <BriefcaseBusiness className="h-3.5 w-3.5" />
+            {roleLabel} workspace
+          </p>
+          <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
+            {isAdmin ? "Operations dashboard" : `${roleLabel} operations`}
+          </h1>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            {scopeLabel}. Monitor workload, service levels, and the complaints that need action.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/complaints"
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--foreground)] px-3 py-2 text-sm font-semibold text-[var(--card)] transition-opacity hover:opacity-85"
+          >
+            <Inbox className="h-4 w-4" />
+            Review queue
+          </Link>
+          <Link
+            href="/admin/reports"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Reports
+          </Link>
+        </div>
+      </header>
 
       <div className="grid grid-cols-2 gap-1.5 sm:hidden">
         {STATS.map((stat) => (

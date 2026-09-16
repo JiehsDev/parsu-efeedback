@@ -28,6 +28,7 @@ const assignmentSchema = new Schema(
     assignedToRef: { type: Schema.Types.ObjectId, ref: "User", default: null }, // null = office-level, not yet claimed by a person
     sourceOfficeRef: { type: Schema.Types.ObjectId, ref: "Office", default: null },
     destinationOfficeRef: { type: Schema.Types.ObjectId, ref: "Office", required: true },
+    reason: { type: String, default: "", trim: true },
   },
   {
     // "Assignment Date" (BR-049) is this record's creation time

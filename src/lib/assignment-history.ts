@@ -39,6 +39,7 @@ export async function getAssignmentHistoryEntries(
       destinationOfficeName: assignment.destinationOfficeRef?.name ?? null,
       assignedStaffName: displayName(assignment.assignedToRef),
       assignedByName: displayName(assignment.assignedByRef),
+      reason: assignment.reason ?? null,
     })),
     ...escalations.map((log: any) => ({
       _id: String(log._id),
@@ -48,7 +49,5 @@ export async function getAssignmentHistoryEntries(
       destinationOfficeName: null,
       resultingStatus: log.afterState?.status ?? null,
     })),
-  ].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
+  ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }

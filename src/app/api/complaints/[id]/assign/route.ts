@@ -154,7 +154,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const allowedDestinations = await getOsasAllowedDestinationOffices(complaint);
-    const allowedDestinationIds = new Set(allowedDestinations.map((office: any) => String(office._id)));
+    const allowedDestinationIds = new Set(
+      allowedDestinations.map((office: any) => String(office._id)),
+    );
     const effectiveOfficeRef = assignedOfficeRef ?? String(complaint.assignedOfficeRef ?? "");
     if (!effectiveOfficeRef || !allowedDestinationIds.has(effectiveOfficeRef)) {
       return NextResponse.json(
@@ -260,6 +262,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     assignedToRef: complaint.assignedStaffRef ?? null,
     sourceOfficeRef: before.assignedOfficeRef ?? null,
     destinationOfficeRef: String(complaint.assignedOfficeRef),
+    reason: parsed.data.message?.trim() ?? "",
   });
 
   await writeAuditLog({
@@ -291,7 +294,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ticketNumber: complaint.ticketNumber,
     complaintId: complaint._id.toString(),
   });
-  if (officeChanged && complaint.assignedOfficeRef) {
+  if ((officeChanged || action === "reassign") && complaint.assignedOfficeRef) {
     await notifyComplaintRoutedToOffice({
       officeId: String(complaint.assignedOfficeRef),
       ticketNumber: complaint.ticketNumber,
