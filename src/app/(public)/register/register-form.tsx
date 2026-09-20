@@ -3,11 +3,10 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { registerAction, type ActionResult } from "@/features/auth/actions";
+import { FieldLabel } from "@/components/ui/form-field";
 
 const inputClass =
   "w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
-const labelClass = "text-sm font-medium text-[var(--foreground)]";
-
 interface RegisterFormProps {
   colleges: Array<{ id: string; name: string }>;
 }
@@ -72,10 +71,18 @@ export function RegisterForm({ colleges }: RegisterFormProps) {
       />
 
       <div className="space-y-1.5">
-        <label htmlFor="collegeId" className={labelClass}>
+        <FieldLabel htmlFor="collegeId" required>
           College
-        </label>
-        <select id="collegeId" name="collegeId" required className={inputClass} defaultValue="">
+        </FieldLabel>
+        <select
+          id="collegeId"
+          name="collegeId"
+          required
+          aria-invalid={!!fieldErrors.collegeId?.length}
+          aria-describedby="register-collegeId-error"
+          className={inputClass}
+          defaultValue=""
+        >
           <option value="" disabled>
             Select your college
           </option>
@@ -86,7 +93,12 @@ export function RegisterForm({ colleges }: RegisterFormProps) {
           ))}
         </select>
         {fieldErrors.collegeId?.map((message) => (
-          <p key={message} className="text-xs text-[var(--destructive)]">
+          <p
+            id="register-collegeId-error"
+            key={message}
+            role="alert"
+            className="text-xs font-medium text-[var(--destructive)]"
+          >
             {message}
           </p>
         ))}
@@ -140,19 +152,26 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className={labelClass}>
+      <FieldLabel htmlFor={id} required>
         {label}
-      </label>
+      </FieldLabel>
       <input
         id={id}
         name={id}
         type={type}
         autoComplete={autoComplete}
         required
+        aria-invalid={!!errors?.length}
+        aria-describedby={errors?.length ? `register-${id}-error` : undefined}
         className={inputClass}
       />
       {errors?.map((message) => (
-        <p key={message} className="text-xs text-[var(--destructive)]">
+        <p
+          id={`register-${id}-error`}
+          key={message}
+          role="alert"
+          className="text-xs font-medium text-[var(--destructive)]"
+        >
           {message}
         </p>
       ))}

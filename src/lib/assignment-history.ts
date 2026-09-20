@@ -33,7 +33,9 @@ export async function getAssignmentHistoryEntries(
   return [
     ...assignments.map((assignment: any) => ({
       _id: String(assignment._id),
-      kind: "assignment" as const,
+      kind: assignment.actionType?.endsWith("escalation")
+        ? ("escalation" as const)
+        : ("assignment" as const),
       createdAt: new Date(assignment.createdAt).toISOString(),
       sourceOfficeName: assignment.sourceOfficeRef?.name ?? null,
       destinationOfficeName: assignment.destinationOfficeRef?.name ?? null,

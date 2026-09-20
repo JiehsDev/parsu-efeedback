@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-field";
 
 const MIN_MESSAGE_LENGTH = 10;
 
@@ -26,6 +27,7 @@ export function FeedbackForm() {
   const router = useRouter();
   const [form, setForm] = useState({ category: "", message: "", isAnonymous: false });
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ category?: string; message?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [justSubmitted, setJustSubmitted] = useState(false);
 
@@ -37,12 +39,16 @@ export function FeedbackForm() {
     // The form is noValidate, so the browser's own required/minLength never
     // fire — these checks are the only thing standing between the student and
     // a round trip that comes back with a Zod error.
-    if (!form.category) {
-      setError("Please choose a category.");
-      return;
-    }
-    if (trimmedLength < MIN_MESSAGE_LENGTH) {
-      setError(`Please write at least ${MIN_MESSAGE_LENGTH} characters.`);
+    const nextErrors = {
+      ...(!form.category ? { category: "Please select a feedback category." } : {}),
+      ...(trimmedLength < MIN_MESSAGE_LENGTH
+        ? { message: `Feedback message must be at least ${MIN_MESSAGE_LENGTH} characters.` }
+        : {}),
+    };
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setError("Please correct the highlighted fields below.");
+      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
       return;
     }
 
@@ -124,9 +130,9 @@ export function FeedbackForm() {
         )}
 
         <div className="space-y-1.5">
-          <label htmlFor="category" className="text-sm font-medium text-[var(--foreground)]">
+          <FieldLabel htmlFor="category" required>
             Category
-          </label>
+          </FieldLabel>
           {/* The decorative Tag/MessageSquareText icons that used to sit inside
               these fields are gone. Input adornments earn their keep on a
               search box; on a labelled select they are noise, and on a textarea
@@ -135,7 +141,12 @@ export function FeedbackForm() {
             value={form.category}
             onValueChange={(value) => setForm((p) => ({ ...p, category: value }))}
           >
-            <SelectTrigger id="category" className="w-full">
+            <SelectTrigger
+              id="category"
+              aria-invalid={!!fieldErrors.category}
+              aria-describedby="feedback-category-error"
+              className="w-full"
+            >
               <SelectValue placeholder="Choose a category" />
             </SelectTrigger>
             <SelectContent>
@@ -146,13 +157,14 @@ export function FeedbackForm() {
               ))}
             </SelectContent>
           </Select>
+          <FieldError id="feedback-category-error" message={fieldErrors.category} />
         </div>
 
         <div className="space-y-1.5">
           <div className="flex items-baseline justify-between gap-3">
-            <label htmlFor="message" className="text-sm font-medium text-[var(--foreground)]">
+            <FieldLabel htmlFor="message" required>
               Message
-            </label>
+            </FieldLabel>
             <span
               className={`qa-tabular text-xs ${
                 trimmedLength > 0 && trimmedLength < MIN_MESSAGE_LENGTH
@@ -169,10 +181,17 @@ export function FeedbackForm() {
             id="message"
             rows={7}
             value={form.message}
-            onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
+            onChange={(e) => {
+              setForm((p) => ({ ...p, message: e.target.value }));
+              if (e.target.value.trim().length >= MIN_MESSAGE_LENGTH)
+                setFieldErrors((p) => ({ ...p, message: undefined }));
+            }}
+            aria-invalid={!!fieldErrors.message}
+            aria-describedby="feedback-message-error"
             placeholder={MESSAGE_PLACEHOLDER}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm leading-relaxed text-[var(--foreground)] outline-none transition-colors placeholder:text-[var(--muted-foreground)]/70 focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm leading-relaxed text-[var(--foreground)] transition-colors outline-none placeholder:text-[var(--muted-foreground)]/70 focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
+          <FieldError id="feedback-message-error" message={fieldErrors.message} />
         </div>
 
         <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)]/40 px-3.5 py-3">

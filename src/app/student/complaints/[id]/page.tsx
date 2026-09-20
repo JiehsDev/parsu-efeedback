@@ -27,6 +27,7 @@ import { CopyButton } from "@/components/shared/CopyButton";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
 import { InformationRequest } from "@/models/InformationRequest";
 import { InformationResponseForm } from "@/components/student/InformationResponseForm";
+import { SlaDetails } from "@/components/shared/SlaDetails";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -48,13 +49,17 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
 
   const c = complaint as any;
   const [timeline, assignedOffice, assignmentHistory, openInformationRequest] = await Promise.all([
-    ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+    ComplaintTimeline.find({ complaintRef: id })
+      .sort({ createdAt: 1 })
+      .populate("actorRef", "firstName lastName role")
+      .lean(),
     c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).select("name").lean() : null,
     getAssignmentHistoryEntries(id),
     InformationRequest.findOne({ complaintRef: id, status: "open" })
       .sort({ requestedAt: -1 })
       .lean(),
   ]);
+  const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -132,6 +137,12 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
         </div>
 
         <div className="space-y-5">
+          <SlaDetails
+            complaint={c}
+            firstResponseAt={firstResponseAt}
+            events={timeline as any}
+            simplified
+          />
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
             <p className="text-sm font-medium text-[var(--foreground)]">Details</p>
             <dl className="mt-4 space-y-4 text-sm">

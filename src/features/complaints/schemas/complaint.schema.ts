@@ -44,6 +44,10 @@ export const informationResponseSchema = z.object({
   attachmentIds: z.array(z.string().min(1)).max(10).optional().default([]),
 });
 
+export const manualEscalationSchema = z.object({
+  reason: z.string().trim().min(1).max(2000),
+});
+
 export const rateComplaintSchema = z.object({
   studentRating: z.number().int().min(1).max(5),
   studentRatingComment: z.string().trim().optional().default(""),

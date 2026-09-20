@@ -88,8 +88,7 @@ async function checkDeadline(
 
     const assignmentChanged =
       String((updated as any).assignedOfficeRef ?? "") !== String(fromOffice ?? "") ||
-      String((updated as any).assignedStaffRef ?? "") !==
-        String(complaint.assignedStaffRef ?? "");
+      String((updated as any).assignedStaffRef ?? "") !== String(complaint.assignedStaffRef ?? "");
 
     if (assignmentChanged && (updated as any).assignedOfficeRef) {
       await Assignment.create({
@@ -98,6 +97,8 @@ async function checkDeadline(
         assignedToRef: (updated as any).assignedStaffRef ?? null,
         sourceOfficeRef: fromOffice ?? null,
         destinationOfficeRef: (updated as any).assignedOfficeRef,
+        actionType: "sla_escalation",
+        reason: "SLA_BREACH",
       });
     }
 
@@ -151,7 +152,8 @@ async function checkDeadline(
   if (!rule) return { escalated: false, warned: false };
 
   const warningThreshold = (rule as any).warningThresholdPercent ?? 80;
-  const clockHours = clock === "response" ? (rule as any).responseHours : (rule as any).resolutionHours;
+  const clockHours =
+    clock === "response" ? (rule as any).responseHours : (rule as any).resolutionHours;
   const totalMs = clockHours * 60 * 60 * 1000;
   const windowStart = new Date(dueAt.getTime() - totalMs);
   const elapsedPercent = ((now.getTime() - windowStart.getTime()) / totalMs) * 100;

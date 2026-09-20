@@ -1,11 +1,12 @@
 // src/components/shared/NotificationsPanel.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { NotificationDot } from "./NotificationIcon";
 import { RelativeTime } from "./RelativeTime";
 import { ListRowsSkeleton } from "./Skeleton";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 interface NotificationRecord {
   _id: string;
@@ -21,19 +22,25 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  function refresh() {
+  const refresh = useCallback(() => {
+    setError(null);
+    setLoading(true);
     const url = filter === "unread" ? "/api/notifications?unreadOnly=true" : "/api/notifications";
     fetch(url)
-      .then((res) => res.json())
-      .then((data) => setNotifications(data.notifications ?? []))
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load notifications.");
+        setNotifications(data.notifications ?? []);
+      })
+      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Could not load notifications."))
       .finally(() => setLoading(false));
-  }
+  }, [filter]);
 
   useEffect(() => {
-    setLoading(true);
     refresh();
-  }, [filter]);
+  }, [refresh]);
 
   async function markRead(id: string) {
     await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
@@ -85,6 +92,14 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
 
       {loading ? (
         <ListRowsSkeleton />
+      ) : error ? (
+        <div className="rounded-[var(--radius)] border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center">
+          <AlertCircle className="mx-auto h-5 w-5 text-[var(--destructive)]" />
+          <p className="mt-2 text-sm text-[var(--destructive)]">{error}</p>
+          <button type="button" onClick={refresh} className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--muted)]">
+            <RefreshCw className="h-3.5 w-3.5" /> Retry
+          </button>
+        </div>
       ) : notifications.length === 0 ? (
         <div className="rounded-[var(--radius)] border border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center">
           <p className="text-sm text-[var(--muted-foreground)]">

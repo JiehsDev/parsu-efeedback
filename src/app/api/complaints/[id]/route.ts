@@ -45,7 +45,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const timeline = await ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean();
+  const timeline = await ComplaintTimeline.find({ complaintRef: id })
+    .sort({ createdAt: 1 })
+    .populate("actorRef", "firstName lastName role")
+    .lean();
 
   return NextResponse.json({ complaint, timeline });
 }
@@ -194,7 +197,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await ComplaintTimeline.create({
     complaintRef: complaint._id,
-    eventType: "status_changed",
+    eventType: fromStatus === "closed" && toStatus === "in_progress" ? "reopened" : "status_changed",
     actorRef: session.user.id,
     fromValue: fromStatus,
     toValue: toStatus,

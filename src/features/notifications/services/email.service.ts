@@ -166,6 +166,7 @@ export async function sendEscalationEmail(params: {
   recipientName: string;
   ticketNumber: string;
   complaintId: string;
+  manual?: boolean;
 }) {
   await sendEmail(
     params.to,
@@ -174,6 +175,7 @@ export async function sendEscalationEmail(params: {
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,
       complaintUrl: complaintUrlForRole(params.complaintId, "office_staff"),
+      manual: params.manual,
     }),
   );
 }

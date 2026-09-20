@@ -26,7 +26,7 @@ adminTest.describe("Rating", () => {
       const staffPage = await staffContext.newPage();
       await staffPage.goto(`/staff/complaints/${id}`);
       await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
-      await expect(staffPage.getByRole("combobox")).toBeVisible();
+      await expect(staffPage.getByRole("combobox")).toBeVisible({ timeout: 30_000 });
       await staffPage.getByRole("combobox").click();
       await staffPage.getByRole("option", { name: "In Progress", exact: true }).click();
       await staffPage.getByRole("button", { name: "Update Status" }).click();

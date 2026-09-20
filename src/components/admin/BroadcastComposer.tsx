@@ -5,7 +5,13 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, Megaphone } from "lucide-react";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ROLE_OPTIONS = [
   { value: "student", label: "Students" },
@@ -85,7 +91,7 @@ export function BroadcastComposer() {
           </div>
         )}
 
-        <FormField label="Title">
+        <FormField label="Title" required>
           <input
             required
             className={inputClass}
@@ -95,7 +101,7 @@ export function BroadcastComposer() {
           />
         </FormField>
 
-        <FormField label="Message">
+        <FormField label="Message" required>
           <textarea
             required
             rows={3}
@@ -105,7 +111,7 @@ export function BroadcastComposer() {
           />
         </FormField>
 
-        <FormField label="Audience">
+        <FormField label="Audience" required>
           <Select value={audience} onValueChange={(value) => setAudience(value as typeof audience)}>
             <SelectTrigger>
               <SelectValue />

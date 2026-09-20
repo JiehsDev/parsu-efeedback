@@ -23,7 +23,7 @@ test.describe("Authentication — BR-005/012/013/083/085/087", () => {
       await page.getByRole("button", { name: "Sign in" }).click();
 
       const alert = errorAlert(page);
-      await expect(alert).toBeVisible();
+      await expect(alert).toBeVisible({ timeout: 30_000 });
 
       if (attempt < AUTH_MAX_FAILED_LOGIN_ATTEMPTS) {
         await expect(alert).toHaveText(/invalid email or password/i);

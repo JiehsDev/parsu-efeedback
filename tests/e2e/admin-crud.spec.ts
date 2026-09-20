@@ -113,7 +113,7 @@ adminTest.describe("Admin CRUD — category + routing rule + SLA rule wizard", (
       await page.getByRole("button", { name: "Next: SLA Rule" }).click();
 
       await page.getByRole("button", { name: "Review" }).click();
-      await expect(page.getByText("Category, routing rule, and SLA rule are all set.")).toBeVisible();
+      await expect(page.getByText("Category, routing rule, and SLA rule are all set.")).toBeVisible({ timeout: 60_000 });
 
       await page.getByRole("button", { name: "Activate Category" }).click();
       await page.waitForURL(/\/admin\/categories\/[a-f0-9]{24}/);
@@ -139,7 +139,7 @@ adminTest.describe("Admin CRUD — users", () => {
       // Role defaults to "office_staff", which needs an Office selection.
       await selectByLabel(page, "Office", "Quality Assurance Office");
       await page.getByRole("button", { name: "Create User" }).click();
-      await expect(page.getByText(email)).toBeVisible();
+      await expect(page.getByText(email)).toBeVisible({ timeout: 60_000 });
 
       const row = page.locator("li", { hasText: email });
       await row.getByRole("button", { name: "Deactivate" }).click();

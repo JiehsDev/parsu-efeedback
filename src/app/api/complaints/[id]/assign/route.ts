@@ -263,6 +263,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     sourceOfficeRef: before.assignedOfficeRef ?? null,
     destinationOfficeRef: String(complaint.assignedOfficeRef),
     reason: parsed.data.message?.trim() ?? "",
+    actionType: isEscalationAction
+      ? "manual_escalation"
+      : action === "reassign"
+        ? "reassign"
+        : "assign",
   });
 
   await writeAuditLog({

@@ -40,7 +40,10 @@ function addHours(date: Date, hours: number) {
   return new Date(date.getTime() + hours * 60 * 60 * 1000);
 }
 
-const PRIORITY_SLA_HOURS: Record<PriorityLevel, { responseHours: number; resolutionHours: number }> = {
+const PRIORITY_SLA_HOURS: Record<
+  PriorityLevel,
+  { responseHours: number; resolutionHours: number }
+> = {
   critical: { responseHours: 4, resolutionHours: 24 },
   high: { responseHours: 8, resolutionHours: 48 },
   medium: { responseHours: 24, resolutionHours: 120 },
@@ -48,83 +51,264 @@ const PRIORITY_SLA_HOURS: Record<PriorityLevel, { responseHours: number; resolut
 };
 
 const FIRST_NAMES = [
-  "Juan", "Maria", "Jose", "Ana", "Pedro", "Rosa", "Antonio", "Carmen",
-  "Manuel", "Teresa", "Ramon", "Josefa", "Francisco", "Luz", "Ricardo", "Elena",
-  "Eduardo", "Cristina", "Fernando", "Isabel", "Rafael", "Angela", "Miguel", "Grace",
-  "Roberto", "Michelle", "Daniel", "Katrina", "Paolo", "Bianca", "Marco", "Julia",
-  "Nathaniel", "Andrea", "Christian", "Samantha",
+  "Juan",
+  "Maria",
+  "Jose",
+  "Ana",
+  "Pedro",
+  "Rosa",
+  "Antonio",
+  "Carmen",
+  "Manuel",
+  "Teresa",
+  "Ramon",
+  "Josefa",
+  "Francisco",
+  "Luz",
+  "Ricardo",
+  "Elena",
+  "Eduardo",
+  "Cristina",
+  "Fernando",
+  "Isabel",
+  "Rafael",
+  "Angela",
+  "Miguel",
+  "Grace",
+  "Roberto",
+  "Michelle",
+  "Daniel",
+  "Katrina",
+  "Paolo",
+  "Bianca",
+  "Marco",
+  "Julia",
+  "Nathaniel",
+  "Andrea",
+  "Christian",
+  "Samantha",
 ];
 const LAST_NAMES = [
-  "Reyes", "Santos", "Cruz", "Bautista", "Garcia", "Mendoza", "Torres", "Flores",
-  "Ramos", "Villanueva", "Del Rosario", "Aquino", "Castillo", "Navarro", "Gonzales",
-  "Fernandez", "Pascual", "Domingo", "Salazar", "Rivera", "Aguilar", "Marquez",
-  "Ocampo", "Diaz", "Espinosa", "Lopez", "Manalo", "Tolentino",
+  "Reyes",
+  "Santos",
+  "Cruz",
+  "Bautista",
+  "Garcia",
+  "Mendoza",
+  "Torres",
+  "Flores",
+  "Ramos",
+  "Villanueva",
+  "Del Rosario",
+  "Aquino",
+  "Castillo",
+  "Navarro",
+  "Gonzales",
+  "Fernandez",
+  "Pascual",
+  "Domingo",
+  "Salazar",
+  "Rivera",
+  "Aguilar",
+  "Marquez",
+  "Ocampo",
+  "Diaz",
+  "Espinosa",
+  "Lopez",
+  "Manalo",
+  "Tolentino",
 ];
 
 const COMPLAINT_TEMPLATES: Record<string, { title: string; description: string }[]> = {
   "Grade Concern": [
-    { title: "Incorrect grade posted for major subject", description: "The final grade shown in the portal does not match what was announced in class. Requesting a review of the computation." },
-    { title: "Missing grade after semester ended", description: "It has been weeks since the semester ended and my grade for this subject is still not reflected in the system." },
+    {
+      title: "Incorrect grade posted for major subject",
+      description:
+        "The final grade shown in the portal does not match what was announced in class. Requesting a review of the computation.",
+    },
+    {
+      title: "Missing grade after semester ended",
+      description:
+        "It has been weeks since the semester ended and my grade for this subject is still not reflected in the system.",
+    },
   ],
   "Classroom & Laboratory Facilities": [
-    { title: "Air conditioner not working in lecture hall", description: "The AC unit has been broken for over a week, making the room uncomfortably hot during afternoon classes." },
-    { title: "Projector malfunctioning in computer laboratory", description: "The projector flickers and shuts off randomly, disrupting lab sessions and demonstrations." },
+    {
+      title: "Air conditioner not working in lecture hall",
+      description:
+        "The AC unit has been broken for over a week, making the room uncomfortably hot during afternoon classes.",
+    },
+    {
+      title: "Projector malfunctioning in computer laboratory",
+      description:
+        "The projector flickers and shuts off randomly, disrupting lab sessions and demonstrations.",
+    },
   ],
   "Restroom & Sanitation": [
-    { title: "No running water in the building restroom", description: "The restroom on the ground floor has had no running water for several days now." },
-    { title: "Unsanitary conditions reported in shared restroom", description: "The restroom is rarely cleaned and lacks basic supplies like soap and tissue." },
+    {
+      title: "No running water in the building restroom",
+      description:
+        "The restroom on the ground floor has had no running water for several days now.",
+    },
+    {
+      title: "Unsanitary conditions reported in shared restroom",
+      description: "The restroom is rarely cleaned and lacks basic supplies like soap and tissue.",
+    },
   ],
   "Campus Wi-Fi & IT Infrastructure": [
-    { title: "Campus Wi-Fi extremely slow near the library", description: "Internet connection drops frequently and loads very slowly, affecting research and online submissions." },
-    { title: "Computer lab units not booting properly", description: "Several units in the lab fail to start or freeze shortly after login, delaying scheduled activities." },
+    {
+      title: "Campus Wi-Fi extremely slow near the library",
+      description:
+        "Internet connection drops frequently and loads very slowly, affecting research and online submissions.",
+    },
+    {
+      title: "Computer lab units not booting properly",
+      description:
+        "Several units in the lab fail to start or freeze shortly after login, delaying scheduled activities.",
+    },
   ],
   "Document Request Delays": [
-    { title: "TOR request pending beyond stated processing time", description: "I requested my Transcript of Records over three weeks ago and have not received any update." },
-    { title: "Certification of enrollment delayed", description: "My request for a certification document has exceeded the posted turnaround time with no explanation." },
+    {
+      title: "TOR request pending beyond stated processing time",
+      description:
+        "I requested my Transcript of Records over three weeks ago and have not received any update.",
+    },
+    {
+      title: "Certification of enrollment delayed",
+      description:
+        "My request for a certification document has exceeded the posted turnaround time with no explanation.",
+    },
   ],
   "Staff Service & Responsiveness": [
-    { title: "Unhelpful response from front desk personnel", description: "I was dismissed without a clear answer when asking about my document request status." },
-    { title: "Slow response to email inquiries", description: "Multiple follow-up emails regarding my concern have gone unanswered for over a week." },
+    {
+      title: "Unhelpful response from front desk personnel",
+      description:
+        "I was dismissed without a clear answer when asking about my document request status.",
+    },
+    {
+      title: "Slow response to email inquiries",
+      description:
+        "Multiple follow-up emails regarding my concern have gone unanswered for over a week.",
+    },
   ],
   "Administrative Process Concerns": [
-    { title: "Redundant requirements for simple request", description: "I was asked to submit the same document twice across two different windows for one transaction." },
-    { title: "Office closed without prior announcement", description: "The office was unexpectedly closed during posted hours, and no notice was given beforehand." },
+    {
+      title: "Redundant requirements for simple request",
+      description:
+        "I was asked to submit the same document twice across two different windows for one transaction.",
+    },
+    {
+      title: "Office closed without prior announcement",
+      description:
+        "The office was unexpectedly closed during posted hours, and no notice was given beforehand.",
+    },
   ],
   "Faculty & Teaching Performance": [
-    { title: "Frequent absences affecting course progress", description: "The instructor has missed several sessions this term without makeup classes being scheduled." },
-    { title: "Concerns about instruction quality", description: "Lecture materials are unclear and questions during class are often left unaddressed." },
+    {
+      title: "Frequent absences affecting course progress",
+      description:
+        "The instructor has missed several sessions this term without makeup classes being scheduled.",
+    },
+    {
+      title: "Concerns about instruction quality",
+      description:
+        "Lecture materials are unclear and questions during class are often left unaddressed.",
+    },
   ],
   "Curriculum & Class Scheduling": [
-    { title: "Class schedule conflict with required subject", description: "Two required subjects for my program are scheduled at the same time this semester." },
-    { title: "Overcrowded section affecting learning", description: "The section has significantly more students than the room can comfortably accommodate." },
+    {
+      title: "Class schedule conflict with required subject",
+      description:
+        "Two required subjects for my program are scheduled at the same time this semester.",
+    },
+    {
+      title: "Overcrowded section affecting learning",
+      description:
+        "The section has significantly more students than the room can comfortably accommodate.",
+    },
   ],
   "Academic Advising & Consultation": [
-    { title: "Faculty unavailable during posted consultation hours", description: "I visited during the posted consultation schedule twice but the instructor was not present." },
-    { title: "Lack of guidance on academic requirements", description: "I was unable to get clear advice on remaining requirements for my program." },
+    {
+      title: "Faculty unavailable during posted consultation hours",
+      description:
+        "I visited during the posted consultation schedule twice but the instructor was not present.",
+    },
+    {
+      title: "Lack of guidance on academic requirements",
+      description: "I was unable to get clear advice on remaining requirements for my program.",
+    },
   ],
   "Library Services & Resources": [
-    { title: "Limited access to reference materials", description: "Several required references for our course are not available for borrowing or online access." },
-    { title: "Library hours not consistently followed", description: "The library has closed earlier than its posted hours on multiple occasions this month." },
+    {
+      title: "Limited access to reference materials",
+      description:
+        "Several required references for our course are not available for borrowing or online access.",
+    },
+    {
+      title: "Library hours not consistently followed",
+      description:
+        "The library has closed earlier than its posted hours on multiple occasions this month.",
+    },
   ],
   "Campus Safety & Security": [
-    { title: "Poorly lit pathway near parking area", description: "The walkway near the parking area has no working lights, making it unsafe at night." },
-    { title: "Lost item not properly logged by security", description: "I reported a lost item at the security desk but there is no record of it being logged." },
+    {
+      title: "Poorly lit pathway near parking area",
+      description:
+        "The walkway near the parking area has no working lights, making it unsafe at night.",
+    },
+    {
+      title: "Lost item not properly logged by security",
+      description:
+        "I reported a lost item at the security desk but there is no record of it being logged.",
+    },
   ],
   "Student Services & Assistance": [
-    { title: "Canteen food quality concerns", description: "Several students have noticed inconsistent food quality and hygiene at the campus canteen." },
-    { title: "Delay in processing student organization request", description: "Our student organization's activity request has been pending approval well past the usual turnaround." },
+    {
+      title: "Canteen food quality concerns",
+      description:
+        "Several students have noticed inconsistent food quality and hygiene at the campus canteen.",
+    },
+    {
+      title: "Delay in processing student organization request",
+      description:
+        "Our student organization's activity request has been pending approval well past the usual turnaround.",
+    },
   ],
   "Health & Medical Services": [
-    { title: "Clinic understaffed during peak hours", description: "The health clinic had no available staff when I sought assistance during a walk-in visit." },
-    { title: "Limited stock of basic first aid supplies", description: "The campus clinic frequently runs out of basic medical supplies needed for minor concerns." },
+    {
+      title: "Clinic understaffed during peak hours",
+      description:
+        "The health clinic had no available staff when I sought assistance during a walk-in visit.",
+    },
+    {
+      title: "Limited stock of basic first aid supplies",
+      description:
+        "The campus clinic frequently runs out of basic medical supplies needed for minor concerns.",
+    },
   ],
   "Scholarships & Financial Assistance": [
-    { title: "Scholarship disbursement delayed", description: "My scholarship allowance for this semester has not been released despite meeting all requirements." },
-    { title: "Unclear grant renewal guidelines", description: "The requirements for renewing my grant were not clearly communicated before the deadline." },
+    {
+      title: "Scholarship disbursement delayed",
+      description:
+        "My scholarship allowance for this semester has not been released despite meeting all requirements.",
+    },
+    {
+      title: "Unclear grant renewal guidelines",
+      description:
+        "The requirements for renewing my grant were not clearly communicated before the deadline.",
+    },
   ],
   "Student Payment & Cashier Concerns": [
-    { title: "Delayed posting of tuition payment", description: "My tuition payment was made over a week ago but is still not reflected in my account, blocking enrollment finalization." },
-    { title: "Incorrect fee assessment on statement of account", description: "The assessed fees on my SOA do not match the published fee schedule for my program and year level." },
+    {
+      title: "Delayed posting of tuition payment",
+      description:
+        "My tuition payment was made over a week ago but is still not reflected in my account, blocking enrollment finalization.",
+    },
+    {
+      title: "Incorrect fee assessment on statement of account",
+      description:
+        "The assessed fees on my SOA do not match the published fee schedule for my program and year level.",
+    },
   ],
 };
 
@@ -157,9 +341,19 @@ export async function GET() {
     // compare — the original seed only ever created one.
     const otherColleges = await Office.insertMany([
       { name: "College of Education", code: "CED", type: "college_office", parentOffice: null },
-      { name: "College of Business & Management", code: "CBM", type: "college_office", parentOffice: null },
+      {
+        name: "College of Business & Management",
+        code: "CBM",
+        type: "college_office",
+        parentOffice: null,
+      },
       { name: "College of Science", code: "COS", type: "college_office", parentOffice: null },
-      { name: "College of Arts and Humanities", code: "CAH", type: "college_office", parentOffice: null },
+      {
+        name: "College of Arts and Humanities",
+        code: "CAH",
+        type: "college_office",
+        parentOffice: null,
+      },
     ]);
     const colleges = [primaryCollege, ...otherColleges];
 
@@ -406,8 +600,18 @@ export async function GET() {
       },
     ] as const;
 
-    const allCategories: { _id: any; name: string; defaultOfficeRef: any; defaultPriority: PriorityLevel }[] = [
-      { _id: complaintCategory._id, name: complaintCategory.name, defaultOfficeRef: registrarOffice._id, defaultPriority: "medium" },
+    const allCategories: {
+      _id: any;
+      name: string;
+      defaultOfficeRef: any;
+      defaultPriority: PriorityLevel;
+    }[] = [
+      {
+        _id: complaintCategory._id,
+        name: complaintCategory.name,
+        defaultOfficeRef: registrarOffice._id,
+        defaultPriority: "medium",
+      },
     ];
 
     for (const cat of additionalCategories) {
@@ -664,6 +868,18 @@ export async function GET() {
       staffByOffice.get(key)!.push(u);
     }
 
+    // Manual escalation hierarchy: college offices elevate to VPAA; general
+    // university offices elevate to VPAF, while OSAS elevates through VPAA.
+    await Office.updateMany(
+      { _id: { $in: colleges.map((college) => college._id) } },
+      { $set: { parentOffice: ovpaaOffice._id } },
+    );
+    await Office.updateMany(
+      { _id: { $in: [registrarOffice._id, qaOffice._id, generalServicesOffice._id] } },
+      { $set: { parentOffice: ovpafOffice._id } },
+    );
+    await Office.updateOne({ _id: osasOffice._id }, { $set: { parentOffice: ovpaaOffice._id } });
+
     // Every seeded office has one active staff account designated as its
     // head/dean. This keeps office administration and the login matrix
     // usable immediately after the development seed completes.
@@ -718,7 +934,13 @@ export async function GET() {
       { value: "escalated" as const, weight: 3 },
       { value: "pending_information" as const, weight: 2 },
     ];
-    const OPEN_STATUSES = new Set(["submitted", "assigned", "in_progress", "pending_information", "escalated"]);
+    const OPEN_STATUSES = new Set([
+      "submitted",
+      "assigned",
+      "in_progress",
+      "pending_information",
+      "escalated",
+    ]);
     const now = new Date();
 
     const complaintDocs = ticketNumbers.map((ticketNumber) => {
@@ -726,7 +948,10 @@ export async function GET() {
       const priority = weightedPick(PRIORITY_WEIGHTS);
       const student = pick(students);
       const templates = COMPLAINT_TEMPLATES[category.name] ?? [
-        { title: `${category.name} concern`, description: `Reported issue related to ${category.name.toLowerCase()}.` },
+        {
+          title: `${category.name} concern`,
+          description: `Reported issue related to ${category.name.toLowerCase()}.`,
+        },
       ];
       const template = pick(templates);
 
@@ -739,7 +964,8 @@ export async function GET() {
       const isResolved = status === "resolved" || status === "closed";
 
       const officeStaff = staffByOffice.get(category.defaultOfficeRef.toString()) ?? [];
-      const assignedStaffRef = status === "submitted" || officeStaff.length === 0 ? null : pick(officeStaff)._id;
+      const assignedStaffRef =
+        status === "submitted" || officeStaff.length === 0 ? null : pick(officeStaff)._id;
 
       let resolvedAt: Date | null = null;
       let closedAt: Date | null = null;
@@ -842,8 +1068,7 @@ export async function GET() {
         complaintCategory: complaintCategory._id,
       },
       verifyRoutingAccounts: {
-        note:
-          "Log in as each office_staff account below (password ParSU_test2026) and confirm complaints for that office appear on their dashboard.",
+        note: "Log in as each office_staff account below (password ParSU_test2026) and confirm complaints for that office appear on their dashboard.",
         registrar: ["staff@parsu.edu.ph", "staff3@parsu.edu.ph"],
         osas: ["staff2@parsu.edu.ph"],
         generalServices: ["staff4@parsu.edu.ph"],

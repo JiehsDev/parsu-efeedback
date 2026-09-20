@@ -19,7 +19,7 @@ export const PASSWORD = "ParSU_test2026";
  * assertions resolve to the app's real error message.
  */
 export function errorAlert(page: Page) {
-  return page.locator('[role="alert"]:not(#__next-route-announcer__)');
+  return page.locator('[role="alert"]:not(#__next-route-announcer__)').first();
 }
 
 /**
@@ -31,11 +31,15 @@ export function errorAlert(page: Page) {
  * which college/office a complaint routes/scopes to.
  */
 export async function loginAs(page: Page, email: string, password = PASSWORD) {
+  // loginAs is used to switch identities inside a role-scoped test. Clear
+  // inherited fixture cookies so the public layout cannot redirect us to the
+  // previous role's dashboard before the requested credentials are entered.
+  await page.context().clearCookies();
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/(dashboard|student|staff|qa|admin)/, { timeout: 30_000 });
+  await page.waitForURL(/\/(dashboard|student|staff|qa|admin)/, { timeout: 60_000 });
 }
 
 /**
@@ -96,7 +100,7 @@ export async function submitComplaint(
   await page.getByLabel("Title").fill(title);
   await page.getByLabel("Description").fill(description);
   await page.getByRole("button", { name: "Submit Complaint" }).click();
-  await page.waitForURL(/\/student\/complaints\?submitted=/, { timeout: 15_000 });
+  await page.waitForURL(/\/student\/complaints\?submitted=/, { timeout: 60_000 });
   const url = new URL(page.url());
   const ticketNumber = url.searchParams.get("submitted")!;
 

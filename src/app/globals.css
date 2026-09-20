@@ -122,6 +122,22 @@ body {
   color: var(--foreground);
 }
 
+/* Any custom form control can opt into the same accessible error treatment by
+   setting aria-invalid. This keeps hand-built forms consistent with selects
+   and native inputs without changing untouched-field appearance. */
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: var(--destructive) !important;
+}
+
+input[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus {
+  --tw-ring-color: var(--destructive);
+  outline-color: var(--destructive);
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

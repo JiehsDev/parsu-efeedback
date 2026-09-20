@@ -7,7 +7,14 @@ import { AlertCircle, Loader2, MessageSquare, RefreshCw } from "lucide-react";
 import { ALLOWED_TRANSITIONS_CLIENT, STATUS_LABELS } from "@/lib/status-transitions-client";
 import type { ComplaintStatus } from "@/lib/constants";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-field";
 
 export function StatusUpdateForm({
   complaintId,
@@ -22,12 +29,18 @@ export function StatusUpdateForm({
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const options = ALLOWED_TRANSITIONS_CLIENT[currentStatus] ?? [];
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!nextStatus) return;
+    if (!nextStatus) {
+      setStatusError("Please select the new complaint status.");
+      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
+      return;
+    }
+    setStatusError(null);
     setError(null);
     setIsSubmitting(true);
 
@@ -56,7 +69,10 @@ export function StatusUpdateForm({
     "w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5"
+    >
       <div className="flex items-center gap-2.5">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
           <RefreshCw className="h-[18px] w-[18px]" />
@@ -73,7 +89,8 @@ export function StatusUpdateForm({
 
       <div className="mt-3">
         <Select value={nextStatus} onValueChange={setNextStatus}>
-          <SelectTrigger>
+          <FieldLabel required>Status</FieldLabel>
+          <SelectTrigger aria-invalid={!!statusError} aria-describedby="status-update-status-error">
             <SelectValue placeholder="Change to…" />
           </SelectTrigger>
           <SelectContent>
@@ -84,10 +101,11 @@ export function StatusUpdateForm({
             ))}
           </SelectContent>
         </Select>
+        <FieldError id="status-update-status-error" message={statusError} />
       </div>
 
       <div className="relative mt-2">
-        <MessageSquare className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+        <MessageSquare className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}

@@ -27,6 +27,9 @@ import {
   getAnalyticsSummary,
   getMonthlyTrends,
   getSlaComplianceByOffice,
+  getCategoryBreakdown,
+  getPriorityBreakdown,
+  getCollegeComparison,
 } from "@/features/analytics/services/analytics.service";
 import { getSettings } from "@/features/settings/services/settings.service";
 import { isR2Configured } from "@/lib/r2";
@@ -42,8 +45,11 @@ import { QaTrendChart } from "@/components/analytics/QaTrendChart";
 import { QaDonutChart } from "@/components/analytics/QaDonutChart";
 import { QaBarList } from "@/components/analytics/QaBarList";
 import { SlaHeatmap } from "@/components/analytics/SlaHeatmap";
+import { CategoryBarChart } from "@/components/analytics/CategoryBarChart";
+import { PriorityPieChart } from "@/components/analytics/PriorityPieChart";
 import { StatCard, StatChip, type StatCardData } from "@/components/shared/StatCard";
 import { RelativeTime } from "@/components/shared/RelativeTime";
+import { actionLabel } from "@/lib/display-labels";
 
 const SLA_CRON_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 
@@ -89,6 +95,9 @@ export default async function AdminDashboardPage() {
     avgRatingResult,
     trends,
     analyticsSummary,
+    categoryBreakdown,
+    priorityBreakdown,
+    collegeComparison,
     slaByOffice,
     roleCounts,
     recentActivity,
@@ -133,6 +142,9 @@ export default async function AdminDashboardPage() {
     ]),
     getMonthlyTrends(scopeMatch),
     getAnalyticsSummary(scopeMatch),
+    getCategoryBreakdown(scopeMatch),
+    getPriorityBreakdown(scopeMatch),
+    isAdmin ? getCollegeComparison() : Promise.resolve([]),
     getSlaComplianceByOffice(scopeMatch),
     User.aggregate([
       { $match: { ...userScopeFilter, isActive: true } },
@@ -453,7 +465,7 @@ export default async function AdminDashboardPage() {
           : "Institution-wide operations";
 
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex min-h-full flex-col gap-4 pb-2">
       <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-[var(--primary)] uppercase">
@@ -524,7 +536,7 @@ export default async function AdminDashboardPage() {
           <div
             role="region"
             aria-labelledby="admin-health-heading"
-            className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-2"
+            className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-2"
           >
             <h2
               id="admin-health-heading"
@@ -578,7 +590,7 @@ export default async function AdminDashboardPage() {
           <div
             role="region"
             aria-labelledby="admin-roles-heading"
-            className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+            className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
           >
             <h2
               id="admin-roles-heading"
@@ -596,7 +608,7 @@ export default async function AdminDashboardPage() {
           <div
             role="region"
             aria-labelledby="admin-activity-heading"
-            className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+            className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
           >
             <div className="flex items-center justify-between gap-2">
               <h2
@@ -620,7 +632,7 @@ export default async function AdminDashboardPage() {
                 {recentActivity.map((log: any) => (
                   <li key={String(log._id)} className="py-1.5">
                     <p className="truncate font-mono text-[10.5px] font-medium text-[var(--foreground)]">
-                      {log.action}
+                      {actionLabel(log.action)}
                     </p>
                     <p className="mt-0.5 flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
                       <span className="truncate">
@@ -640,11 +652,11 @@ export default async function AdminDashboardPage() {
       )}
 
       {/* SLA HEATMAP · TREND (wide) · OFFICE WORKLOAD */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div
           role="region"
           aria-labelledby="admin-sla-heading"
-          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
         >
           <div className="flex items-center justify-between gap-2">
             <h2
@@ -662,7 +674,7 @@ export default async function AdminDashboardPage() {
         <div
           role="region"
           aria-labelledby="admin-trend-heading"
-          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-2"
+          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-2"
         >
           <div className="flex items-center justify-between gap-2">
             <h2
@@ -682,7 +694,7 @@ export default async function AdminDashboardPage() {
           {trends.length === 0 ? (
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">Not enough data yet.</p>
           ) : (
-            <div className="mt-1 h-[calc(100%-1.5rem)]">
+            <div className="mt-3 min-h-[220px] sm:min-h-[260px]">
               <QaTrendChart data={trends} />
             </div>
           )}
@@ -691,7 +703,7 @@ export default async function AdminDashboardPage() {
         <div
           role="region"
           aria-labelledby="admin-workload-heading"
-          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
         >
           <h2
             id="admin-workload-heading"
@@ -708,6 +720,46 @@ export default async function AdminDashboardPage() {
           )}
         </div>
       </div>
+
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+        <div
+          role="region"
+          aria-labelledby="admin-category-heading"
+          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+        >
+          <h2 id="admin-category-heading" className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+            Complaint categories
+          </h2>
+          <div className="mt-3">
+            {categoryBreakdown.length ? <CategoryBarChart data={categoryBreakdown} /> : <p className="text-xs text-[var(--muted-foreground)]">No category data yet.</p>}
+          </div>
+        </div>
+        <div
+          role="region"
+          aria-labelledby="admin-priority-heading"
+          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+        >
+          <h2 id="admin-priority-heading" className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+            Priority mix
+          </h2>
+          <div className="mt-3">
+            {priorityBreakdown.length ? <PriorityPieChart data={priorityBreakdown} /> : <p className="text-xs text-[var(--muted-foreground)]">No priority data yet.</p>}
+          </div>
+        </div>
+      </div>
+
+      {isAdmin && (
+        <div role="region" aria-labelledby="admin-college-heading" className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <h2 id="admin-college-heading" className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+            College comparison
+          </h2>
+          <div className="mt-3">
+            {collegeComparison.length ? (
+              <QaBarList data={collegeComparison.map((item: any) => ({ label: item.college, value: item.volume }))} subject="college" color="var(--primary)" />
+            ) : <p className="text-xs text-[var(--muted-foreground)]">No college comparison data yet.</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

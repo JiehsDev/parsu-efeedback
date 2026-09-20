@@ -1,7 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { GraduationCap } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { homeRouteForRole } from "@/middleware/rbac";
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  // The edge proxy intentionally allows guest routes through so revoked
+  // sessions can still reach login. The Node auth check here distinguishes a
+  // genuinely active session and keeps active users out of guest pages.
+  const session = await auth();
+  if (session?.user?.role) redirect(homeRouteForRole(session.user.role));
+
   return (
     <div className="flex min-h-full flex-1 flex-col lg:flex-row">
       {/* Brand panel — hidden on small screens so mobile goes straight to the form */}
@@ -15,7 +24,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[var(--primary)]/20 blur-3xl"
+          className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-[var(--primary)]/20 blur-3xl"
         />
         <div
           aria-hidden
@@ -30,12 +39,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         </Link>
 
         <div className="relative mt-auto">
-          <h2 className="max-w-sm text-3xl font-semibold leading-tight text-white xl:text-4xl">
+          <h2 className="max-w-sm text-3xl leading-tight font-semibold text-white xl:text-4xl">
             Heard. Handled. Resolved.
           </h2>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">
-            One place for Partido State University students to raise concerns, track every
-            update, and see them through to resolution.
+            One place for Partido State University students to raise concerns, track every update,
+            and see them through to resolution.
           </p>
         </div>
 
@@ -55,9 +64,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </span>
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
-          {children}
-        </div>
+        <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">{children}</div>
       </div>
     </div>
   );

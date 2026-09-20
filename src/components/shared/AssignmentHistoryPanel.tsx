@@ -1,4 +1,5 @@
 import { History, Shuffle } from "lucide-react";
+import { statusLabel } from "@/lib/display-labels";
 
 export interface AssignmentHistoryEntry {
   _id: string;
@@ -69,7 +70,7 @@ export function AssignmentHistoryPanel({
                   <div className="mt-1 space-y-0.5 text-xs text-[var(--muted-foreground)]">
                     <p>Staff: {entry.assignedStaffName ?? "Office level"}</p>
                     <p>Changed by: {entry.assignedByName ?? "System"}</p>
-                    {entry.resultingStatus && <p>Status: {entry.resultingStatus}</p>}
+                    {entry.resultingStatus && <p>Status: {statusLabel(entry.resultingStatus)}</p>}
                   </div>
                 )}
                 {(entry.message || entry.reason) && (

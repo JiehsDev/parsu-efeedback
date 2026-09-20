@@ -29,14 +29,21 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/settings")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load settings.");
+        return data;
+      })
       .then((data) => {
         setSettings(data.settings);
         setMimeTypesInput(data.settings.uploadAllowedMimeTypes.join(", "));
-      });
+      })
+      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Could not load settings."))
+      .finally(() => setIsLoading(false));
   }, []);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -47,7 +54,10 @@ export default function AdminSettingsPage() {
     setIsSaving(true);
 
     const payload = {
-      ...settings,
+      ticketNumberPrefix: settings.ticketNumberPrefix,
+      uploadMaxFileSizeMb: settings.uploadMaxFileSizeMb,
+      authMaxFailedLoginAttempts: settings.authMaxFailedLoginAttempts,
+      authLockoutDurationMinutes: settings.authLockoutDurationMinutes,
       uploadAllowedMimeTypes: mimeTypesInput
         .split(",")
         .map((s) => s.trim())
@@ -75,11 +85,20 @@ export default function AdminSettingsPage() {
   const inputClass =
     "w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
-  if (!settings) {
+  if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading…
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <div className="rounded-2xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
+        <p>{error ?? "Could not load settings."}</p>
+        <button type="button" onClick={() => window.location.reload()} className="mt-3 inline-flex items-center rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">Retry</button>
       </div>
     );
   }
@@ -219,11 +238,13 @@ export default function AdminSettingsPage() {
                 type="number"
                 min={1}
                 value={settings.authSessionMaxAgeMinutes}
-                onChange={(e) =>
-                  setSettings({ ...settings, authSessionMaxAgeMinutes: Number(e.target.value) })
-                }
-                className={inputClass}
+                readOnly
+                aria-describedby="session-age-help"
+                className={`${inputClass} cursor-not-allowed opacity-70`}
               />
+              <p id="session-age-help" className="text-xs text-[var(--muted-foreground)]">
+                Controlled by AUTH_SESSION_MAX_AGE_MINUTES at server startup. This value is reference-only here.
+              </p>
             </div>
           </div>
         </div>

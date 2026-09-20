@@ -16,6 +16,7 @@ import { Types } from "mongoose";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
+import { Office } from "@/models/Office";
 import { getAnalyticsSummary } from "@/features/analytics/services/analytics.service";
 import {
   ComplaintListRow,
@@ -47,6 +48,7 @@ export default async function StaffDashboardPage() {
   const firstName = session.user.name?.split(" ")[0] ?? "there";
   const openStatusFilter = { $nin: ["resolved", "closed", "withdrawn"] as const };
   const [
+    office,
     statusCounts,
     overdueCount,
     unassignedCount,
@@ -55,6 +57,7 @@ export default async function StaffDashboardPage() {
     myOpenPreview,
     analyticsSummary,
   ] = await Promise.all([
+    Office.findById(officeRef).select("name headUserRef").lean(),
     Complaint.aggregate([
       { $match: { assignedOfficeRef: officeRef, isArchived: false } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
@@ -99,13 +102,19 @@ export default async function StaffDashboardPage() {
       : unassignedCount > 0
         ? `${unassignedCount} complaint${unassignedCount === 1 ? "" : "s"} waiting to be claimed.`
         : "Your office queue is all caught up.";
+  const isOfficeHead = String((office as any)?.headUserRef ?? "") === session.user.id;
+  const officeHeadLabel = isOfficeHead ? "Office Head" : "Office Staff";
+  const officeName = String((office as any)?.name ?? "Assigned office");
+  const officeContextLabel = officeName.toLowerCase().includes("quality")
+    ? "Quality Assurance Office Staff"
+    : officeName;
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-7">
       <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--primary)] uppercase">
-            Staff workspace
+            {officeHeadLabel} workspace
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
             Office operations
@@ -113,6 +122,15 @@ export default async function StaffDashboardPage() {
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Good morning, {firstName}. {queueMessage}
           </p>
+          <p className="mt-1 text-xs font-medium text-[var(--muted-foreground)]">
+            {officeContextLabel}
+          </p>
+          {isOfficeHead && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3 py-1.5 text-xs font-semibold text-[var(--primary)]">
+              <Building2 className="h-3.5 w-3.5" />
+              Office Head · higher-level escalation available
+            </div>
+          )}
         </div>
         <div className="flex shrink-0 gap-2">
           <Link

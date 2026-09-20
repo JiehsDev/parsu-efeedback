@@ -20,7 +20,13 @@ function getInitials(name: string) {
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-export function StaffNav({ userName }: { userName: string }) {
+export function StaffNav({
+  userName,
+  isOfficeHead = false,
+}: {
+  userName: string;
+  isOfficeHead?: boolean;
+}) {
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -108,7 +114,7 @@ export function StaffNav({ userName }: { userName: string }) {
                   {userName}
                 </span>
                 <span className="block truncate text-[10.5px] text-[var(--muted-foreground)]">
-                  Office Staff
+                  {isOfficeHead ? "Office Head · Office Staff" : "Office Staff"}
                 </span>
               </span>
             </button>
@@ -122,7 +128,9 @@ export function StaffNav({ userName }: { userName: string }) {
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">
                     {userName}
                   </p>
-                  <p className="text-xs text-[var(--muted-foreground)]">Office Staff</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    {isOfficeHead ? "Office Head · Office Staff" : "Office Staff"}
+                  </p>
                 </div>
                 <div className="p-1">
                   <Link

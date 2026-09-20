@@ -7,15 +7,18 @@ interface Props {
   recipientName: string;
   ticketNumber: string;
   complaintUrl: string;
+  manual?: boolean;
 }
 
-export default function Escalation({ recipientName, ticketNumber, complaintUrl }: Props) {
+export default function Escalation({ recipientName, ticketNumber, complaintUrl, manual }: Props) {
   return (
     <EmailLayout previewTitle="Complaint Escalated">
       <Text>Hi {recipientName},</Text>
       <Text>
-        Complaint <strong>{ticketNumber}</strong> has breached its SLA deadline and been escalated
-        to you for immediate attention.
+        Complaint <strong>{ticketNumber}</strong>{" "}
+        {manual
+          ? "has been manually escalated to you for immediate attention."
+          : "has breached its SLA deadline and been escalated to you for immediate attention."}
       </Text>
       <Button
         href={complaintUrl}

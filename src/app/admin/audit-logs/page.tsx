@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ScrollText, Search } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, RefreshCw, ScrollText, Search } from "lucide-react";
 import { RelativeTime } from "@/components/shared/RelativeTime";
+import { actionLabel } from "@/lib/display-labels";
 import {
   Select,
   SelectContent,
@@ -34,9 +35,12 @@ export default function AdminAuditLogsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     setIsLoading(true);
+    setError(null);
     const params = new URLSearchParams({ page: String(page) });
     if (entityType) params.set("entityType", entityType);
     if (actionFilter) params.set("action", actionFilter);
@@ -45,13 +49,18 @@ export default function AdminAuditLogsPage() {
     if (dateTo) params.set("dateTo", dateTo);
 
     fetch(`/api/admin/audit-logs?${params}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load audit logs.");
+        return data;
+      })
       .then((data) => {
         setLogs(data.logs ?? []);
         setTotal(data.total ?? 0);
       })
+      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Could not load audit logs."))
       .finally(() => setIsLoading(false));
-  }, [page, entityType, actionFilter, actorFilter, dateFrom, dateTo]);
+  }, [page, entityType, actionFilter, actorFilter, dateFrom, dateTo, retryKey]);
 
   const totalPages = Math.max(1, Math.ceil(total / 50));
 
@@ -64,7 +73,7 @@ export default function AdminAuditLogsPage() {
         <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Audit Logs</h1>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Select
           value={entityType}
           onValueChange={(value) => {
@@ -134,6 +143,14 @@ export default function AdminAuditLogsPage() {
 
       {isLoading ? (
         <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
+      ) : error ? (
+        <div className="rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
+          <AlertCircle className="mx-auto h-5 w-5" />
+          <p className="mt-2">{error}</p>
+          <button type="button" onClick={() => setRetryKey((current) => current + 1)} className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">
+            <RefreshCw className="h-3.5 w-3.5" /> Retry
+          </button>
+        </div>
       ) : logs.length === 0 ? (
         <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
@@ -156,7 +173,7 @@ export default function AdminAuditLogsPage() {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
                         <span className="font-mono text-xs font-medium text-[var(--foreground)]">
-                          {log.action}
+                          {actionLabel(log.action)}
                         </span>
                       </span>
                       <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">

@@ -36,7 +36,10 @@ for (const { role, email, storageFile } of ROLES) {
     await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    await page.waitForURL(homeRouteForRole(role), { timeout: 30_000 });
+    // A cold dev server plus the credential provider's password verification
+    // can exceed 30 seconds on the first administrative login. This is a
+    // test harness budget, not an application timeout.
+    await page.waitForURL(homeRouteForRole(role), { timeout: 60_000 });
     await expect(page).toHaveURL(homeRouteForRole(role));
 
     await page.context().storageState({ path: storageFile });

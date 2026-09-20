@@ -37,6 +37,8 @@ import {
   getOsasEscalationOffice,
   isComplaintInOsasActionScope,
 } from "@/lib/osas-complaint-scope";
+import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
+import { SlaDetails } from "@/components/shared/SlaDetails";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -76,6 +78,7 @@ export default async function AdminComplaintDetailPage({
     osasCanAssign,
     osasEscalationOffice,
     informationRequests,
+    escalationTarget,
   ] = await Promise.all([
     // Student identity is kept out of the admin view — ID + college only,
     // not name, so a complaint reads a little more anonymous.
@@ -84,7 +87,10 @@ export default async function AdminComplaintDetailPage({
       .populate("collegeRef", "name")
       .lean(),
     c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).lean() : null,
-    ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+    ComplaintTimeline.find({ complaintRef: id })
+      .sort({ createdAt: 1 })
+      .populate("actorRef", "firstName lastName role")
+      .lean(),
     ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
     c.assignedStaffRef
       ? User.findById(c.assignedStaffRef).select("firstName lastName").lean()
@@ -101,6 +107,7 @@ export default async function AdminComplaintDetailPage({
     role === "osas" ? isComplaintInOsasActionScope(c) : false,
     role === "osas" ? getOsasEscalationOffice(c) : null,
     InformationRequest.find({ complaintRef: id }).sort({ requestedAt: -1 }).lean(),
+    resolveManualEscalationTarget(c, role),
   ]);
 
   // vpaa/vpaf are confined to complaints assigned to their office
@@ -111,6 +118,7 @@ export default async function AdminComplaintDetailPage({
   ) {
     notFound();
   }
+  const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -151,6 +159,7 @@ export default async function AdminComplaintDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         <div className="space-y-6">
+          <SlaDetails complaint={c} firstResponseAt={firstResponseAt} events={timeline as any} />
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
             <p className="text-sm font-semibold text-[var(--foreground)]">Description</p>
             <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-[var(--foreground)]/90">
@@ -228,7 +237,11 @@ export default async function AdminComplaintDetailPage({
 
           {isAdmin && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
 
-          {(isAdmin || role === "vpaa" || role === "vpaf" || osasCanAssign || c.status === "pending_information") && (
+          {(isAdmin ||
+            role === "vpaa" ||
+            role === "vpaf" ||
+            osasCanAssign ||
+            c.status === "pending_information") && (
             <InformationRequestPanel
               complaintId={String(c._id)}
               status={c.status}
@@ -299,10 +312,43 @@ export default async function AdminComplaintDetailPage({
                   canChangeOffice
                   label="Escalate Complaint"
                   action="escalate"
+                  destinationOfficeId={String(
+                    escalationTarget?.office?._id ?? osasEscalationOffice._id,
+                  )}
+                  destinationStaffId={escalationTarget ? String(escalationTarget.staff._id) : null}
                 />
               )}
             </>
           )}
+
+          {role !== "osas" &&
+            ["administrator", "vpaa", "vpaf"].includes(role) &&
+            escalationTarget &&
+            c.status !== "withdrawn" && (
+              <AssignmentDialog
+                complaintId={String(c._id)}
+                currentOfficeId={c.assignedOfficeRef ? String(c.assignedOfficeRef) : null}
+                currentOfficeName={office ? (office as any).name : null}
+                currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null}
+                currentStaffName={
+                  assignedStaff
+                    ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
+                    : null
+                }
+                offices={[
+                  {
+                    _id: String(escalationTarget.office._id),
+                    name: escalationTarget.office.name,
+                    type: escalationTarget.office.type,
+                  },
+                ]}
+                canChangeOffice
+                label="Escalate Complaint"
+                action="escalate"
+                destinationOfficeId={String(escalationTarget.office._id)}
+                destinationStaffId={String(escalationTarget.staff._id)}
+              />
+            )}
 
           <AssignmentHistoryPanel entries={assignmentHistory} />
 

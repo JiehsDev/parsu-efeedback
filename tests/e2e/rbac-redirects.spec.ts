@@ -9,15 +9,33 @@ import {
 } from "./fixtures";
 
 studentTest.describe("student RBAC redirects", () => {
+  studentTest("an authenticated student cannot open the login page", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page).toHaveURL(/\/student\/dashboard/);
+  });
+
+  studentTest("an authenticated student cannot open registration", async ({ page }) => {
+    await page.goto("/register");
+    await expect(page).toHaveURL(/\/student\/dashboard/);
+  });
+
   for (const route of ["/staff/dashboard", "/admin/dashboard"]) {
-    studentTest(`student visiting ${route} is redirected to student dashboard`, async ({ page }) => {
-      await page.goto(route);
-      await expect(page).toHaveURL(/\/student\/dashboard/);
-    });
+    studentTest(
+      `student visiting ${route} is redirected to student dashboard`,
+      async ({ page }) => {
+        await page.goto(route);
+        await expect(page).toHaveURL(/\/student\/dashboard/);
+      },
+    );
   }
 });
 
 staffTest.describe("office_staff RBAC redirects", () => {
+  staffTest("an authenticated staff member cannot open the login page", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page).toHaveURL(/\/staff\/dashboard/);
+  });
+
   for (const route of ["/student/dashboard", "/admin/dashboard"]) {
     staffTest(`staff visiting ${route} is redirected to staff dashboard`, async ({ page }) => {
       await page.goto(route);

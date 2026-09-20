@@ -2,39 +2,45 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, UserPlus } from "lucide-react";
 import { useToast } from "@/components/shared/Toast";
 
 export function AssignSelfButton({ complaintId }: { complaintId: string }) {
   const { show: showToast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
     setError(null);
     setIsSubmitting(true);
+    try {
+      const sessionResponse = await fetch("/api/auth/session");
+      const session = await sessionResponse.json().catch(() => ({}));
+      const staffId = session?.user?.id;
+      if (!sessionResponse.ok || !staffId) {
+        throw new Error("Your session could not be verified. Please sign in again.");
+      }
 
-    const session = await fetch("/api/auth/session").then((r) => r.json());
-    const staffId = session?.user?.id;
+      const res = await fetch(`/api/complaints/${complaintId}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignedStaffRef: staffId, message: "Self-assigned" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "Could not assign complaint.");
+        return;
+      }
 
-    const res = await fetch(`/api/complaints/${complaintId}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assignedStaffRef: staffId, message: "Self-assigned" }),
-    });
-    setIsSubmitting(false);
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Could not assign complaint.");
-      return;
+      showToast("Complaint assigned to you");
+      router.refresh();
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "Could not reach the server. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    showToast("Complaint assigned to you");
-    // This detail page is a server component. A full reload guarantees the
-    // assignment and the new status are read from MongoDB before staff see
-    // the next action controls.
-    window.location.assign(`${window.location.pathname}?refresh=${Date.now()}`);
   }
 
   return (

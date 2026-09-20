@@ -31,6 +31,8 @@ import { CopyButton } from "@/components/shared/CopyButton";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
 import { InformationRequest } from "@/models/InformationRequest";
 import { InformationRequestPanel } from "@/components/staff/InformationRequestPanel";
+import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
+import { SlaDetails } from "@/components/shared/SlaDetails";
 
 export const dynamic = "force-dynamic";
 
@@ -67,21 +69,35 @@ export default async function StaffComplaintDetailPage({
 
   const c = complaint as any;
 
-  const [timeline, notes, office, assignedStaff, assignmentHistory, informationRequests] =
-    await Promise.all([
-      ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
-      ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
-      Office.findById(session!.user.officeRef).select("name type").lean(),
-      c.assignedStaffRef
-        ? User.findById(c.assignedStaffRef).select("firstName lastName").lean()
-        : null,
-      getAssignmentHistoryEntries(id),
-      InformationRequest.find({ complaintRef: id }).sort({ requestedAt: -1 }).lean(),
-    ]);
+  const [
+    timeline,
+    notes,
+    office,
+    assignedStaff,
+    assignmentHistory,
+    informationRequests,
+    escalationTarget,
+  ] = await Promise.all([
+    ComplaintTimeline.find({ complaintRef: id })
+      .sort({ createdAt: 1 })
+      .populate("actorRef", "firstName lastName role")
+      .lean(),
+    ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
+    Office.findById(session!.user.officeRef).select("name type").lean(),
+    c.assignedStaffRef
+      ? User.findById(c.assignedStaffRef).select("firstName lastName").lean()
+      : null,
+    getAssignmentHistoryEntries(id),
+    InformationRequest.find({ complaintRef: id }).sort({ requestedAt: -1 }).lean(),
+    String(c.assignedStaffRef ?? "") === session!.user.id
+      ? resolveManualEscalationTarget(c, session!.user.role)
+      : null,
+  ]);
   const currentOfficeName = office ? (office as any).name : "Your office";
   const currentStaffName = assignedStaff
     ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
     : null;
+  const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -110,6 +126,7 @@ export default async function StaffComplaintDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
+          <SlaDetails complaint={c} firstResponseAt={firstResponseAt} events={timeline as any} />
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
             <p className="text-sm font-semibold text-[var(--foreground)]">Description</p>
             <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-[var(--foreground)]/90">
@@ -228,6 +245,48 @@ export default async function StaffComplaintDetailPage({
               requests={JSON.parse(JSON.stringify(informationRequests))}
             />
           )}
+
+          {String(c.assignedStaffRef ?? "") === session!.user.id &&
+            escalationTarget &&
+            c.status !== "withdrawn" && (
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-[var(--qa-amber)]/30 bg-[var(--qa-amber-soft)] px-4 py-3">
+                  <p className="text-xs font-semibold tracking-wide text-[var(--qa-amber-strong)] uppercase">
+                    Next escalation target
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--qa-amber-strong)]">
+                    {escalationTarget.office.name} Office Head
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--qa-amber-strong)]/80">
+                    {escalationTarget.staff.firstName} {escalationTarget.staff.lastName} · {escalationTarget.staff.email}
+                  </p>
+                  <p className="mt-2 text-xs text-[var(--qa-amber-strong)]/80">
+                    The destination is computed from the office hierarchy and cannot be selected manually.
+                  </p>
+                </div>
+                <AssignmentDialog
+                  complaintId={String(c._id)}
+                  currentOfficeId={String(c.assignedOfficeRef)}
+                  currentOfficeName={currentOfficeName}
+                  currentStaffId={String(c.assignedStaffRef)}
+                  currentStaffName={currentStaffName}
+                  offices={[{ _id: String(escalationTarget.office._id), name: escalationTarget.office.name, type: escalationTarget.office.type }]}
+                  canChangeOffice
+                  label="Escalate Complaint"
+                  action="escalate"
+                  destinationOfficeId={String(escalationTarget.office._id)}
+                  destinationStaffId={String(escalationTarget.staff._id)}
+                />
+              </div>
+            )}
+
+          {String(c.assignedStaffRef ?? "") === session!.user.id &&
+            !escalationTarget &&
+            c.status !== "withdrawn" && (
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/35 px-4 py-3 text-sm text-[var(--muted-foreground)]">
+                No higher escalation authority is configured for this office.
+              </div>
+            )}
 
           <AssignmentHistoryPanel entries={assignmentHistory} />
 

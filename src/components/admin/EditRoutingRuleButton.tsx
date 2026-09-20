@@ -7,7 +7,13 @@ import { AlertCircle, Loader2, Pencil, Plus } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface OfficeOption {
   _id: string;
@@ -76,7 +82,10 @@ export function EditRoutingRuleButton({
       </button>
 
       {isOpen && (
-        <Modal title={rule ? "Edit Routing Rule" : "Add Routing Rule"} onClose={() => setIsOpen(false)}>
+        <Modal
+          title={rule ? "Edit Routing Rule" : "Add Routing Rule"}
+          onClose={() => setIsOpen(false)}
+        >
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
@@ -85,7 +94,7 @@ export function EditRoutingRuleButton({
               </div>
             )}
 
-            <FormField label="Target office">
+            <FormField label="Target office" required>
               <Select value={targetOfficeRef} onValueChange={setTargetOfficeRef}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select office" />

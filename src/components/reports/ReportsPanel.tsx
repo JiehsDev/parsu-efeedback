@@ -11,6 +11,7 @@ import {
   Printer,
   Sparkles,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import { ReportStatusBadge } from "./ReportStatusBadge";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
@@ -66,6 +67,7 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
   const [error, setError] = useState<string | null>(null);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     format: "csv" as "csv" | "excel" | "pdf",
@@ -78,21 +80,35 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
   });
 
   function refreshReports() {
+    setLoadError(null);
+    setIsLoadingReports(true);
     fetch("/api/reports/export")
-      .then((res) => res.json())
-      .then((data) => setReports(data.reports ?? []))
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load reports.");
+        setReports(data.reports ?? []);
+      })
+      .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load reports."))
       .finally(() => setIsLoadingReports(false));
   }
 
   useEffect(() => {
     refreshReports();
     fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data) => setCategories(data.categories ?? []));
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error("Could not load categories.");
+        setCategories(data.categories ?? []);
+      })
+      .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load categories."));
     if (showOfficeFilter) {
       fetch("/api/offices")
-        .then((res) => res.json())
-        .then((data) => setOffices(data.offices ?? []));
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error("Could not load offices.");
+          setOffices(data.offices ?? []);
+        })
+        .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load offices."));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -307,6 +323,13 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
           <div className="mt-4">
             <ListRowsSkeleton rows={3} />
           </div>
+        ) : loadError ? (
+          <div className="mt-4 rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
+            <p>{loadError}</p>
+            <button type="button" onClick={refreshReports} className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">
+              <RefreshCw className="h-3.5 w-3.5" /> Retry
+            </button>
+          </div>
         ) : reports.length === 0 ? (
           <div className="mt-4 flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
@@ -322,7 +345,7 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
               {reports.map((r) => (
                 <li
                   key={r._id}
-                  className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[var(--muted)]/40"
+                  className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-[var(--muted)]/40 sm:flex-row sm:items-center sm:gap-4"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
                     <FileBarChart className="h-[18px] w-[18px]" />

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, FileUp, Loader2, Send, X } from "lucide-react";
 import { useToast } from "@/components/shared/Toast";
+import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-field";
 
 async function uploadFile(file: File, complaintId: string) {
   const presign = await fetch("/api/uploads/presign", {
@@ -61,15 +62,19 @@ export function InformationResponseForm({
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [messageError, setMessageError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!message.trim()) {
+      setMessageError("Please explain the information you are submitting.");
       setError("Please explain the information you are submitting.");
+      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
       return;
     }
+    setMessageError(null);
     setSubmitting(true);
     setError(null);
     try {
@@ -129,14 +134,24 @@ export function InformationResponseForm({
             {error}
           </div>
         )}
+        <FieldLabel htmlFor="information-response-message" required>
+          Response message
+        </FieldLabel>
         <textarea
+          id="information-response-message"
           value={message}
-          onChange={(event) => setMessage(event.target.value)}
+          onChange={(event) => {
+            setMessage(event.target.value);
+            if (event.target.value.trim()) setMessageError(null);
+          }}
           rows={4}
           required
+          aria-invalid={!!messageError}
+          aria-describedby="information-response-message-error"
           placeholder="Write your response"
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
         />
+        <FieldError id="information-response-message-error" message={messageError} />
         <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-sm text-[var(--foreground)]">
           <FileUp className="h-4 w-4 text-[var(--muted-foreground)]" />
           Add supporting files

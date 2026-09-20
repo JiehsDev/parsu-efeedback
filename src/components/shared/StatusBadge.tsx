@@ -1,5 +1,6 @@
 // src/components/shared/StatusBadge.tsx
 import type { ComplaintStatus } from "@/lib/constants";
+import { statusLabel } from "@/lib/display-labels";
 
 // The app runs a fixed LIGHT theme (see globals.css). These styles used to
 // reach for Tailwind's *-400 shades (emerald-400, amber-400) as badge text,
@@ -65,7 +66,7 @@ export function StatusBadge({ status }: { status: ComplaintStatus }) {
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap ${style.className}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dotClassName}`} />
-      {style.label}
+      {statusLabel(status)}
     </span>
   );
 }

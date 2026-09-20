@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FieldError } from "@/components/ui/form-field";
 
 interface AssignmentOfficeOption {
   _id: string;
@@ -47,6 +48,8 @@ export function AssignmentDialog({
   canChangeOffice,
   label,
   action = "reassign",
+  destinationOfficeId,
+  destinationStaffId,
 }: {
   complaintId: string;
   currentOfficeId: string | null;
@@ -57,19 +60,24 @@ export function AssignmentDialog({
   canChangeOffice: boolean;
   label?: string;
   action?: "assign" | "reassign" | "escalate";
+  destinationOfficeId?: string | null;
+  destinationStaffId?: string | null;
 }) {
   const router = useRouter();
   const { show: showToast } = useToast();
   const confirm = useConfirm();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOfficeId, setSelectedOfficeId] = useState(
-    currentOfficeId ?? offices[0]?._id ?? "",
+    destinationOfficeId ?? currentOfficeId ?? offices[0]?._id ?? "",
   );
-  const [selectedStaffId, setSelectedStaffId] = useState<string>(currentStaffId ?? OFFICE_LEVEL);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>(
+    destinationStaffId ?? currentStaffId ?? OFFICE_LEVEL,
+  );
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [customReason, setCustomReason] = useState("");
   const requiresReason = action === "reassign" || action === "escalate";
@@ -98,12 +106,12 @@ export function AssignmentDialog({
 
   useEffect(() => {
     if (!isOpen) return;
-    setSelectedOfficeId(currentOfficeId ?? offices[0]?._id ?? "");
-    setSelectedStaffId(currentStaffId ?? OFFICE_LEVEL);
+    setSelectedOfficeId(destinationOfficeId ?? currentOfficeId ?? offices[0]?._id ?? "");
+    setSelectedStaffId(destinationStaffId ?? currentStaffId ?? OFFICE_LEVEL);
     setReason("");
     setCustomReason("");
     setError(null);
-  }, [currentOfficeId, currentStaffId, isOpen, offices]);
+  }, [currentOfficeId, currentStaffId, destinationOfficeId, destinationStaffId, isOpen, offices]);
 
   async function submit() {
     if (!selectedOfficeId) {
@@ -116,9 +124,18 @@ export function AssignmentDialog({
         : reason
       : customReason.trim();
     if (requiresReason && !transferReason) {
-      setError("Select a reason before saving.");
+      setReasonError(
+        action === "escalate"
+          ? "Please provide a reason for escalation."
+          : "Please provide a reason for reassignment.",
+      );
+      setError("Please correct the highlighted fields below.");
+      const field = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+      field?.scrollIntoView({ behavior: "smooth", block: "center" });
+      field?.focus({ preventScroll: true });
       return;
     }
+    setReasonError(null);
 
     const ok = await confirm({
       title,
@@ -140,11 +157,16 @@ export function AssignmentDialog({
       payload.assignedOfficeRef = selectedOfficeId;
     payload.assignedStaffRef = selectedStaffId === OFFICE_LEVEL ? null : selectedStaffId;
 
-    const res = await fetch(`/api/complaints/${complaintId}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch(
+      action === "escalate"
+        ? `/api/complaints/${complaintId}/escalate`
+        : `/api/complaints/${complaintId}/assign`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(action === "escalate" ? { reason: transferReason } : payload),
+      },
+    );
     const data = await res.json().catch(() => ({}));
     setIsSubmitting(false);
 
@@ -186,7 +208,7 @@ export function AssignmentDialog({
             )}
 
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/30 px-4 py-3 text-sm">
-              <p className="text-xs text-[var(--muted-foreground)]">Current assignment</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Current authority</p>
               <p className="mt-1 font-medium text-[var(--foreground)]">
                 {currentOfficeName ?? "No office assigned"}
               </p>
@@ -198,9 +220,11 @@ export function AssignmentDialog({
             <FormField
               label="Destination office"
               hint={
-                !canChangeOffice
-                  ? "Office staff may only assign within their own office."
-                  : undefined
+                action === "escalate"
+                  ? "The destination is computed from the escalation hierarchy."
+                  : !canChangeOffice
+                    ? "Office staff may only assign within their own office."
+                    : undefined
               }
             >
               <Select
@@ -209,7 +233,7 @@ export function AssignmentDialog({
                   setSelectedOfficeId(value);
                   setSelectedStaffId(OFFICE_LEVEL);
                 }}
-                disabled={!canChangeOffice}
+                disabled={!canChangeOffice || action === "escalate"}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select office" />
@@ -225,10 +249,18 @@ export function AssignmentDialog({
             </FormField>
 
             <FormField
-              label="Assigned staff"
-              hint="Leave at office level if no individual owner is selected."
+              label={action === "escalate" ? "Next escalation authority" : "Assigned staff"}
+              hint={
+                action === "escalate"
+                  ? "The configured office head receives the complaint."
+                  : "Leave at office level if no individual owner is selected."
+              }
             >
-              <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+              <Select
+                value={selectedStaffId}
+                onValueChange={setSelectedStaffId}
+                disabled={action === "escalate"}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Office level" />
                 </SelectTrigger>
@@ -250,17 +282,28 @@ export function AssignmentDialog({
             </FormField>
 
             <FormField
-              label={requiresReason ? "Reason for reassignment" : "Assignment note"}
+              label={
+                requiresReason
+                  ? action === "escalate"
+                    ? "Reason for escalation"
+                    : "Reason for reassignment"
+                  : "Assignment note"
+              }
               hint={
                 requiresReason
                   ? "Required for the transfer record."
                   : "Optional note for the timeline."
               }
+              required={requiresReason}
             >
               {requiresReason ? (
                 <div className="space-y-2">
                   <Select value={reason} onValueChange={setReason}>
-                    <SelectTrigger>
+                    <SelectTrigger
+                      id="assignment-reason"
+                      aria-invalid={!!reasonError}
+                      aria-describedby="assignment-reason-error"
+                    >
                       <SelectValue placeholder="Select a reason" />
                     </SelectTrigger>
                     <SelectContent>
@@ -273,13 +316,20 @@ export function AssignmentDialog({
                   </Select>
                   {reason === "Other" && (
                     <textarea
+                      id="assignment-custom-reason"
                       rows={3}
                       value={customReason}
-                      onChange={(event) => setCustomReason(event.target.value)}
+                      onChange={(event) => {
+                        setCustomReason(event.target.value);
+                        if (event.target.value.trim()) setReasonError(null);
+                      }}
+                      aria-invalid={!!reasonError}
+                      aria-describedby="assignment-reason-error"
                       className={inputClass}
                       placeholder="Enter the reason"
                     />
                   )}
+                  <FieldError id="assignment-reason-error" message={reasonError} />
                 </div>
               ) : (
                 <textarea

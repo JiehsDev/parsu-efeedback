@@ -19,7 +19,14 @@ import {
   UserCheck,
   X,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-field";
 
 interface Category {
   _id: string;
@@ -64,6 +71,11 @@ export default function NewComplaintPage() {
   const [form, setForm] = useState({ categoryRef: "", title: "", description: "" });
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    categoryRef?: string;
+    title?: string;
+    description?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
@@ -153,8 +165,19 @@ export default function NewComplaintPage() {
   }
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!form.categoryRef) {
-      setError("Please select a category.");
+    const nextErrors = {
+      ...(!form.categoryRef ? { categoryRef: "Please select a complaint category." } : {}),
+      ...(form.title.trim().length < 5
+        ? { title: "Complaint title must be at least 5 characters." }
+        : {}),
+      ...(form.description.trim().length < 20
+        ? { description: "Please describe your complaint in at least 20 characters." }
+        : {}),
+    };
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setError("Please correct the highlighted fields below.");
+      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
       return;
     }
     setError(null);
@@ -184,7 +207,7 @@ export default function NewComplaintPage() {
         setUploadProgress(`Uploading ${file.name} (${i + 1}/${files.length})…`);
         try {
           await uploadOneFile(file, complaintId);
-        } catch (err) {
+        } catch {
           failedFiles.push(file.name);
         }
       }
@@ -248,16 +271,21 @@ export default function NewComplaintPage() {
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="categoryRef" className="text-sm font-medium text-[var(--foreground)]">
+              <FieldLabel htmlFor="categoryRef" required>
                 Category
-              </label>
+              </FieldLabel>
               <div className="relative">
-                <Tag className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <Tag className="pointer-events-none absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                 <Select
                   value={form.categoryRef}
                   onValueChange={(value) => setForm((prev) => ({ ...prev, categoryRef: value }))}
                 >
-                  <SelectTrigger id="categoryRef" className="pl-10">
+                  <SelectTrigger
+                    id="categoryRef"
+                    aria-invalid={!!fieldErrors.categoryRef}
+                    aria-describedby="complaint-category-error"
+                    className="pl-10"
+                  >
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -269,6 +297,7 @@ export default function NewComplaintPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <FieldError id="complaint-category-error" message={fieldErrors.categoryRef} />
               {selectedCategory?.description && (
                 <p className="text-xs text-[var(--muted-foreground)]">
                   {selectedCategory.description}
@@ -277,38 +306,52 @@ export default function NewComplaintPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="title" className="text-sm font-medium text-[var(--foreground)]">
+              <FieldLabel htmlFor="title" required>
                 Title
-              </label>
+              </FieldLabel>
               <input
                 id="title"
                 required
                 minLength={5}
                 maxLength={200}
                 value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, title: e.target.value }));
+                  if (e.target.value.trim().length >= 5)
+                    setFieldErrors((p) => ({ ...p, title: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.title}
+                aria-describedby="complaint-title-error"
                 placeholder="Brief summary of the issue"
                 className={inputClass}
               />
+              <FieldError id="complaint-title-error" message={fieldErrors.title} />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="description" className="text-sm font-medium text-[var(--foreground)]">
+              <FieldLabel htmlFor="description" required>
                 Description
-              </label>
+              </FieldLabel>
               <div className="relative">
-                <AlignLeft className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+                <AlignLeft className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
                 <textarea
                   id="description"
                   required
                   minLength={20}
                   rows={8}
                   value={form.description}
-                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, description: e.target.value }));
+                    if (e.target.value.trim().length >= 20)
+                      setFieldErrors((p) => ({ ...p, description: undefined }));
+                  }}
+                  aria-invalid={!!fieldErrors.description}
+                  aria-describedby="complaint-description-error"
                   placeholder="Explain what happened, when, and any relevant details."
                   className={`${inputClass} py-3`}
                 />
               </div>
+              <FieldError id="complaint-description-error" message={fieldErrors.description} />
               <p className="text-xs text-[var(--muted-foreground)]">Minimum 20 characters.</p>
             </div>
 
@@ -383,7 +426,10 @@ export default function NewComplaintPage() {
             </div>
             <ul className="mt-3 space-y-2.5">
               {TIPS.map((tip) => (
-                <li key={tip} className="flex gap-2.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
+                <li
+                  key={tip}
+                  className="flex gap-2.5 text-xs leading-relaxed text-[var(--muted-foreground)]"
+                >
                   <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--muted-foreground)]" />
                   {tip}
                 </li>
@@ -397,7 +443,7 @@ export default function NewComplaintPage() {
               {PROCESS_STEPS.map((step, i) => (
                 <div key={step.title} className="relative flex gap-2.5 pb-4 last:pb-0">
                   {i < PROCESS_STEPS.length - 1 && (
-                    <span className="absolute left-[13px] top-7 h-[calc(100%-1rem)] w-px bg-[var(--border)]" />
+                    <span className="absolute top-7 left-[13px] h-[calc(100%-1rem)] w-px bg-[var(--border)]" />
                   )}
                   <span className="relative z-10 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
                     <step.icon className="h-3.5 w-3.5" />

@@ -436,7 +436,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="First name">
+              <FormField label="First name" required>
                 <input
                   required
                   className={inputClass}
@@ -444,7 +444,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
                   onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Last name">
+              <FormField label="Last name" required>
                 <input
                   required
                   className={inputClass}
@@ -454,7 +454,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
               </FormField>
             </div>
 
-            <FormField label="Email">
+            <FormField label="Email" required>
               <input
                 type="email"
                 required
@@ -464,7 +464,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
               />
             </FormField>
 
-            <FormField label="Employee/Student ID">
+            <FormField label="Employee/Student ID" required>
               <input
                 required
                 className={inputClass}
@@ -473,7 +473,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
               />
             </FormField>
 
-            <FormField label="Password">
+            <FormField label="Password" required>
               <input
                 type="password"
                 required
@@ -484,7 +484,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
               />
             </FormField>
 
-            <FormField label="Role">
+            <FormField label="Role" required>
               <Select
                 value={form.role}
                 onValueChange={(value) => setForm((p) => ({ ...p, role: value }))}

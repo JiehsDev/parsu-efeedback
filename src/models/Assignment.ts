@@ -29,6 +29,11 @@ const assignmentSchema = new Schema(
     sourceOfficeRef: { type: Schema.Types.ObjectId, ref: "Office", default: null },
     destinationOfficeRef: { type: Schema.Types.ObjectId, ref: "Office", required: true },
     reason: { type: String, default: "", trim: true },
+    actionType: {
+      type: String,
+      enum: ["assign", "reassign", "manual_escalation", "sla_escalation"],
+      default: "assign",
+    },
   },
   {
     // "Assignment Date" (BR-049) is this record's creation time

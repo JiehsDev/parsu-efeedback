@@ -263,6 +263,51 @@ export async function notifyEscalation(params: {
   }
 }
 
+export async function notifyManualEscalation(params: {
+  studentId: string;
+  staffId: string;
+  ticketNumber: string;
+  complaintId: string;
+  reason: string;
+  fromStatus: string;
+}) {
+  await createNotification({
+    userRef: params.staffId,
+    type: "escalation",
+    title: "Complaint manually escalated to you",
+    body: `Complaint ${params.ticketNumber} was escalated to you. Reason: ${params.reason}`,
+    relatedComplaintRef: params.complaintId,
+  });
+  const recipient = await getRecipient(params.staffId);
+  if (recipient) {
+    await sendEscalationEmail({
+      to: recipient.email,
+      recipientName: recipient.name,
+      ticketNumber: params.ticketNumber,
+      complaintId: params.complaintId,
+      manual: true,
+    });
+  }
+  await createNotification({
+    userRef: params.studentId,
+    type: "status_updated",
+    title: "Complaint escalated",
+    body: `Complaint ${params.ticketNumber} was escalated for higher-level review.`,
+    relatedComplaintRef: params.complaintId,
+  });
+  const student = await getRecipient(params.studentId);
+  if (student) {
+    await sendComplaintUpdatedEmail({
+      to: student.email,
+      recipientName: student.name,
+      ticketNumber: params.ticketNumber,
+      complaintId: params.complaintId,
+      fromStatus: params.fromStatus,
+      toStatus: "escalated",
+    });
+  }
+}
+
 export async function notifyInformationRequested(params: {
   studentId: string;
   ticketNumber: string;

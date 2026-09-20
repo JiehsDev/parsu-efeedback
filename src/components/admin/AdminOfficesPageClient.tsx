@@ -9,7 +9,13 @@ import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface OfficeRow {
   _id: string;
@@ -18,7 +24,13 @@ interface OfficeRow {
   type: string;
   isActive: boolean;
   parentOffice?: { _id: string; name: string; code: string } | null;
-  headUserRef?: { _id: string; firstName: string; lastName: string; email: string; isActive: boolean } | null;
+  headUserRef?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    isActive: boolean;
+  } | null;
   staffCount?: number;
 }
 
@@ -32,6 +44,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // vpaa/vpaf are locked to their own office category; only administrator
   // (scopeKind "all") gets a real choice.
@@ -40,9 +53,15 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
   const [form, setForm] = useState({ name: "", code: "", type: defaultType });
 
   function refresh() {
+    setLoadError(null);
+    setIsLoading(true);
     fetch("/api/admin/offices")
-      .then((res) => res.json())
-      .then((data) => setOffices(data.offices ?? []))
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load offices.");
+        setOffices(data.offices ?? []);
+      })
+      .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load offices."))
       .finally(() => setIsLoading(false));
   }
 
@@ -130,59 +149,64 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
 
       {isLoading ? (
         <ListRowsSkeleton />
+      ) : loadError ? (
+        <div className="rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
+          <p>{loadError}</p>
+          <button type="button" onClick={refresh} className="mt-3 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">Retry</button>
+        </div>
       ) : (
-      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
-        <ul className="divide-y divide-[var(--border)]">
-          {offices.map((o) => (
-            <li
-              key={o._id}
-              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
-            >
-              <Link
-                href={`/admin/offices/${o._id}`}
-                className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
+        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+          <ul className="divide-y divide-[var(--border)]">
+            {offices.map((o) => (
+              <li
+                key={o._id}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
               >
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-[var(--foreground)]">{o.name}</span>
-                    <span className="font-mono text-xs text-[var(--muted-foreground)]">
-                      {o.code}
+                <Link
+                  href={`/admin/offices/${o._id}`}
+                  className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-[var(--foreground)]">{o.name}</span>
+                      <span className="font-mono text-xs text-[var(--muted-foreground)]">
+                        {o.code}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-xs text-[var(--muted-foreground)] capitalize">
+                      {o.type.replace("_", " ")} · {o.parentOffice?.name ?? "No parent"} · Staff:{" "}
+                      {o.staffCount ?? 0}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                      Head:{" "}
+                      {o.headUserRef
+                        ? `${o.headUserRef.firstName} ${o.headUserRef.lastName} (${o.headUserRef.email})`
+                        : "Not assigned"}
                     </span>
                   </span>
-                  <span className="mt-0.5 block text-xs capitalize text-[var(--muted-foreground)]">
-                    {o.type.replace("_", " ")} · {o.parentOffice?.name ?? "No parent"} · Staff:{" "}
-                    {o.staffCount ?? 0}
+                  <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+                </Link>
+                <div className="flex items-center gap-2 sm:shrink-0">
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      o.isActive
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    {o.isActive ? "Active" : "Inactive"}
                   </span>
-                  <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
-                    Head:{" "}
-                    {o.headUserRef
-                      ? `${o.headUserRef.firstName} ${o.headUserRef.lastName} (${o.headUserRef.email})`
-                      : "Not assigned"}
-                  </span>
-                </span>
-                <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
-              </Link>
-              <div className="flex items-center gap-2 sm:shrink-0">
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    o.isActive
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                  }`}
-                >
-                  {o.isActive ? "Active" : "Inactive"}
-                </span>
-                <button
-                  onClick={() => toggleActive(o)}
-                  className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
-                >
-                  {o.isActive ? "Deactivate" : "Activate"}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+                  <button
+                    onClick={() => toggleActive(o)}
+                    className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                  >
+                    {o.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {showCreate && (
@@ -195,7 +219,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
               </div>
             )}
 
-            <FormField label="Name">
+            <FormField label="Name" required>
               <input
                 required
                 className={inputClass}
@@ -204,7 +228,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
               />
             </FormField>
 
-            <FormField label="Code" hint="Short unique code, e.g. CCIS, OUR">
+            <FormField label="Code" required hint="Short unique code, e.g. CCIS, OUR">
               <input
                 required
                 className={inputClass}
@@ -215,13 +239,12 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
 
             <FormField
               label="Type"
+              required
               hint={typeIsLocked ? "Locked to your own office category" : undefined}
             >
               <Select
                 value={form.type}
-                onValueChange={(value) =>
-                  setForm((p) => ({ ...p, type: value as typeof p.type }))
-                }
+                onValueChange={(value) => setForm((p) => ({ ...p, type: value as typeof p.type }))}
                 disabled={typeIsLocked}
               >
                 <SelectTrigger>

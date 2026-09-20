@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-field";
 
 // Maps the CredentialsSignin `code` values thrown in src/lib/auth.ts to
 // copy a person can actually act on.
@@ -40,11 +41,21 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
   // Fixed: Replaced deprecated FormEvent with modern React 19 safe event modeling
   async function handleSubmit(event: React.BaseSyntheticEvent) {
     event.preventDefault();
     setError(null);
+    const nextErrors = {
+      ...(email.trim() ? {} : { email: "Email is required." }),
+      ...(password ? {} : { password: "Password is required." }),
+    };
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -67,7 +78,7 @@ function LoginForm() {
 
       // Safe client-side redirect fallback to let middleware pick up token placement cleanly
       window.location.href = callbackUrl;
-    } catch (err) {
+    } catch {
       setError("An unexpected system error occurred.");
       setIsSubmitting(false);
     }
@@ -95,14 +106,15 @@ function LoginForm() {
           )}
 
           <div className="space-y-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-[var(--foreground)]">
+            <FieldLabel htmlFor="email" required>
               Email
-            </label>
+            </FieldLabel>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <input
                 id="email"
                 name="email"
+                aria-label="Email"
                 type="email"
                 inputMode="email"
                 autoCapitalize="none"
@@ -111,17 +123,23 @@ function LoginForm() {
                 autoFocus
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (e.target.value.trim()) setFieldErrors((p) => ({ ...p, email: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? "login-email-error" : undefined}
+                className={`${inputClass} ${fieldErrors.email ? "border-[var(--destructive)]" : ""}`}
               />
             </div>
+            <FieldError id="login-email-error" message={fieldErrors.email} />
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-medium text-[var(--foreground)]">
+              <FieldLabel htmlFor="password" required>
                 Password
-              </label>
+              </FieldLabel>
               <Link
                 href="/forgot-password"
                 className="text-xs font-medium text-[var(--primary)] hover:underline"
@@ -130,27 +148,34 @@ function LoginForm() {
               </Link>
             </div>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <input
                 id="password"
                 name="password"
+                aria-label="Password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`${inputClass} pr-10`}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (e.target.value) setFieldErrors((p) => ({ ...p, password: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
+                className={`${inputClass} pr-10 ${fieldErrors.password ? "border-[var(--destructive)]" : ""}`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 tabIndex={-1}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            <FieldError id="login-password-error" message={fieldErrors.password} />
           </div>
 
           <button

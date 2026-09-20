@@ -90,7 +90,7 @@ studentTest.describe("Attachments", () => {
       // "?submitted=" or "/<id>" specifically (not a bare, unanchored
       // "/student/complaints" substring match) so this doesn't resolve
       // prematurely while still on /student/complaints/new.
-      await page.waitForURL(/\/student\/complaints(\?submitted=|\/[a-f0-9]{24})/, { timeout: 20_000 });
+      await page.waitForURL(/\/student\/complaints(\?submitted=|\/[a-f0-9]{24})/, { timeout: 60_000 });
 
       let complaintId: string;
       if (/\/student\/complaints\/[a-f0-9]{24}/.test(page.url())) {

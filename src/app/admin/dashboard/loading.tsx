@@ -5,12 +5,15 @@ const CARD = "overflow-hidden rounded-xl border border-[var(--border)] bg-[var(-
 
 export default function Loading() {
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex min-h-full flex-col gap-4 pb-2">
       <Skeleton className="h-6 w-40" />
 
       <div className="grid grid-cols-2 gap-1.5 sm:hidden">
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-1.5 py-2.5">
+          <div
+            key={i}
+            className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-1.5 py-2.5"
+          >
             <Skeleton className="mx-auto h-5 w-6" />
             <Skeleton className="mx-auto mt-1.5 h-2.5 w-10" />
           </div>
@@ -19,7 +22,10 @@ export default function Loading() {
 
       <div className="hidden gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3">
+          <div
+            key={i}
+            className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+          >
             <div className="flex items-center justify-between">
               <Skeleton className="h-2.5 w-14" />
               <Skeleton className="h-3.5 w-3.5" />
@@ -76,7 +82,7 @@ export default function Loading() {
       </div>
 
       {/* SLA HEATMAP · LINE CHART (wide) · BAR */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className={CARD}>
           <Skeleton className="h-2.5 w-20" />
           <div className="mt-2.5 space-y-2">
@@ -88,7 +94,7 @@ export default function Loading() {
 
         <div className={`${CARD} xl:col-span-2`}>
           <Skeleton className="h-2.5 w-24" />
-          <Skeleton className="mt-3 h-[calc(100%-2rem)] w-full rounded-lg" />
+          <Skeleton className="mt-3 h-[220px] w-full rounded-lg sm:h-[260px]" />
         </div>
 
         <div className={CARD}>

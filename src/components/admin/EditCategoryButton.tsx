@@ -68,7 +68,7 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
               </div>
             )}
 
-            <FormField label="Name">
+            <FormField label="Name" required>
               <input
                 required
                 className={inputClass}
@@ -87,8 +87,8 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
             </FormField>
 
             <p className="text-xs text-[var(--muted-foreground)]">
-              Office and priority are set from this category&apos;s routing and SLA rules, not
-              here — edit them from the Configuration Status panel below.
+              Office and priority are set from this category&apos;s routing and SLA rules, not here
+              — edit them from the Configuration Status panel below.
             </p>
 
             <button

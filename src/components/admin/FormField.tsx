@@ -3,16 +3,34 @@ export function FormField({
   label,
   children,
   hint,
+  required = false,
+  error,
+  htmlFor,
 }: {
   label: string;
   children: React.ReactNode;
   hint?: string;
+  required?: boolean;
+  error?: string;
+  htmlFor?: string;
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium text-[var(--foreground)]">{label}</label>
+      <label htmlFor={htmlFor} className="text-sm font-medium text-[var(--foreground)]">
+        {label}
+        {required && (
+          <span className="ml-1 text-[var(--destructive)]" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
       {children}
       {hint && <p className="text-xs text-[var(--muted-foreground)]">{hint}</p>}
+      {error && (
+        <p role="alert" className="text-xs font-medium text-[var(--destructive)]">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
