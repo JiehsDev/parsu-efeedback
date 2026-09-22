@@ -160,6 +160,42 @@ export async function notifyComplaintRoutedToOffice(params: {
   );
 }
 
+export async function notifyComplaintClosedByStudent(params: {
+  complaintId: string;
+  ticketNumber: string;
+  officeId: string | null;
+  assignedStaffId: string | null;
+  closureType: "rated" | "without_rating";
+  rating?: number;
+}) {
+  await connectToDatabase();
+
+  const recipientIds = new Set<string>();
+  if (params.assignedStaffId) recipientIds.add(params.assignedStaffId);
+  if (params.officeId) {
+    const office = await Office.findById(params.officeId).select("headUserRef").lean();
+    if ((office as any)?.headUserRef) recipientIds.add(String((office as any).headUserRef));
+  }
+  if (recipientIds.size === 0) return;
+
+  const body =
+    params.closureType === "rated"
+      ? `Complaint ${params.ticketNumber} was closed by the student with a rating of ${params.rating}/5.`
+      : `Complaint ${params.ticketNumber} was closed by the student without submitting a rating.`;
+
+  await Promise.all(
+    [...recipientIds].map((userId) =>
+      createNotification({
+        userRef: userId,
+        type: "status_updated",
+        title: "Complaint closed by student",
+        body,
+        relatedComplaintRef: params.complaintId,
+      }),
+    ),
+  );
+}
+
 export async function notifyStatusUpdated(params: {
   studentId: string;
   ticketNumber: string;
@@ -197,7 +233,7 @@ export async function notifyComplaintResolved(params: {
     userRef: params.studentId,
     type: "complaint_resolved",
     title: "Complaint resolved",
-    body: `Complaint ${params.ticketNumber} has been marked resolved. You can now rate the resolution.`,
+    body: `Complaint ${params.ticketNumber} has been resolved. You may review the resolution, submit a rating, or close the complaint without rating.`,
     relatedComplaintRef: params.complaintId,
   });
 
@@ -340,6 +376,44 @@ export async function notifyManualEscalation(params: {
   }
 }
 
+export async function notifyOfficeReassignment(params: {
+  studentId: string;
+  ticketNumber: string;
+  complaintId: string;
+  destinationOfficeId: string;
+  destinationOfficeName: string;
+  previousStaffId?: string | null;
+}) {
+  // Destination office (staff + head) — reuse the existing "routed to
+  // office" fan-out so the new office sees it the same way a fresh
+  // routing would.
+  await notifyComplaintRoutedToOffice({
+    officeId: params.destinationOfficeId,
+    ticketNumber: params.ticketNumber,
+    complaintId: params.complaintId,
+  });
+
+  if (params.previousStaffId) {
+    await createNotification({
+      userRef: params.previousStaffId,
+      type: "status_updated",
+      title: "Complaint reassigned to another office",
+      body: `Complaint ${params.ticketNumber} was transferred to ${params.destinationOfficeName}. It is no longer assigned to you.`,
+      relatedComplaintRef: params.complaintId,
+    });
+  }
+
+  // Student notice is intentionally generic — the internal reassignment
+  // reason isn't exposed to the student.
+  await createNotification({
+    userRef: params.studentId,
+    type: "status_updated",
+    title: "Complaint routed to another office",
+    body: `Your complaint ${params.ticketNumber} has been routed to the office responsible for handling your concern.`,
+    relatedComplaintRef: params.complaintId,
+  });
+}
+
 export async function notifyInformationRequested(params: {
   studentId: string;
   ticketNumber: string;
@@ -392,8 +466,10 @@ export async function notifyInformationSubmitted(params: {
   );
 }
 
-export async function notifyArchiveRequested(params: { userId: string; ticketNumber: string; complaintId: string; requestId: string; reason: string }) {
-  await createNotification({ userRef: params.userId, type: "archive_request", title: "Archive request needs review", body: `Archive request for ${params.ticketNumber}: ${params.reason}`, relatedComplaintRef: params.complaintId });
+export async function notifyArchiveRequested(params: { userId: string; ticketNumber: string; complaintId: string; requestId: string; reason: string; complaintTitle?: string; requesterName?: string }) {
+  const requester = params.requesterName ? ` from ${params.requesterName}` : "";
+  const title = params.complaintTitle ? ` (${params.complaintTitle})` : "";
+  await createNotification({ userRef: params.userId, type: "archive_request", title: "Archive request needs review", body: `Archive request${requester} for ${params.ticketNumber}${title}: ${params.reason}`, relatedComplaintRef: params.complaintId });
 }
 
 export async function notifyArchiveDecision(params: { userId: string; approved: boolean; ticketNumber: string; complaintId: string; reason?: string }) {

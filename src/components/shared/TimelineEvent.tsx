@@ -1,6 +1,7 @@
 // src/components/shared/TimelineEvent.tsx
 import { RelativeTime } from "@/components/shared/RelativeTime";
 import { formatEnumLabel, roleLabel, statusLabel } from "@/lib/display-labels";
+import { getActorDisplayName } from "@/lib/actor-display";
 
 const EVENT_LABELS: Record<string, string> = {
   submitted: "Complaint submitted",
@@ -20,11 +21,9 @@ const EVENT_LABELS: Record<string, string> = {
   information_submitted: "Additional information submitted",
 };
 
-export function TimelineEvent({ event }: { event: any }) {
+export function TimelineEvent({ event, viewerRole = "handler" }: { event: any; viewerRole?: string }) {
   const actor = event.actorRef;
-  const actorName = actor
-    ? `${actor.firstName ?? ""} ${actor.lastName ?? ""}`.trim()
-    : "System";
+  const actorName = getActorDisplayName(actor, viewerRole);
   const eventLabel =
     event.eventType === "assigned" && event.toValue === "in_progress"
       ? "Complaint picked up"

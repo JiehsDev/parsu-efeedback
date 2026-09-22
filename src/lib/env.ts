@@ -67,6 +67,13 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
   CRON_SECRET: z.string().min(16, "CRON_SECRET should be a long random string"),
 
+  // Optional shared secret gating the dev-only reseed endpoint
+  // (src/app/api/dev/seed/route.ts). Unset in local dev/CI so `npm run
+  // test:e2e`'s global-setup keeps working unauthenticated; set it on any
+  // shared/staging deployment (which typically also isn't NODE_ENV=production)
+  // to stop that destructive, unauthenticated GET from being link-triggerable.
+  DEV_SEED_SECRET: z.string().min(16).optional(),
+
   // --- Business rule thresholds (see docs/business-rules.md) ---
   AUTH_MAX_FAILED_LOGIN_ATTEMPTS: positiveInt.default(5), // BR-013
   AUTH_LOCKOUT_DURATION_MINUTES: positiveInt.default(15), // BR-013

@@ -52,4 +52,29 @@ describe("Complaint ratings — BR-067/068/069", () => {
     expect((saved as any)!.studentRating).toBe(4);
     expect((saved as any)!.studentRatingComment).toBe("Handled well, a bit slow.");
   });
+
+  it("closureType defaults to null and closedByRef defaults to null", async () => {
+    const complaint = await createComplaint("resolved");
+    const saved = await Complaint.findById(complaint._id).lean();
+    expect((saved as any)!.closureType).toBeNull();
+    expect((saved as any)!.closedByRef).toBeNull();
+  });
+
+  it("closureType persists 'rated' or 'without_rating', and closedByRef persists the student", async () => {
+    const complaint = await createComplaint("resolved");
+    const studentId = complaint.studentRef;
+    complaint.closureType = "without_rating";
+    complaint.closedByRef = studentId as any;
+    await complaint.save();
+
+    const saved = await Complaint.findById(complaint._id).lean();
+    expect((saved as any)!.closureType).toBe("without_rating");
+    expect(String((saved as any)!.closedByRef)).toBe(String(studentId));
+  });
+
+  it("rejects an invalid closureType value", async () => {
+    const complaint = await createComplaint("resolved");
+    (complaint as any).closureType = "bogus";
+    await expect(complaint.save()).rejects.toThrow();
+  });
 });

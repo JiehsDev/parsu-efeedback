@@ -19,7 +19,7 @@ import { Office } from "@/models/Office";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
-import { RatingForm } from "@/components/student/RatingForm";
+import { ResolutionActions, ClosedResolutionSummary } from "@/components/student/ResolutionActions";
 import { EditWithdrawComplaint } from "@/components/student/EditWithdrawComplaint";
 import type { ComplaintStatus } from "@/lib/constants";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
@@ -51,7 +51,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
   const [timeline, assignedOffice, assignmentHistory, openInformationRequest] = await Promise.all([
     ComplaintTimeline.find({ complaintRef: id })
       .sort({ createdAt: 1 })
-      .populate("actorRef", "firstName lastName role")
+      .populate("actorRef", "firstName lastName role employeeOrStudentId")
       .lean(),
     c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).select("name").lean() : null,
     getAssignmentHistoryEntries(id),
@@ -113,21 +113,14 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
             />
           )}
 
-          {c.status === "resolved" && c.studentRating === null && (
-            <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5" aria-labelledby="resolution-completed-heading">
-              <h2 id="resolution-completed-heading" className="text-base font-semibold text-emerald-700 dark:text-emerald-300">Resolution Completed</h2>
-              <p className="mt-1 text-sm text-emerald-800/80 dark:text-emerald-200/80">
-                The responsible office has marked this complaint as resolved. Please rate your experience to complete and close the complaint.
-              </p>
-              <div className="mt-4"><RatingForm complaintId={String(c._id)} /></div>
-            </section>
-          )}
+          {c.status === "resolved" && <ResolutionActions complaintId={String(c._id)} />}
 
           {c.status === "closed" && (
-            <section className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/35 p-5" aria-labelledby="complaint-closed-heading">
-              <h2 id="complaint-closed-heading" className="text-base font-semibold text-[var(--foreground)]">Complaint Closed</h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">Your resolution rating was submitted and this complaint is now closed.</p>
-            </section>
+            <ClosedResolutionSummary
+              closureType={c.closureType ?? null}
+              studentRating={c.studentRating ?? null}
+              studentRatingComment={c.studentRatingComment ?? ""}
+            />
           )}
 
           <AttachmentGallery complaintId={String(c._id)} />
@@ -143,7 +136,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
             </div>
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
               {timeline.map((event: any) => (
-                <TimelineEvent key={event._id} event={event} />
+              <TimelineEvent key={event._id} event={event} viewerRole="student" />
               ))}
             </div>
           </div>

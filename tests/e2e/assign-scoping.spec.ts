@@ -87,10 +87,15 @@ adminTest.describe("Assignment scoping", () => {
       expect(crossOfficeRes.status()).toBe(403);
       await staffContext.close();
 
-      // --- VPAA reassigns a complaint routed to a college office: moves it
-      // between two college offices — allowed, since both stay within
-      // VPAA's office category (college_office). "Faculty & Teaching
-      // Performance" routes to CECS (a college_office) per the seed data. ---
+      // --- OFFICE REASSIGNMENT final rule: reassigning a complaint's office
+      // is now exclusively an Office-Head action (Office.headUserRef), via
+      // the dedicated POST /api/complaints/[id]/reassign-office endpoint.
+      // VPAA is NOT Office.headUserRef for any college in the seed data
+      // (each college's head is its own dean account), so VPAA can still
+      // assign staff within a college it's scoped to, but can no longer
+      // move the complaint to another office at all — neither through the
+      // legacy /assign route (now rejects any office change outright) nor
+      // through the new endpoint (not the office head). ---
       const collegeComplaintStudentContext = await browser.newContext({
         storageState: "tests/e2e/.auth/student.json",
       });
@@ -116,7 +121,8 @@ adminTest.describe("Assignment scoping", () => {
       expect(otherCollegeOffice).toBeTruthy();
 
       // First human action: VPAA assigns a CECS staff member (no office
-      // change) — an "assigned" timeline entry, not "reassigned".
+      // change) — an "assigned" timeline entry, not "reassigned". Staff
+      // assignment authority is unaffected by the office-reassignment rule.
       const staffInCollegeRes = await vpaaContext.request.get(
         `/api/offices/${primaryCollegeOffice._id}/staff`,
       );
@@ -129,16 +135,20 @@ adminTest.describe("Assignment scoping", () => {
       );
       expect(vpaaAssignStaffRes.ok()).toBeTruthy();
 
-      // Second human action: VPAA moves the complaint to a different
-      // college office — allowed, since both stay within VPAA's office
-      // category (college_office) — a "reassigned" timeline entry.
-      const vpaaReassignRes = await vpaaContext.request.post(
+      // VPAA can no longer move the office via the legacy /assign route.
+      const vpaaLegacyReassignRes = await vpaaContext.request.post(
         `/api/complaints/${collegeComplaint}/assign`,
         { data: { assignedOfficeRef: otherCollegeOffice._id, message: "e2e-vpaa-reassign" } },
       );
-      expect(vpaaReassignRes.ok()).toBeTruthy();
-      const { complaint: vpaaAssigned } = await vpaaReassignRes.json();
-      expect(String(vpaaAssigned.assignedOfficeRef)).toBe(otherCollegeOffice._id);
+      expect(vpaaLegacyReassignRes.status()).toBe(400);
+
+      // Nor via the new dedicated endpoint, since VPAA isn't this college's
+      // head.
+      const vpaaNewReassignRes = await vpaaContext.request.post(
+        `/api/complaints/${collegeComplaint}/reassign-office`,
+        { data: { destinationOfficeRef: otherCollegeOffice._id, reasonCode: "other", reasonText: "e2e-vpaa-not-head" } },
+      );
+      expect(vpaaNewReassignRes.status()).toBe(403);
 
       // --- VPAA cross-category attempt: complaint B is assigned to a
       // university_office (General Services) — outside VPAA's office
@@ -148,6 +158,20 @@ adminTest.describe("Assignment scoping", () => {
       });
       expect(crossCategoryRes.status()).toBe(403);
       await vpaaContext.close();
+
+      // Administrator is unrestricted (bypasses both the head check and the
+      // lateral-eligibility check) and performs the actual office move —
+      // this is the complaint's second distinct human assignment action,
+      // proving two separate immutable Assignment records rather than one
+      // mutated in place (checked below via the timeline).
+      const adminReassignCollegeRes = await adminPage.request.post(
+        `/api/complaints/${collegeComplaint}/reassign-office`,
+        { data: { destinationOfficeRef: otherCollegeOffice._id, reasonCode: "administrative_transfer", reasonText: "" } },
+      );
+      expect(adminReassignCollegeRes.ok()).toBeTruthy();
+      const { complaint: adminReassignedCollege } = await adminReassignCollegeRes.json();
+      expect(String(adminReassignedCollege.assignedOfficeRef)).toBe(otherCollegeOffice._id);
+      expect(adminReassignedCollege.assignedStaffRef).toBeNull();
 
       // --- A student from a different college (index 1 = College of
       // Education, not CECS) files a complaint routed to a university
@@ -165,28 +189,33 @@ adminTest.describe("Assignment scoping", () => {
       await otherContext.close();
 
       // --- Admin is unrestricted: reassigns complaint C to an arbitrary
-      // office regardless of category. ---
+      // office regardless of category, via the new dedicated endpoint
+      // (admin bypasses both the head check and the lateral-eligibility
+      // check — QA Office isn't a lateral match for a university office by
+      // the general rule, but admin isn't subject to that rule). ---
       const officesRes = await adminPage.request.get("/api/offices");
       const { offices } = await officesRes.json();
       const qaOffice = offices.find((o: any) => o.name === "Quality Assurance Office");
       expect(qaOffice).toBeTruthy();
 
-      const adminAssignRes = await adminPage.request.post(`/api/complaints/${complaintC}/assign`, {
-        data: { assignedOfficeRef: qaOffice._id, message: "e2e-admin-unrestricted" },
+      const adminAssignRes = await adminPage.request.post(`/api/complaints/${complaintC}/reassign-office`, {
+        data: { destinationOfficeRef: qaOffice._id, reasonCode: "administrative_transfer", reasonText: "" },
       });
       expect(adminAssignRes.ok()).toBeTruthy();
       const { complaint: adminAssigned } = await adminAssignRes.json();
       expect(String(adminAssigned.assignedOfficeRef)).toBe(qaOffice._id);
 
       await adminPage.goto(`/admin/complaints/${complaintC}`);
-      await expect(adminPage.getByRole("button", { name: "Reassign Complaint" })).toBeVisible();
+      await expect(adminPage.getByRole("button", { name: "Assign Staff" })).toBeVisible();
+      await expect(adminPage.getByRole("button", { name: "Reassign Office" })).toBeVisible();
       await expect(adminPage.locator("p").filter({ hasText: "Update status" })).toBeVisible();
       await expect(adminPage.getByText("Assignment & Escalation History")).toBeVisible();
 
       // --- BR-047/051/052: the college complaint now has two distinct
-      // human assignment actions (VPAA staff-assign, then VPAA office
-      // reassign) — two separate timeline entries, proving two separate,
-      // immutable Assignment records rather than one mutated in place. ---
+      // human assignment actions (VPAA staff-assign, then admin's office
+      // reassignment via the new endpoint) — two separate timeline
+      // entries, proving two separate, immutable Assignment records
+      // rather than one mutated in place. ---
       const finalRes = await adminPage.request.get(`/api/complaints/${collegeComplaint}`);
       const { timeline: finalTimeline } = await finalRes.json();
       const assignmentEvents = finalTimeline.filter(
@@ -231,10 +260,15 @@ adminTest.describe("Assignment scoping", () => {
       const osasContext = await browser.newContext({ storageState: "tests/e2e/.auth/osas.json" });
       const osasPage = await osasContext.newPage();
 
+      // osas@parsu.edu.ph is Office.headUserRef for the OSAS office in the
+      // seed data, so this actor IS the office head here — the new
+      // "Reassign Office" action is visible and usable via the dedicated
+      // endpoint.
       await osasPage.goto(`/admin/complaints/${osasComplaint}`);
-      await expect(osasPage.getByRole("button", { name: "Reassign Complaint" })).toBeVisible();
+      await expect(osasPage.getByRole("button", { name: "Reassign Office" })).toBeVisible();
       await expect(osasPage.getByRole("button", { name: "Escalate Complaint" })).toBeVisible();
 
+      // The legacy /assign route no longer moves offices at all, for anyone.
       const invalidDestinationRes = await osasPage.request.post(`/api/complaints/${osasComplaint}/assign`, {
         data: {
           assignedOfficeRef: generalServicesOffice._id,
@@ -243,21 +277,28 @@ adminTest.describe("Assignment scoping", () => {
       });
       expect(invalidDestinationRes.status()).toBe(400);
 
-      const reassignRes = await osasPage.request.post(`/api/complaints/${osasComplaint}/assign`, {
+      // Reassignment now goes through the dedicated, Office-Head-only
+      // endpoint; a university office (OSAS) may hand off to a college.
+      const reassignRes = await osasPage.request.post(`/api/complaints/${osasComplaint}/reassign-office`, {
         data: {
-          assignedOfficeRef: collegeOffice._id,
-          assignedStaffRef: null,
-          message: "e2e-osas-reassign",
+          destinationOfficeRef: collegeOffice._id,
+          reasonCode: "belongs_to_another_office",
+          reasonText: "e2e-osas-reassign",
         },
       });
       expect(reassignRes.ok()).toBeTruthy();
       const { complaint: reassigned } = await reassignRes.json();
       expect(String(reassigned.assignedOfficeRef)).toBe(collegeOffice._id);
+      expect(reassigned.assignedStaffRef).toBeNull();
 
-      const blockedRes = await osasPage.request.post(`/api/complaints/${vpafComplaint}/assign`, {
+      // OSAS is not the head of the VPAF-scoped complaint's office, so the
+      // dedicated endpoint correctly rejects this regardless of OSAS's
+      // broader student-affairs action scope.
+      const blockedRes = await osasPage.request.post(`/api/complaints/${vpafComplaint}/reassign-office`, {
         data: {
-          assignedOfficeRef: collegeOffice._id,
-          message: "e2e-osas-should-not-touch-vpaf",
+          destinationOfficeRef: collegeOffice._id,
+          reasonCode: "other",
+          reasonText: "e2e-osas-should-not-touch-vpaf",
         },
       });
       expect(blockedRes.status()).toBe(403);

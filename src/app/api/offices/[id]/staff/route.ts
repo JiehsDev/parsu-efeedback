@@ -16,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ staff: [] });
   }
   await connectToDatabase();
-  const office = await Office.findById(id).select("code type").lean();
+  const office = await Office.findById(id).select("code type headUserRef").lean();
   const osasMayView =
     session.user.role === "osas" &&
     office &&
@@ -30,8 +30,20 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!mayViewStaff) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  if (session.user.role === "office_staff" && String((office as any)?.headUserRef ?? "") !== session.user.id) {
+    return NextResponse.json({ error: "Only the office head can view assignable staff." }, { status: 403 });
+  }
 
-  const staff = await User.find({ officeRef: id, role: "office_staff", isActive: true })
+  // The office head is a User with role "office_staff" in this office too,
+  // but they assign complaints — they don't appear as an assignable target
+  // in their own dropdown.
+  const headUserRef = (office as any)?.headUserRef ?? null;
+  const staff = await User.find({
+    officeRef: id,
+    role: "office_staff",
+    isActive: true,
+    ...(headUserRef ? { _id: { $ne: headUserRef } } : {}),
+  })
     .select("firstName lastName email")
     .sort({ firstName: 1 })
     .lean();

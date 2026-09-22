@@ -10,6 +10,7 @@ import {
   getPriorityBreakdown,
   getOfficeBreakdown,
   getSlaComplianceByOffice,
+  getAnalyticsSummary,
 } from "./analytics.service";
 
 beforeAll(connectTestDb);
@@ -107,6 +108,82 @@ describe("analytics.service — BR-088/089", () => {
     expect(officeB.total).toBe(1);
     expect(officeB.compliant).toBe(0);
     expect(officeB.percent).toBe(0);
+  });
+});
+
+describe("analytics.service — optional-rating closure counts", () => {
+  it("counts rated vs without-rating closures separately and averages only real ratings", async () => {
+    const office = await createTestOffice({ name: "Office C" });
+    const category = await createTestCategory({ name: "Category Z", defaultOfficeRef: office._id });
+    const student = await createTestUser({ role: "student" });
+
+    await Complaint.create({
+      ticketNumber: "T-RATED-1",
+      studentRef: student._id,
+      categoryRef: category._id,
+      title: "Rated closure",
+      description: "Test description long enough to pass validation",
+      priority: "medium",
+      status: "closed",
+      assignedOfficeRef: office._id,
+      studentRating: 4,
+      closureType: "rated",
+    });
+    await Complaint.create({
+      ticketNumber: "T-RATED-2",
+      studentRef: student._id,
+      categoryRef: category._id,
+      title: "Rated closure 2",
+      description: "Test description long enough to pass validation",
+      priority: "medium",
+      status: "closed",
+      assignedOfficeRef: office._id,
+      studentRating: 2,
+      closureType: "rated",
+    });
+    await Complaint.create({
+      ticketNumber: "T-UNRATED-1",
+      studentRef: student._id,
+      categoryRef: category._id,
+      title: "Closed without rating",
+      description: "Test description long enough to pass validation",
+      priority: "medium",
+      status: "closed",
+      assignedOfficeRef: office._id,
+      studentRating: null,
+      closureType: "without_rating",
+    });
+
+    const summary = await getAnalyticsSummary({ assignedOfficeRef: office._id });
+
+    expect(summary.ratedClosures).toBe(2);
+    expect(summary.closedWithoutRating).toBe(1);
+    expect(summary.averageRating).toBe(3); // (4 + 2) / 2 — the unrated one is excluded, not treated as 0
+  });
+
+  it("reports averageRating as null when there are no rated closures", async () => {
+    const office = await createTestOffice({ name: "Office D" });
+    const category = await createTestCategory({ name: "Category W", defaultOfficeRef: office._id });
+    const student = await createTestUser({ role: "student" });
+
+    await Complaint.create({
+      ticketNumber: "T-UNRATED-ONLY",
+      studentRef: student._id,
+      categoryRef: category._id,
+      title: "Closed without rating only",
+      description: "Test description long enough to pass validation",
+      priority: "medium",
+      status: "closed",
+      assignedOfficeRef: office._id,
+      studentRating: null,
+      closureType: "without_rating",
+    });
+
+    const summary = await getAnalyticsSummary({ assignedOfficeRef: office._id });
+
+    expect(summary.ratedClosures).toBe(0);
+    expect(summary.closedWithoutRating).toBe(1);
+    expect(summary.averageRating).toBeNull();
   });
 });
 

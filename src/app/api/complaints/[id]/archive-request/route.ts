@@ -7,6 +7,7 @@ import { archiveRequestSchema } from "@/features/complaints/schemas/complaint.sc
 import { archiveEligibility, notifyHeadForArchiveRequest } from "@/lib/archive-workflow";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import { canAccessInternalComplaintNotes } from "@/lib/complaint-access";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -40,6 +41,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   await connectToDatabase();
   const { id } = await params;
+  const complaint = await Complaint.findById(id).lean();
+  if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
+  if (!(await canAccessInternalComplaintNotes(session, complaint))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const requests = await ArchiveRequest.find({ complaintRef: id }).sort({ createdAt: -1 }).populate("requestedByRef", "firstName lastName role").populate("reviewedByRef", "firstName lastName role").lean();
   return NextResponse.json({ requests });
 }

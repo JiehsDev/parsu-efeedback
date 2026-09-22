@@ -13,6 +13,7 @@ import { ListSearchInput } from "@/components/shared/ListSearchInput";
 import { ListSortSelect } from "@/components/shared/ListSortSelect";
 import { escapeRegExp } from "@/lib/utils";
 import { getAdminScope, complaintFilterForScope, officeFilterForScope } from "@/lib/admin-scope";
+import { isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest first" },
@@ -80,6 +81,9 @@ export default async function AdminComplaintsPage({
     .sort({ createdAt: sortOrder })
     .limit(200)
     .lean();
+  const scopedComplaints = scope.kind === "student"
+    ? (await Promise.all(complaints.map(async (complaint: any) => (await isComplaintInOsasActionScope(complaint)) ? complaint : null))).filter(Boolean)
+    : complaints;
 
   function withParam(key: string, value: string | undefined) {
     const params = new URLSearchParams();
@@ -113,7 +117,7 @@ export default async function AdminComplaintsPage({
                 : scope.kind === "student"
                   ? "All complaints"
                   : "Institution-wide"}
-            . {complaints.length} shown.
+            . {scopedComplaints.length} shown.
           </p>
         </div>
         <Link
@@ -162,7 +166,7 @@ export default async function AdminComplaintsPage({
         </div>
       )}
 
-      {complaints.length === 0 ? (
+      {scopedComplaints.length === 0 ? (
         <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
             <Inbox className="h-6 w-6" />
@@ -174,7 +178,7 @@ export default async function AdminComplaintsPage({
       ) : (
         <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
           <ul className="divide-y divide-[var(--border)]">
-            {complaints.map((c: any) => (
+            {scopedComplaints.map((c: any) => (
               <li key={c._id}>
                 <Link
                   href={`/admin/complaints/${c._id}`}

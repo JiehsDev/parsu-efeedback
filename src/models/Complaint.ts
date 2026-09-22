@@ -82,6 +82,14 @@ const complaintSchema = new Schema(
     resolvedAt: { type: Date, default: null },
     closedAt: { type: Date, default: null },
 
+    // Rating is optional: a resolved complaint closes either because the
+    // student rated it or explicitly closed without rating. Tracked
+    // explicitly rather than inferred from studentRating so analytics can
+    // tell "no rating yet" apart from "closed without one" (both leave
+    // studentRating null).
+    closureType: { type: String, enum: ["rated", "without_rating", null], default: null },
+    closedByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
+
     // BR-045: complaints are never deleted, only archived by an admin
     isArchived: { type: Boolean, required: true, default: false },
     archivedAt: { type: Date, default: null },

@@ -16,10 +16,7 @@ export async function getComplaintOfficeHead(officeId: unknown) {
   return head ? { office, head } : null;
 }
 
-export async function isOfficeHead(userId: string, officeId: unknown) {
-  const office = await Office.findOne({ _id: officeId, headUserRef: userId }).select("_id name").lean();
-  return office;
-}
+export { isOfficeHead } from "@/lib/office-head";
 
 export async function archiveComplaint(params: {
   complaintId: string;
@@ -68,7 +65,9 @@ export async function restoreComplaint(params: { complaintId: string; actorId: s
 }
 
 export async function notifyHeadForArchiveRequest(complaintId: string, requestId: string, reason: string) {
-  const complaint = await Complaint.findById(complaintId).select("ticketNumber assignedOfficeRef").lean();
+  const complaint = await Complaint.findById(complaintId).select("ticketNumber title assignedOfficeRef").lean();
   const target = complaint ? await getComplaintOfficeHead(complaint.assignedOfficeRef) : null;
-  if (complaint && target) await notifyArchiveRequested({ userId: String((target as any).head._id), ticketNumber: complaint.ticketNumber, complaintId, requestId, reason });
+  const request = await ArchiveRequest.findById(requestId).populate("requestedByRef", "firstName lastName").lean();
+  const requester = request?.requestedByRef as any;
+  if (complaint && target) await notifyArchiveRequested({ userId: String((target as any).head._id), ticketNumber: complaint.ticketNumber, complaintId, requestId, reason, complaintTitle: complaint.title, requesterName: requester ? `${requester.firstName} ${requester.lastName}` : undefined });
 }

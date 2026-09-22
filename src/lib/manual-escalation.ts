@@ -3,10 +3,7 @@ import { User } from "@/models/User";
 import { SLARule } from "@/models/SLARule";
 import { getOsasEscalationOffice, isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
 import type { UserRole } from "@/lib/constants";
-
-export async function isOfficeHead(userId: string, officeId: string) {
-  return Boolean(await Office.exists({ _id: officeId, headUserRef: userId, isActive: true }));
-}
+export { isOfficeHead } from "@/lib/office-head";
 
 export type ManualEscalationTarget = {
   office: any;

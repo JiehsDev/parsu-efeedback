@@ -14,7 +14,8 @@ export async function GET() {
   const filter: Record<string, any> = isAdmin ? { status: "pending" } : { status: "pending", officeRef: { $in: offices!.map((office) => office._id) } };
   const requests = await ArchiveRequest.find(filter)
     .sort({ createdAt: -1 })
-    .populate("complaintRef", "ticketNumber title status assignedOfficeRef")
+    .populate("complaintRef", "ticketNumber title description status assignedOfficeRef assignedStaffRef archiveReason")
+    .populate("officeRef", "name type code headUserRef")
     .populate("requestedByRef", "firstName lastName role")
     .lean();
   return NextResponse.json({ requests });

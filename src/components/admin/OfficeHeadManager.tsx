@@ -3,7 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2, UserPlus, UserRound, X } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, UserPlus, UserRound, X } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
@@ -35,6 +35,7 @@ export function OfficeHeadManager({
   const [selectedHeadId, setSelectedHeadId] = useState(currentHeadId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -191,7 +192,7 @@ export function OfficeHeadManager({
               <input required className={inputClass} value={form.employeeOrStudentId} onChange={(e) => setForm((p) => ({ ...p, employeeOrStudentId: e.target.value }))} />
             </FormField>
             <FormField label="Temporary password">
-              <input required type="password" minLength={8} className={inputClass} value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} />
+              <div className="relative"><input required type={showPassword ? "text" : "password"} minLength={8} className={`${inputClass} pr-10`} value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} title={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((visible) => !visible)} className="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div>
             </FormField>
             <SubmitButton loading={isSubmitting}>Create Head Account</SubmitButton>
           </form>

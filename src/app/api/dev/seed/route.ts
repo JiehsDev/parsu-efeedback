@@ -1,5 +1,6 @@
 // src/app/api/dev/seed/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
@@ -9,6 +10,8 @@ import Complaint from "@/models/Complaint";
 import Feedback from "@/models/Feedback";
 import RoutingRule from "@/models/RoutingRule";
 import SLARule from "@/models/SLARule";
+import { InformationRequest } from "@/models/InformationRequest";
+import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { Counter } from "@/models/Counter";
 import { getSettings } from "@/features/settings/services/settings.service";
 import { FEEDBACK_CATEGORIES } from "@/features/feedback/constants";
@@ -312,15 +315,24 @@ const COMPLAINT_TEMPLATES: Record<string, { title: string; description: string }
   ],
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Unauthorized environment execution" }, { status: 403 });
+  }
+  // On any deployment that sets DEV_SEED_SECRET (e.g. a shared/staging
+  // environment where NODE_ENV isn't "production"), this destructive reseed
+  // requires a matching header instead of being triggerable by anyone with
+  // the URL. Left unset locally/in CI so E2E global-setup keeps working.
+  if (env.DEV_SEED_SECRET && req.headers.get("x-dev-seed-secret") !== env.DEV_SEED_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   try {
     await connectToDatabase();
 
     // Clear existing collections for a clean setup
+    await InformationRequest.deleteMany({});
+    await ArchiveRequest.deleteMany({});
     await User.deleteMany({});
     await Office.deleteMany({});
     await Category.deleteMany({});
@@ -833,6 +845,126 @@ export async function GET() {
         tokenVersion: 1,
         isActive: false,
       },
+
+      // Every office below previously had exactly one office_staff account
+      // (its head, doing double duty as the only staff login), which made
+      // it impossible to test head-only actions (Assign Staff, Change
+      // Assignee, Reassign Office) against a distinct non-head staff member
+      // for most offices. These add a second, ordinary staff account per
+      // office without touching any existing account/head assignment.
+      {
+        firstName: "Grace",
+        lastName: "Manalo",
+        email: "staff8@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0430",
+        officeRef: primaryCollege._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Roberto",
+        lastName: "Tolentino",
+        email: "staff9@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0431",
+        officeRef: otherColleges[0]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Michelle",
+        lastName: "Diaz",
+        email: "staff10@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0432",
+        officeRef: otherColleges[1]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Daniel",
+        lastName: "Espinosa",
+        email: "staff11@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0433",
+        officeRef: otherColleges[2]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Julia",
+        lastName: "Lopez",
+        email: "staff12@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0434",
+        officeRef: otherColleges[3]!._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Marco",
+        lastName: "Pascual",
+        email: "staff13@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0435",
+        officeRef: ovpaaOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Bianca",
+        lastName: "Del Rosario",
+        email: "staff14@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0436",
+        officeRef: ovpafOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Paolo",
+        lastName: "Salazar",
+        email: "staff15@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0437",
+        officeRef: qaOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "Nathaniel",
+        lastName: "Rivera",
+        email: "staff16@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0438",
+        officeRef: generalServicesOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      // Registrar already had one non-head staff (staff3); this adds a
+      // second, per explicit request, so the Registrar has 2 ordinary
+      // staff to test Change Assignee between two non-head staff members.
+      {
+        firstName: "Samantha",
+        lastName: "Aguilar",
+        email: "staff17@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0439",
+        officeRef: registrarOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
     ];
 
     // A wide student pool spread across every college so college-comparison
@@ -1014,6 +1146,11 @@ export async function GET() {
         resolutionSummary: isResolved ? "Resolved after review by the assigned office." : "",
         studentRating,
         studentRatingComment,
+        // Rating is optional (a closed complaint may or may not have one) —
+        // closureType/closedByRef track which closure path was taken,
+        // rather than being inferred from studentRating being null.
+        closureType: status === "closed" ? (studentRating !== null ? "rated" : "without_rating") : null,
+        closedByRef: status === "closed" ? student._id : null,
         reopenCount: 0,
         submittedAt,
         resolvedAt,
@@ -1024,7 +1161,53 @@ export async function GET() {
       };
     });
 
-    await Complaint.insertMany(complaintDocs);
+    const insertedComplaints = await Complaint.insertMany(complaintDocs);
+
+    // 4b. Seed the actual sub-resources behind two lifecycle states that
+    // otherwise only exist as a bare `status` string with nothing backing
+    // it — without these, "pending_information" complaints have no real
+    // InformationRequest to respond to, and there's no archive request to
+    // approve/reject on first login.
+    const pendingInfoComplaints = insertedComplaints.filter((c) => c.status === "pending_information");
+    const INFO_REQUEST_MESSAGES = [
+      "Could you upload a clearer copy of your supporting document?",
+      "Please confirm the exact date this issue occurred.",
+      "Can you provide your student ID number for verification?",
+      "We need the reference number from your original request to proceed.",
+    ];
+    for (const complaint of pendingInfoComplaints) {
+      const officeStaff = staffByOffice.get(complaint.assignedOfficeRef!.toString()) ?? [];
+      const requestedByRef = complaint.assignedStaffRef ?? (officeStaff[0]?._id ?? null);
+      if (!requestedByRef) continue;
+      await InformationRequest.create({
+        complaintRef: complaint._id,
+        requestedByRef,
+        requestMessage: pick(INFO_REQUEST_MESSAGES),
+        status: "open",
+        requestedAt: daysAgo(randInt(0, 5)),
+      });
+    }
+
+    // A few pending archive requests (staff-requested, awaiting their
+    // office head's approval) so the Archive Requests pages aren't empty
+    // on first login. Picked from resolved/closed complaints that already
+    // have an assigned staff member to be the requester.
+    const archivableCandidates = insertedComplaints.filter(
+      (c) => (c.status === "resolved" || c.status === "closed") && c.assignedStaffRef,
+    );
+    const ARCHIVE_REQUEST_COUNT = Math.min(4, archivableCandidates.length);
+    for (let i = 0; i < ARCHIVE_REQUEST_COUNT; i++) {
+      const complaint = archivableCandidates[i]!;
+      await ArchiveRequest.create({
+        complaintRef: complaint._id,
+        requestedByRef: complaint.assignedStaffRef,
+        officeRef: complaint.assignedOfficeRef,
+        reasonCode: "no_action_required",
+        reasonText: "Concern fully addressed; no further action needed from this office.",
+        reason: "no_action_required: Concern fully addressed; no further action needed from this office.",
+        status: "pending",
+      });
+    }
 
     // 5. A handful of standalone feedback entries (not tied to any
     // complaint) so the QA Feedback page has something to show too.
@@ -1056,6 +1239,8 @@ export async function GET() {
         categories: allCategories.length,
         complaints: complaintDocs.length,
         feedback: feedbackDocs.length,
+        informationRequests: pendingInfoComplaints.length,
+        archiveRequests: ARCHIVE_REQUEST_COUNT,
       },
       offices: {
         primaryCollege: primaryCollege._id,
@@ -1068,18 +1253,18 @@ export async function GET() {
         complaintCategory: complaintCategory._id,
       },
       verifyRoutingAccounts: {
-        note: "Log in as each office_staff account below (password ParSU_test2026) and confirm complaints for that office appear on their dashboard.",
-        registrar: ["staff@parsu.edu.ph", "staff3@parsu.edu.ph"],
-        osas: ["staff2@parsu.edu.ph"],
-        generalServices: ["staff4@parsu.edu.ph"],
-        cecs: ["staff5@parsu.edu.ph"],
-        ced: ["dean.ced@parsu.edu.ph"],
-        cbm: ["dean.cbm@parsu.edu.ph"],
-        cos: ["dean.cos@parsu.edu.ph"],
-        cah: ["dean.cah@parsu.edu.ph"],
-        ovpaa: ["staff6@parsu.edu.ph"],
-        ovpaf: ["staff7@parsu.edu.ph"],
-        qualityAssurance: ["qa@parsu.edu.ph"],
+        note: "Log in as each office_staff account below (password ParSU_test2026) and confirm complaints for that office appear on their dashboard. \"(head)\" accounts are Office.headUserRef for that office and can Assign Staff / Change Assignee / Reassign Office; the rest are ordinary staff who can only Pick Up / Release.",
+        registrar: ["staff@parsu.edu.ph (head)", "staff3@parsu.edu.ph", "staff17@parsu.edu.ph"],
+        osas: ["osas@parsu.edu.ph (head, role=osas)", "staff2@parsu.edu.ph"],
+        generalServices: ["staff4@parsu.edu.ph (head)", "staff16@parsu.edu.ph"],
+        cecs: ["staff5@parsu.edu.ph (head)", "staff8@parsu.edu.ph"],
+        ced: ["dean.ced@parsu.edu.ph (head)", "staff9@parsu.edu.ph"],
+        cbm: ["dean.cbm@parsu.edu.ph (head)", "staff10@parsu.edu.ph"],
+        cos: ["dean.cos@parsu.edu.ph (head)", "staff11@parsu.edu.ph"],
+        cah: ["dean.cah@parsu.edu.ph (head)", "staff12@parsu.edu.ph"],
+        ovpaa: ["staff6@parsu.edu.ph (head)", "staff13@parsu.edu.ph"],
+        ovpaf: ["staff7@parsu.edu.ph (head)", "staff14@parsu.edu.ph"],
+        qualityAssurance: ["qa@parsu.edu.ph (head)", "staff15@parsu.edu.ph"],
       },
     });
   } catch (error: any) {

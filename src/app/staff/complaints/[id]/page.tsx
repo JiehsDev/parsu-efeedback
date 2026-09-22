@@ -27,6 +27,8 @@ import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { ReopenComplaintButton } from "@/components/shared/ReopenComplaintButton";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
 import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
+import { getEligibleReassignmentOffices } from "@/lib/office-reassignment-scope";
+import { ReassignOfficeDialog } from "@/components/shared/ReassignOfficeDialog";
 import type { ComplaintStatus } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -49,11 +51,12 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
     select: "employeeOrStudentId collegeRef",
     populate: { path: "collegeRef", select: "name" },
   }).lean();
-  if (!complaint || String((complaint as any).assignedOfficeRef) !== session.user.officeRef) notFound();
+  if (!complaint) notFound();
+  if (String((complaint as any).assignedOfficeRef) !== session.user.officeRef) redirect("/staff/complaints");
   const c = complaint as any;
 
   const [timeline, notes, office, assignedStaff, assignmentHistory, informationRequests, archiveRequests, escalationTarget] = await Promise.all([
-    ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).populate("actorRef", "firstName lastName role").lean(),
+    ComplaintTimeline.find({ complaintRef: id }).sort({ createdAt: 1 }).populate("actorRef", "firstName lastName role employeeOrStudentId").lean(),
     ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
     Office.findById(session.user.officeRef).select("name type headUserRef").lean(),
     c.assignedStaffRef ? User.findById(c.assignedStaffRef).select("firstName lastName email role").lean() : null,
@@ -73,6 +76,12 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
   const isOfficeHead = String((office as any)?.headUserRef ?? "") === session.user.id;
   const canArchive = ["submitted", "assigned", "in_progress", "pending_information", "escalated", "resolved", "closed", "withdrawn"].includes(c.status);
 
+  const canReassignOffice =
+    isOfficeHead && !c.isArchived && !["withdrawn", "resolved", "closed"].includes(c.status) && Boolean(office);
+  const reassignmentOffices = canReassignOffice
+    ? (await getEligibleReassignmentOffices(office as any)).map((o: any) => ({ _id: String(o._id), name: o.name }))
+    : [];
+
   return (
     <div className="mx-auto max-w-[1440px] space-y-5">
       <Link href="/staff/complaints" className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"><ArrowLeft className="h-3.5 w-3.5" />Back to queue</Link>
@@ -85,7 +94,7 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
       {c.status === "pending_information" && activeRequest && <section className="rounded-2xl border border-[var(--qa-amber)]/40 bg-[var(--qa-amber-soft)] px-4 py-3 sm:px-5" aria-labelledby="waiting-information-heading"><div className="flex flex-wrap items-center justify-between gap-2"><h2 id="waiting-information-heading" className="text-sm font-semibold text-[var(--qa-amber-strong)]">Waiting for Student Information</h2><span className="rounded-full bg-[var(--qa-amber)]/15 px-2.5 py-1 text-xs font-semibold text-[var(--qa-amber-strong)]">Awaiting Student Response</span></div><p className="mt-1 text-sm text-[var(--qa-amber-strong)]">{activeRequest.requestMessage}</p><p className="mt-1 text-xs text-[var(--qa-amber-strong)]/75">Requested {new Date(activeRequest.requestedAt).toLocaleString()} by {activeRequest.requestedByRef?.firstName ?? "staff"} {activeRequest.requestedByRef?.lastName ?? ""}</p></section>}
       {c.isArchived && <section className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] px-4 py-3 sm:px-5"><p className="text-sm font-semibold text-[var(--foreground)]">Archived Complaint</p><p className="mt-1 text-sm text-[var(--muted-foreground)]">This complaint is retained for record purposes and is no longer active.</p><p className="mt-1 text-xs text-[var(--muted-foreground)]">Reason: {c.archiveReason || "Not recorded"} · Archived {c.archivedAt ? new Date(c.archivedAt).toLocaleString() : "date unavailable"}</p></section>}
 
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5" aria-labelledby="complaint-context-heading"><div className="flex items-center justify-between gap-3"><h2 id="complaint-context-heading" className="text-sm font-semibold text-[var(--foreground)]">Complaint context</h2><StatusBadge status={c.status as ComplaintStatus} /></div><dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-6"><ContextItem label="Complainant" value={c.studentRef?.employeeOrStudentId ?? "—"} /><ContextItem label="Office" value={currentOfficeName} /><ContextItem label="Priority" value={c.priority} dot={PRIORITY_DOT[c.priority]} /><ContextItem label="Ticket" value={c.ticketNumber} mono /><ContextItem label="Submitted" value={new Date(c.submittedAt).toLocaleDateString()} /><ContextItem label="Current owner" value={currentStaffName ?? "Office level"} /></dl></section>
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5" aria-labelledby="complaint-context-heading"><div className="flex items-center justify-between gap-3"><h2 id="complaint-context-heading" className="text-sm font-semibold text-[var(--foreground)]">Complaint context</h2><StatusBadge status={c.status as ComplaintStatus} /></div><dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-5"><ContextItem label="Complainant" value={c.studentRef?.employeeOrStudentId ?? "—"} /><ContextItem label="College" value={c.studentRef?.collegeRef?.name ?? "College unavailable"} /><ContextItem label="Priority" value={c.priority} dot={PRIORITY_DOT[c.priority]} /><ContextItem label="Ticket" value={c.ticketNumber} mono /><ContextItem label="Submitted" value={new Date(c.submittedAt).toLocaleDateString()} /></dl></section>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(320px,4fr)]">
         <main className="min-w-0 space-y-5">
@@ -98,10 +107,11 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
         <aside className="min-w-0 space-y-5 lg:sticky lg:top-5 lg:self-start">
           <section className="rounded-2xl border border-[var(--primary)]/30 bg-[var(--card)] p-4 shadow-lg shadow-black/10 sm:p-5" aria-labelledby="complaint-actions-heading"><div className="flex items-center justify-between gap-3"><h2 id="complaint-actions-heading" className="text-base font-semibold text-[var(--foreground)]">Complaint Actions</h2><span className="text-xs text-[var(--muted-foreground)]">Workflow</span></div><div className="mt-4 space-y-3">
              {!c.isArchived && !c.assignedStaffRef && !["withdrawn", "resolved", "closed"].includes(c.status) && <AssignSelfButton complaintId={String(c._id)} />}
-             {!c.isArchived && !["withdrawn", "resolved", "closed"].includes(c.status) && <AssignmentDialog complaintId={String(c._id)} currentOfficeId={session.user.officeRef ?? null} currentOfficeName={currentOfficeName} currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null} currentStaffName={currentStaffName} offices={[{ _id: session.user.officeRef!, name: currentOfficeName, type: (office as any)?.type }]} canChangeOffice={false} label={c.assignedStaffRef ? "Reassign Complaint" : "Assign Staff"} action={c.assignedStaffRef ? "reassign" : "assign"} />}
+             {isOfficeHead && !c.isArchived && !["withdrawn", "resolved", "closed"].includes(c.status) && <AssignmentDialog complaintId={String(c._id)} currentOfficeId={session.user.officeRef ?? null} currentOfficeName={currentOfficeName} currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null} currentStaffName={currentStaffName} offices={[{ _id: session.user.officeRef!, name: currentOfficeName, type: (office as any)?.type }]} canChangeOffice={false} label={c.assignedStaffRef ? "Change Assignee" : "Assign Staff"} action={c.assignedStaffRef ? "reassign" : "assign"} />}
+             {canReassignOffice && <ReassignOfficeDialog complaintId={String(c._id)} currentOfficeName={currentOfficeName} eligibleOffices={reassignmentOffices} />}
              {!c.isArchived && !["resolved", "closed"].includes(c.status) && String(c.assignedStaffRef) === session.user.id && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
              {isOfficeHead && c.status === "resolved" && <ReopenComplaintButton complaintId={String(c._id)} />}
-            {c.status === "resolved" && <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">Resolved · Waiting for Student Rating</p>}
+            {c.status === "resolved" && <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">Resolved · Awaiting Student Confirmation</p>}
              {!c.isArchived && !["resolved", "closed"].includes(c.status) && (String(c.assignedStaffRef ?? "") === session.user.id || c.status === "pending_information") && <InformationRequestPanel complaintId={String(c._id)} status={c.status} canRequest={String(c.assignedStaffRef ?? "") === session.user.id} requests={requests} />}
             {c.isArchived ? <p className="rounded-xl bg-[var(--muted)] px-3 py-2 text-xs text-[var(--muted-foreground)]">Archived complaints are read-only until restored.</p> : isOfficeHead && pendingArchive ? <ArchiveApprovalPanel request={pendingArchive} /> : isOfficeHead && canArchive ? <ArchiveComplaintToggle complaintId={String(c._id)} ticketNumber={c.ticketNumber} isArchived={false} mode="head" /> : !isOfficeHead && session.user.role === "office_staff" && canArchive && !pendingArchive && (!c.assignedStaffRef || String(c.assignedStaffRef) === session.user.id) ? <ArchiveRequestButton complaintId={String(c._id)} /> : pendingArchive ? <p className="rounded-xl bg-[var(--qa-amber-soft)] px-3 py-2 text-xs text-[var(--qa-amber-strong)]">Archive Request Pending</p> : null}
             {String(c.assignedStaffRef ?? "") === session.user.id && escalationTarget && c.status !== "withdrawn" && <div className="space-y-3"><div className="rounded-xl border border-[var(--qa-amber)]/30 bg-[var(--qa-amber-soft)] px-3 py-2.5"><p className="text-[11px] font-semibold tracking-wide text-[var(--qa-amber-strong)] uppercase">Next escalation target</p><p className="mt-1 text-sm font-semibold text-[var(--qa-amber-strong)]">{escalationTarget.office.name} Office Head</p><p className="mt-0.5 text-xs text-[var(--qa-amber-strong)]/80">{escalationTarget.staff.firstName} {escalationTarget.staff.lastName} · {escalationTarget.staff.email}</p></div><AssignmentDialog complaintId={String(c._id)} currentOfficeId={String(c.assignedOfficeRef)} currentOfficeName={currentOfficeName} currentStaffId={String(c.assignedStaffRef)} currentStaffName={currentStaffName} offices={[{ _id: String(escalationTarget.office._id), name: escalationTarget.office.name, type: escalationTarget.office.type }]} canChangeOffice action="escalate" label="Escalate Complaint" destinationOfficeId={String(escalationTarget.office._id)} destinationStaffId={String(escalationTarget.staff._id)} /></div>}
@@ -115,5 +125,5 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
 }
 
 function ContextItem({ label, value, dot, mono }: { label: string; value: string; dot?: string; mono?: boolean }) {
-  return <div className="min-w-0"><dt className="text-xs text-[var(--muted-foreground)]">{label}</dt><dd className={`mt-1 truncate text-[var(--foreground)] ${mono ? "font-mono text-xs" : ""}`}>{dot && <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${dot}`} />}{value}</dd></div>;
+  return <div className="min-w-0"><dt className="text-xs text-[var(--muted-foreground)]">{label}</dt><dd className={`mt-1 break-words text-[var(--foreground)] ${mono ? "font-mono text-xs" : ""}`}>{dot && <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${dot}`} />}{value}</dd></div>;
 }

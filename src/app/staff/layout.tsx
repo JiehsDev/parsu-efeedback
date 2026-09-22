@@ -8,7 +8,7 @@ import { Office } from "@/models/Office";
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "office_staff" && session.user.role !== "administrator") {
+  if (session.user.role !== "office_staff") {
     redirect("/dashboard");
   }
   let isOfficeHead = false;

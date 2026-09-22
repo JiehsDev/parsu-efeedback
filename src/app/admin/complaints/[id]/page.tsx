@@ -1,5 +1,5 @@
 // src/app/admin/complaints/[id]/page.tsx
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -42,6 +42,8 @@ import {
 import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
 import { SlaDetails } from "@/components/shared/SlaDetails";
 import { ReopenComplaintButton } from "@/components/shared/ReopenComplaintButton";
+import { ReassignOfficeDialog } from "@/components/shared/ReassignOfficeDialog";
+import { getEligibleReassignmentOffices } from "@/lib/office-reassignment-scope";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -60,6 +62,7 @@ export default async function AdminComplaintDetailPage({
   const role = session!.user.role;
   const scope = getAdminScope(role);
   const isAdmin = role === "administrator";
+  const isScopedAdmin = ["vpaa", "vpaf", "osas"].includes(role);
   const { id } = await params;
 
   // No isArchived filter here, unlike every role-scoped complaint page —
@@ -93,7 +96,7 @@ export default async function AdminComplaintDetailPage({
     c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).lean() : null,
     ComplaintTimeline.find({ complaintRef: id })
       .sort({ createdAt: 1 })
-      .populate("actorRef", "firstName lastName role")
+      .populate("actorRef", "firstName lastName role employeeOrStudentId")
       .lean(),
     ComplaintNote.find({ complaintRef: id }).sort({ createdAt: 1 }).lean(),
     c.assignedStaffRef
@@ -121,11 +124,29 @@ export default async function AdminComplaintDetailPage({
     (scope.kind === "college_office" || scope.kind === "university_office") &&
     (office as any)?.type !== scope.kind
   ) {
-    notFound();
+    redirect("/admin/complaints");
   }
+  if (role === "osas" && !(await isComplaintInOsasActionScope(c))) redirect("/admin/complaints");
   const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
   const pendingArchive = JSON.parse(JSON.stringify(archiveRequests)).find((request: any) => request.status === "pending");
   const isOfficeHead = String((office as any)?.headUserRef ?? "") === session!.user.id;
+
+  // REASSIGN OFFICE: Office-Head-only (Office.headUserRef), lateral offices
+  // only — administrator sees every active office (unrestricted), a head
+  // sees only offices getEligibleReassignmentOffices() considers lateral.
+  const canReassignOffice =
+    (isAdmin || isOfficeHead) &&
+    !c.isArchived &&
+    !["withdrawn", "resolved", "closed"].includes(c.status) &&
+    Boolean(office);
+  const reassignmentOffices = canReassignOffice
+    ? isAdmin
+      ? (activeOffices as any[]).map((o) => ({ _id: String(o._id), name: o.name }))
+      : (await getEligibleReassignmentOffices(office as any)).map((o: any) => ({
+          _id: String(o._id),
+          name: o.name,
+        }))
+    : [];
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -151,6 +172,11 @@ export default async function AdminComplaintDetailPage({
             {c.isArchived && (
               <span className="rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
                 Archived
+              </span>
+            )}
+            {isOfficeHead && role !== "administrator" && (
+              <span className="rounded-full bg-[var(--primary)]/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--primary)] uppercase">
+                Office Head
               </span>
             )}
           </div>
@@ -180,7 +206,7 @@ export default async function AdminComplaintDetailPage({
           <NotesSection
             complaintId={String(c._id)}
             initialNotes={JSON.parse(JSON.stringify(notes))}
-            readOnly
+            readOnly={false}
           />
         </div>
 
@@ -244,8 +270,8 @@ export default async function AdminComplaintDetailPage({
           </div>
 
           {isOfficeHead && pendingArchive && !c.isArchived && <ArchiveApprovalPanel request={pendingArchive} />}
-          {isAdmin && !c.isArchived && !["resolved", "closed"].includes(c.status) && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
-          {isAdmin && !c.isArchived && ["resolved", "closed"].includes(c.status) && <ReopenComplaintButton complaintId={String(c._id)} />}
+          {(isAdmin || isScopedAdmin) && !c.isArchived && !["resolved", "closed"].includes(c.status) && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
+          {(isAdmin || isOfficeHead) && !c.isArchived && ["resolved", "closed"].includes(c.status) && <ReopenComplaintButton complaintId={String(c._id)} />}
 
           {(isAdmin ||
             role === "vpaa" ||
@@ -255,7 +281,7 @@ export default async function AdminComplaintDetailPage({
             <InformationRequestPanel
               complaintId={String(c._id)}
               status={c.status}
-              canRequest={isAdmin || role === "vpaa" || role === "vpaf" || osasCanAssign}
+              canRequest={isAdmin || isScopedAdmin}
               requests={JSON.parse(JSON.stringify(informationRequests))}
             />
           )}
@@ -271,12 +297,22 @@ export default async function AdminComplaintDetailPage({
                   ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
                   : null
               }
-              offices={(activeOffices as any[]).map((activeOffice) => ({
-                _id: String(activeOffice._id),
-                name: activeOffice.name,
-                type: activeOffice.type,
-              }))}
-              canChangeOffice
+              offices={
+                office
+                  ? [{ _id: String((office as any)._id), name: (office as any).name, type: (office as any).type }]
+                  : []
+              }
+              canChangeOffice={false}
+              label={c.assignedStaffRef ? "Change Assignee" : "Assign Staff"}
+              action="assign"
+            />
+          )}
+
+          {canReassignOffice && (
+            <ReassignOfficeDialog
+              complaintId={String(c._id)}
+              currentOfficeName={office ? (office as any).name : null}
+              eligibleOffices={reassignmentOffices}
             />
           )}
 
@@ -292,14 +328,14 @@ export default async function AdminComplaintDetailPage({
                     ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}`
                     : null
                 }
-                offices={(activeOffices as any[]).map((activeOffice) => ({
-                  _id: String(activeOffice._id),
-                  name: activeOffice.name,
-                  type: activeOffice.type,
-                }))}
-                canChangeOffice
-                label="Reassign Complaint"
-                action="reassign"
+                offices={
+                  office
+                    ? [{ _id: String((office as any)._id), name: (office as any).name, type: (office as any).type }]
+                    : []
+                }
+                canChangeOffice={false}
+                label="Assign Staff"
+                action="assign"
               />
               {osasEscalationOffice && (
                 <AssignmentDialog

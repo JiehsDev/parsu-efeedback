@@ -7,6 +7,8 @@ import {
   AlertCircle,
   ChevronRight,
   Download,
+  Eye,
+  EyeOff,
   Loader2,
   Plus,
   Search,
@@ -94,6 +96,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
   const [totalUsers, setTotalUsers] = useState(0);
   const [offices, setOffices] = useState<Office[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [search, setSearch] = useState("");
@@ -441,7 +444,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
       )}
 
       {showCreate && (
-        <Modal title="Add User" onClose={() => setShowCreate(false)}>
+        <Modal title="Add User" onClose={() => { setShowCreate(false); setShowCreatePassword(false); }}>
           <form onSubmit={handleCreate} className="space-y-4">
             {error && (
               <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
@@ -489,14 +492,25 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
             </FormField>
 
             <FormField label="Password" required>
-              <input
-                type="password"
-                required
-                minLength={8}
-                className={inputClass}
-                value={form.password}
-                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-              />
+              <div className="relative">
+                <input
+                  type={showCreatePassword ? "text" : "password"}
+                  required
+                  minLength={8}
+                  className={`${inputClass} pr-10`}
+                  value={form.password}
+                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  aria-label={showCreatePassword ? "Hide password" : "Show password"}
+                  title={showCreatePassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowCreatePassword((visible) => !visible)}
+                  className="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+                >
+                  {showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </FormField>
 
             <FormField label="Role" required>

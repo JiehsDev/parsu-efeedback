@@ -1,4 +1,5 @@
 import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
+import { isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
 
 export async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
   const { role, id, officeRef } = session.user;
@@ -6,7 +7,8 @@ export async function canAccessComplaint(session: any, complaint: any): Promise<
   if (role === "administrator") return true;
   if (role === "student") return String(complaint.studentRef) === id;
   if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
-  if (role === "vpaa" || role === "vpaf" || role === "osas") {
+  if (role === "osas") return isComplaintInOsasActionScope(complaint);
+  if (role === "vpaa" || role === "vpaf") {
     return isComplaintInAdminScope(getAdminScope(role), complaint);
   }
 

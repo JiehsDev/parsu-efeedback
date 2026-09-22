@@ -175,22 +175,32 @@ const accountRows = [
   ["student@parsu.edu.ph", "student", "Active", "Elliot Anderson", "College of Engineering & Computational Sciences"],
   ["inactive@parsu.edu.ph", "student", "Inactive", "Inactive Test", "Login rejection test account"],
   ["student20001@parsu.edu.ph through student20035@parsu.edu.ph", "student", "Active", "Generated names", "7 generated students per seeded college"],
-  ["staff@parsu.edu.ph", "office_staff", "Active", "Maria Santos", "Office of the University Registrar"],
+  ["staff@parsu.edu.ph", "office_staff", "Active", "Maria Santos", "Office of the University Registrar (head)"],
   ["staff2@parsu.edu.ph", "office_staff", "Active", "Pedro Penduko", "Office of Student Affairs and Services"],
   ["staff3@parsu.edu.ph", "office_staff", "Active", "Pedro Penduko", "Office of the University Registrar"],
-  ["staff4@parsu.edu.ph", "office_staff", "Active", "Liza Domingo", "General Services Office"],
-  ["staff5@parsu.edu.ph", "office_staff", "Active", "Noel Aguilar", "College of Engineering & Computational Sciences"],
-  ["dean.ced@parsu.edu.ph", "office_staff", "Active", "Andrea Castillo", "College of Education"],
-  ["dean.cbm@parsu.edu.ph", "office_staff", "Active", "Christian Mendoza", "College of Business & Management"],
-  ["dean.cos@parsu.edu.ph", "office_staff", "Active", "Rosa Navarro", "College of Science"],
-  ["dean.cah@parsu.edu.ph", "office_staff", "Active", "Katrina Ocampo", "College of Arts and Humanities"],
-  ["staff6@parsu.edu.ph", "office_staff", "Active", "Carlos Mercado", "Office of the Vice President for Academic Affairs"],
-  ["staff7@parsu.edu.ph", "office_staff", "Active", "Bea Salonga", "Office of the Vice President for Administration and Finance"],
-  ["qa@parsu.edu.ph", "office_staff", "Active", "Elena Reyes", "Quality Assurance Office; follows office_staff permissions"],
+  ["staff4@parsu.edu.ph", "office_staff", "Active", "Liza Domingo", "General Services Office (head)"],
+  ["staff5@parsu.edu.ph", "office_staff", "Active", "Noel Aguilar", "College of Engineering & Computational Sciences (head)"],
+  ["staff8@parsu.edu.ph", "office_staff", "Active", "Grace Manalo", "College of Engineering & Computational Sciences"],
+  ["dean.ced@parsu.edu.ph", "office_staff", "Active", "Andrea Castillo", "College of Education (head)"],
+  ["staff9@parsu.edu.ph", "office_staff", "Active", "Roberto Tolentino", "College of Education"],
+  ["dean.cbm@parsu.edu.ph", "office_staff", "Active", "Christian Mendoza", "College of Business & Management (head)"],
+  ["staff10@parsu.edu.ph", "office_staff", "Active", "Michelle Diaz", "College of Business & Management"],
+  ["dean.cos@parsu.edu.ph", "office_staff", "Active", "Rosa Navarro", "College of Science (head)"],
+  ["staff11@parsu.edu.ph", "office_staff", "Active", "Daniel Espinosa", "College of Science"],
+  ["dean.cah@parsu.edu.ph", "office_staff", "Active", "Katrina Ocampo", "College of Arts and Humanities (head)"],
+  ["staff12@parsu.edu.ph", "office_staff", "Active", "Julia Lopez", "College of Arts and Humanities"],
+  ["staff6@parsu.edu.ph", "office_staff", "Active", "Carlos Mercado", "Office of the Vice President for Academic Affairs (head)"],
+  ["staff13@parsu.edu.ph", "office_staff", "Active", "Marco Pascual", "Office of the Vice President for Academic Affairs"],
+  ["staff7@parsu.edu.ph", "office_staff", "Active", "Bea Salonga", "Office of the Vice President for Administration and Finance (head)"],
+  ["staff14@parsu.edu.ph", "office_staff", "Active", "Bianca Del Rosario", "Office of the Vice President for Administration and Finance"],
+  ["staff16@parsu.edu.ph", "office_staff", "Active", "Nathaniel Rivera", "General Services Office"],
+  ["staff17@parsu.edu.ph", "office_staff", "Active", "Samantha Aguilar", "Office of the University Registrar"],
+  ["qa@parsu.edu.ph", "office_staff", "Active", "Elena Reyes", "Quality Assurance Office (head); follows office_staff permissions"],
+  ["staff15@parsu.edu.ph", "office_staff", "Active", "Paolo Salazar", "Quality Assurance Office"],
   ["admin@parsu.edu.ph", "administrator", "Active", "System Administrator", "No office or college scope"],
   ["vpaa@parsu.edu.ph", "vpaa", "Active", "Dr. Juan Cruz", "College-office sub-admin"],
   ["vpaf@parsu.edu.ph", "vpaf", "Active", "Rosario Villanueva", "University-office sub-admin"],
-  ["osas@parsu.edu.ph", "osas", "Active", "Cristina Bautista", "Student-domain sub-admin"],
+  ["osas@parsu.edu.ph", "osas", "Active", "Cristina Bautista", "Student-domain sub-admin; Office.headUserRef for OSAS"],
 ];
 
 title("ParSU e-Feedback");
@@ -199,10 +209,11 @@ subtitle(`Role Capabilities and Seed Accounts | Generated ${new Date().toLocaleD
 h1("Login Notes");
 bullets([
   "All seeded test accounts use the password ParSU_test2026.",
-  "The seed route creates 53 users: 18 named base users plus 35 generated active students.",
+  "The seed route creates 63 users: 28 named base users plus 35 generated active students.",
   "QA is not a separate application role in the current implementation; qa@parsu.edu.ph is an office_staff account assigned to the Quality Assurance Office.",
   "Administrator is unrestricted. VPAA, VPAF, and OSAS use the admin area but are data-scoped by backend guards.",
-  "Every seeded college and university office has at least one active office_staff login and an assigned office head/dean.",
+  "Office Head authority is Office.headUserRef, not a separate software role: every seeded college and university office now has one distinct head account plus at least one ordinary (non-head) office_staff account, so head-only actions (Assign Staff, Change Assignee, Reassign Office) can be tested against a real non-head staff member in every office. The Registrar has two ordinary staff accounts.",
+  "OSAS is the one office whose head is not an office_staff account: osas@parsu.edu.ph (role osas) is Office.headUserRef for OSAS, per BR — VPAA/VPAF/OSAS retain their own software role even while acting as an office head.",
 ]);
 
 h1("Role Summary");
@@ -285,20 +296,21 @@ p("Use these accounts after running the development seed endpoint. Unless marked
 table(["Email", "Role", "Status", "Name", "Office / Scope"], accountRows, [148, 78, 50, 94, 145]);
 
 h1("Office Staff Routing Accounts");
+p("\"Head\" is the account referenced by Office.headUserRef for that office (only a head can Assign Staff, Change Assignee, or Reassign Office). \"Staff\" lists the ordinary, non-head office_staff accounts.");
 table(
-  ["Office / head", "Routing categories", "Staff accounts"],
+  ["Office / head", "Routing categories", "Staff accounts (non-head)"],
   [
-    ["CECS | Head: Noel Aguilar", "Faculty & Teaching Performance", "staff5@parsu.edu.ph"],
-    ["CED | Head: Andrea Castillo", "Faculty & Teaching Performance - College of Education", "dean.ced@parsu.edu.ph"],
-    ["CBM | Head: Christian Mendoza", "Faculty & Teaching Performance - College of Business & Management", "dean.cbm@parsu.edu.ph"],
-    ["COS | Head: Rosa Navarro", "Faculty & Teaching Performance - College of Science", "dean.cos@parsu.edu.ph"],
-    ["CAH | Head: Katrina Ocampo", "Faculty & Teaching Performance - College of Arts and Humanities", "dean.cah@parsu.edu.ph"],
-    ["OUR | Head: Maria Santos", "Grade Concern; Document Request Delays; Staff Service & Responsiveness; Administrative Process Concerns", "staff@parsu.edu.ph, staff3@parsu.edu.ph"],
-    ["OSAS | Head: Pedro Penduko", "Campus Safety & Security; Student Services & Assistance; Health & Medical Services; Scholarships & Financial Assistance", "staff2@parsu.edu.ph"],
-    ["OVPAA | Head: Carlos Mercado", "Curriculum & Class Scheduling; Academic Advising & Consultation; Library Services & Resources", "staff6@parsu.edu.ph"],
-    ["OVPAF | Head: Bea Salonga", "Student Payment & Cashier Concerns", "staff7@parsu.edu.ph"],
-    ["GSO | Head: Liza Domingo", "Classroom & Laboratory Facilities; Restroom & Sanitation; Campus Wi-Fi & IT Infrastructure", "staff4@parsu.edu.ph"],
-    ["QAO | Head: Elena Reyes", "No direct routing category; quality-assurance staff account", "qa@parsu.edu.ph"],
+    ["CECS | Head: Noel Aguilar (staff5@)", "Faculty & Teaching Performance", "staff8@parsu.edu.ph"],
+    ["CED | Head: Andrea Castillo (dean.ced@)", "Faculty & Teaching Performance - College of Education", "staff9@parsu.edu.ph"],
+    ["CBM | Head: Christian Mendoza (dean.cbm@)", "Faculty & Teaching Performance - College of Business & Management", "staff10@parsu.edu.ph"],
+    ["COS | Head: Rosa Navarro (dean.cos@)", "Faculty & Teaching Performance - College of Science", "staff11@parsu.edu.ph"],
+    ["CAH | Head: Katrina Ocampo (dean.cah@)", "Faculty & Teaching Performance - College of Arts and Humanities", "staff12@parsu.edu.ph"],
+    ["OUR | Head: Maria Santos (staff@)", "Grade Concern; Document Request Delays; Staff Service & Responsiveness; Administrative Process Concerns", "staff3@parsu.edu.ph, staff17@parsu.edu.ph"],
+    ["OSAS | Head: Cristina Bautista (osas@, role=osas)", "Campus Safety & Security; Student Services & Assistance; Health & Medical Services; Scholarships & Financial Assistance", "staff2@parsu.edu.ph"],
+    ["OVPAA | Head: Carlos Mercado (staff6@)", "Curriculum & Class Scheduling; Academic Advising & Consultation; Library Services & Resources", "staff13@parsu.edu.ph"],
+    ["OVPAF | Head: Bea Salonga (staff7@)", "Student Payment & Cashier Concerns", "staff14@parsu.edu.ph"],
+    ["GSO | Head: Liza Domingo (staff4@)", "Classroom & Laboratory Facilities; Restroom & Sanitation; Campus Wi-Fi & IT Infrastructure", "staff16@parsu.edu.ph"],
+    ["QAO | Head: Elena Reyes (qa@)", "No direct routing category; quality-assurance staff account", "staff15@parsu.edu.ph"],
   ],
   [150, 235, 130],
 );

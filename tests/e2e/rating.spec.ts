@@ -17,9 +17,9 @@ adminTest.describe("Rating", () => {
         "Automated E2E test complaint for rating verification. Safe to ignore.",
       );
 
-      // BR-067: not resolved yet — no rating UI.
+      // BR-067: not resolved yet — no resolution-choice UI.
       await studentPage.goto(`/student/complaints/${id}`);
-      await expect(studentPage.getByRole("radiogroup", { name: "Rating" })).toHaveCount(0);
+      await expect(studentPage.getByRole("heading", { name: "Resolution Completed" })).toHaveCount(0);
 
       // Advance to resolved.
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
@@ -33,8 +33,14 @@ adminTest.describe("Rating", () => {
       await expect(staffPage.getByText(/status updated to resolved/i)).toBeVisible();
       await staffContext.close();
 
-      // BR-067: now resolved — rating UI appears for the owning student.
+      // BR-067: now resolved — the resolution-choice panel appears for the
+      // owning student, offering both Rate Resolution and Close Without
+      // Rating (rating is optional, not mandatory).
       await studentPage.goto(`/student/complaints/${id}`);
+      await expect(studentPage.getByRole("heading", { name: "Resolution Completed" })).toBeVisible();
+      await expect(studentPage.getByRole("button", { name: "Close Without Rating" })).toBeVisible();
+
+      await studentPage.getByRole("button", { name: "Rate Resolution" }).click();
       const ratingGroup = studentPage.getByRole("radiogroup", { name: "Rating" });
       await expect(ratingGroup).toBeVisible();
 
@@ -71,6 +77,53 @@ adminTest.describe("Rating", () => {
       });
       expect(otherRateRes.status()).toBe(403);
       await otherContext.close();
+    },
+  );
+
+  adminTest(
+    "resolved complaint can be closed without a rating, leaving rating null",
+    async ({ browser }) => {
+      const studentContext = await browser.newContext({
+        storageState: "tests/e2e/.auth/student.json",
+      });
+      const studentPage = await studentContext.newPage();
+      const { id } = await submitComplaint(
+        studentPage,
+        "Grade Concern",
+        `E2E close-without-rating ${Date.now()}`,
+        "Automated E2E test complaint for close-without-rating verification.",
+      );
+
+      const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
+      const staffPage = await staffContext.newPage();
+      await staffPage.goto(`/staff/complaints/${id}`);
+      await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
+      await expect(staffPage.getByRole("combobox")).toBeVisible({ timeout: 30_000 });
+      await staffPage.getByRole("combobox").click();
+      await staffPage.getByRole("option", { name: "Resolved", exact: true }).click();
+      await staffPage.getByRole("button", { name: "Update Status" }).click();
+      await expect(staffPage.getByText(/status updated to resolved/i)).toBeVisible();
+      // Staff has no manual "closed" option once resolved.
+      await staffPage.reload();
+      await expect(staffPage.getByRole("combobox")).toHaveCount(0);
+      await staffContext.close();
+
+      await studentPage.goto(`/student/complaints/${id}`);
+      await studentPage.getByRole("button", { name: "Close Without Rating" }).click();
+      await expect(studentPage.getByText("Close this complaint without submitting a rating?")).toBeVisible();
+      await studentPage.getByRole("button", { name: "Close Complaint" }).click();
+      await expect(studentPage.getByText("Complaint closed.")).toBeVisible();
+
+      await studentPage.reload();
+      await expect(studentPage.getByRole("heading", { name: "Complaint Closed" })).toBeVisible();
+      await expect(studentPage.getByText("You closed this complaint without submitting a rating.")).toBeVisible();
+      await expect(studentPage.getByText("Your rating")).toHaveCount(0);
+
+      const rateAfterCloseRes = await studentPage.request.post(`/api/complaints/${id}/rate`, {
+        data: { studentRating: 5 },
+      });
+      expect(rateAfterCloseRes.status()).toBe(400);
+      await studentContext.close();
     },
   );
 });

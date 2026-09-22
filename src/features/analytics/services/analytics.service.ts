@@ -44,6 +44,12 @@ export interface AnalyticsSummary {
   slaComplianceRate: number;
   byStatus: Array<{ status: string; volume: number }>;
   officePerformance: SlaComplianceByOfficePoint[];
+  // Rating is optional (a closed complaint may have closureType "rated" or
+  // "without_rating") — averageRating is computed only from actually rated
+  // closures, never defaulting unrated ones to 0.
+  ratedClosures: number;
+  closedWithoutRating: number;
+  averageRating: number | null;
 }
 
 function roundHours(ms: number) {
@@ -55,7 +61,7 @@ export async function getAnalyticsSummary(
 ): Promise<AnalyticsSummary> {
   const match = { isArchived: false, ...scopeMatch };
 
-  const [complaints, byStatus, officePerformance] = await Promise.all([
+  const [complaints, byStatus, officePerformance, closureStats] = await Promise.all([
     Complaint.find(match)
       .select("_id submittedAt resolvedAt slaResolutionDueAt status isOverdue")
       .lean(),
@@ -65,7 +71,14 @@ export async function getAnalyticsSummary(
       { $sort: { _id: 1 } },
     ]),
     getSlaComplianceByOffice(scopeMatch),
+    Complaint.aggregate([
+      { $match: { ...match, closureType: { $ne: null } } },
+      { $group: { _id: "$closureType", volume: { $sum: 1 }, avgRating: { $avg: "$studentRating" } } },
+    ]),
   ]);
+
+  const ratedRow = closureStats.find((row: any) => row._id === "rated");
+  const withoutRatingRow = closureStats.find((row: any) => row._id === "without_rating");
 
   const totalComplaints = complaints.length;
   const resolved = complaints.filter((c: any) => c.status === "resolved" || c.status === "closed");
@@ -121,6 +134,9 @@ export async function getAnalyticsSummary(
     slaComplianceRate: resolved.length ? Math.round((compliantResolved / resolved.length) * 100) : 0,
     byStatus: byStatus.map((row: any) => ({ status: row._id, volume: row.volume })),
     officePerformance,
+    ratedClosures: ratedRow?.volume ?? 0,
+    closedWithoutRating: withoutRatingRow?.volume ?? 0,
+    averageRating: ratedRow?.avgRating != null ? Math.round(ratedRow.avgRating * 10) / 10 : null,
   };
 }
 

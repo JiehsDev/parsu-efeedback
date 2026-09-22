@@ -95,14 +95,14 @@ export function AssignmentDialog({
   );
 
   useEffect(() => {
-    if (!isOpen || !selectedOfficeId) return;
+    if (!isOpen || !selectedOfficeId || action === "escalate") return;
     setLoadingStaff(true);
     fetch(`/api/offices/${selectedOfficeId}/staff`)
       .then((res) => (res.ok ? res.json() : { staff: [] }))
       .then((data) => setStaff(data.staff ?? []))
       .catch(() => setStaff([]))
       .finally(() => setLoadingStaff(false));
-  }, [isOpen, selectedOfficeId]);
+  }, [action, isOpen, selectedOfficeId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -217,69 +217,56 @@ export function AssignmentDialog({
               </p>
             </div>
 
-            <FormField
-              label="Destination office"
-              hint={
-                action === "escalate"
-                  ? "The destination is computed from the escalation hierarchy."
-                  : !canChangeOffice
-                    ? "Office staff may only assign within their own office."
-                    : undefined
-              }
-            >
-              <Select
-                value={selectedOfficeId}
-                onValueChange={(value) => {
-                  setSelectedOfficeId(value);
-                  setSelectedStaffId(OFFICE_LEVEL);
-                }}
-                disabled={!canChangeOffice || action === "escalate"}
+            {(canChangeOffice || action === "escalate") && (
+              <FormField
+                label="Destination office"
+                hint={action === "escalate" ? "The destination is computed from the escalation hierarchy." : undefined}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select office" />
-                </SelectTrigger>
-                <SelectContent>
-                  {offices.map((office) => (
-                    <SelectItem key={office._id} value={office._id}>
-                      {office.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
+                <Select
+                  value={selectedOfficeId}
+                  onValueChange={(value) => {
+                    setSelectedOfficeId(value);
+                    setSelectedStaffId(OFFICE_LEVEL);
+                  }}
+                  disabled={!canChangeOffice || action === "escalate"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select office" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {offices.map((office) => (
+                      <SelectItem key={office._id} value={office._id}>
+                        {office.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
 
-            <FormField
-              label={action === "escalate" ? "Next escalation authority" : "Assigned staff"}
-              hint={
-                action === "escalate"
-                  ? "The configured office head receives the complaint."
-                  : "Leave at office level if no individual owner is selected."
-              }
-            >
-              <Select
-                value={selectedStaffId}
-                onValueChange={setSelectedStaffId}
-                disabled={action === "escalate"}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Office level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={OFFICE_LEVEL}>Office level / unassigned</SelectItem>
-                  {staff.map((member) => (
-                    <SelectItem key={member._id} value={member._id}>
-                      {member.firstName} {member.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {loadingStaff && (
-                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Loading staff...
-                </p>
-              )}
-            </FormField>
+            {action !== "escalate" && (
+              <FormField label="Assigned staff" hint="Leave at office level if no individual owner is selected.">
+                <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Office level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={OFFICE_LEVEL}>Office level / unassigned</SelectItem>
+                    {staff.map((member) => (
+                      <SelectItem key={member._id} value={member._id}>
+                        {member.firstName} {member.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {loadingStaff && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Loading staff...
+                  </p>
+                )}
+              </FormField>
+            )}
 
             <FormField
               label={

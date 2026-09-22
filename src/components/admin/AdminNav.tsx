@@ -36,6 +36,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 const PRIMARY_NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/admin/complaints", label: "Complaints", icon: Inbox },
+  { href: "/admin/archive-requests", label: "Archive Requests", icon: Archive },
   { href: "/admin/complaints?archived=1", label: "Archived Complaints", icon: Archive },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart },
   { href: "/admin/users", label: "Users", icon: Users },
@@ -81,6 +82,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   const workspaceLabel = isScopedSubAdmin ? `ParSU ${roleLabel}` : "ParSU Admin";
   const primaryItems = PRIMARY_NAV_ITEMS.filter((item) => !item.hideFor?.includes(role));
   const [unreadCount, setUnreadCount] = useState(0);
+  const [archiveRequestCount, setArchiveRequestCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +91,13 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
       .then((res) => res.json())
       .then((data) => setUnreadCount(data.unreadCount ?? 0))
       .catch(() => setUnreadCount(0));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/archive-requests")
+      .then((res) => res.ok ? res.json() : { requests: [] })
+      .then((data) => setArchiveRequestCount(Array.isArray(data.requests) ? data.requests.length : 0))
+      .catch(() => setArchiveRequestCount(0));
   }, []);
 
   useEffect(() => {
@@ -107,7 +116,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   function renderItem(item: (typeof PRIMARY_NAV_ITEMS)[number]) {
     const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
     return (
-      <Link
+        <Link
         key={item.href}
         href={item.href}
         title={item.label}
@@ -135,7 +144,11 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
       </Link>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
-        {primaryItems.map(renderItem)}
+        {primaryItems.map((item) => {
+          const rendered = renderItem(item);
+          if (item.href !== "/admin/archive-requests" || archiveRequestCount === 0) return rendered;
+          return <div key={item.href} className="relative">{rendered}<span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-white lg:right-3">{archiveRequestCount > 99 ? "99+" : archiveRequestCount}</span></div>;
+        })}
 
         {/* Categories/Routing/SLA Rules/Announcements/Audit Logs/Settings
             stay administrator-only — not shown to any scoped sub-admin. */}

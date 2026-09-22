@@ -16,6 +16,7 @@ import {
   notifyComplaintResolved,
 } from "@/features/notifications/services/notification.service";
 import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
+import { isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
 
 async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
   const { role, id, officeRef } = session.user;
@@ -25,7 +26,8 @@ async function canAccessComplaint(session: any, complaint: any): Promise<boolean
   // QA-style read access, scoped to each sub-admin's own category — the
   // PATCH handler below separately blocks these roles from ever reaching
   // the mutation path.
-  if (role === "vpaa" || role === "vpaf" || role === "osas") {
+  if (role === "osas") return isComplaintInOsasActionScope(complaint);
+  if (role === "vpaa" || role === "vpaf") {
     return isComplaintInAdminScope(getAdminScope(role), complaint);
   }
   return false;
@@ -47,10 +49,24 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const timeline = await ComplaintTimeline.find({ complaintRef: id })
     .sort({ createdAt: 1 })
-    .populate("actorRef", "firstName lastName role")
+    .populate("actorRef", "firstName lastName role employeeOrStudentId")
     .lean();
 
-  return NextResponse.json({ complaint, timeline });
+  const safeTimeline = session.user.role === "student"
+    ? timeline
+    : timeline.map((event: any) => {
+        if (event.actorRef?.role !== "student") return event;
+        return {
+          ...event,
+          actorRef: {
+            _id: event.actorRef._id,
+            role: "student",
+            employeeOrStudentId: event.actorRef.employeeOrStudentId ?? null,
+          },
+        };
+      });
+
+  return NextResponse.json({ complaint, timeline: safeTimeline });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -144,10 +160,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // read access below, scoped to their own category) — day-to-day status
   // changes stay staff's job; vpaa/vpaf's own mutation power is limited to
   // reassignment/escalation via /api/complaints/[id]/assign.
-  if (["vpaa", "vpaf", "osas"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const parsed = updateComplaintStatusSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -210,7 +222,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await writeAuditLog({
     actorId: session.user.id,
-    action: "complaint.status_change",
+    action: toStatus === "resolved" ? "COMPLAINT_RESOLVED" : "complaint.status_change",
     entityType: "Complaint",
     entityId: complaint._id,
     beforeState: { status: fromStatus },

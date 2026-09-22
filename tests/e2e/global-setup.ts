@@ -3,9 +3,11 @@
 // Runs once before the whole Playwright run (wired via playwright.config.ts
 // `globalSetup`). Hits the dev-only seed endpoint (src/app/api/dev/seed/
 // route.ts) so every spec runs against a known, freshly-reset data set:
-// known accounts (student@parsu.edu.ph, staff@parsu.edu.ph..staff5, dean@,
-// qa@, admin@, inactive@ — all password ParSU_test2026), colleges/offices,
-// 13 submittable categories, 300 complaints, 24 feedback rows.
+// known accounts (student@parsu.edu.ph, staff@parsu.edu.ph..staff17, dean@,
+// qa@, admin@, inactive@ — all password ParSU_test2026; every office has
+// both a head and at least one ordinary staff account), colleges/offices,
+// 13 submittable categories, 300 complaints, 24 feedback rows, plus a few
+// seeded InformationRequest/ArchiveRequest rows so those states aren't empty.
 //
 // The seed route unconditionally clears every collection first, so this
 // must run exactly once per suite run, before any spec (including

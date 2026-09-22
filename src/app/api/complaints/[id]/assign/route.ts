@@ -77,6 +77,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { assignedOfficeRef, assignedStaffRef, action } = parsed.data;
   const isEscalationAction = action === "escalate";
 
+  // Office reassignment now goes exclusively through the dedicated
+  // Office-Head-only, lateral-eligibility-checked endpoint
+  // (POST /api/complaints/[id]/reassign-office) — this route no longer
+  // changes assignedOfficeRef for anyone (role-based reassignment here had
+  // no Office.headUserRef check at all, which the final rule requires).
+  // Escalation (action:"escalate") is untouched — a separate mechanism
+  // with its own server-computed target.
+  if (
+    !isEscalationAction &&
+    assignedOfficeRef !== undefined &&
+    assignedOfficeRef !== String(complaint.assignedOfficeRef ?? "")
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Office reassignment now goes through the dedicated Reassign Office action, available to the office head.",
+      },
+      { status: 400 },
+    );
+  }
+
   // --- Scope checks per role ---
 
   if (role === "office_staff") {
@@ -94,6 +115,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         { error: "Staff cannot reassign complaints to a different office" },
         { status: 403 },
       );
+    }
+    if (action !== "escalate") {
+      const office = await Office.findById(complaint.assignedOfficeRef).select("headUserRef").lean();
+      const isHead = String((office as any)?.headUserRef ?? "") === userId;
+      if (!isHead && action !== undefined) {
+        return NextResponse.json({ error: "Ordinary staff may only use the pickup action." }, { status: 403 });
+      }
+      if (!isHead && String(assignedStaffRef ?? "") !== userId) {
+        return NextResponse.json({ error: "Only the office head can assign a complaint to another staff member. You can pick up complaints for yourself." }, { status: 403 });
+      }
     }
     // Any staff target must belong to the same office
     if (assignedStaffRef) {

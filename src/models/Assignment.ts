@@ -31,7 +31,10 @@ const assignmentSchema = new Schema(
     reason: { type: String, default: "", trim: true },
     actionType: {
       type: String,
-      enum: ["assign", "reassign", "manual_escalation", "sla_escalation"],
+      // "office_reassignment": the Office-Head-only lateral transfer to
+      // another office of the same/equivalent organizational level —
+      // distinct from "manual_escalation" (upward, to a higher authority).
+      enum: ["assign", "reassign", "manual_escalation", "sla_escalation", "office_reassignment"],
       default: "assign",
     },
   },

@@ -79,6 +79,27 @@ export const archiveRequestSchema = z.object({
   }
 });
 
+export const REASSIGN_OFFICE_REASON_CODES = [
+  "incorrect_initial_routing",
+  "belongs_to_another_office",
+  "another_units_responsibility",
+  "requires_specialized_handling",
+  "administrative_transfer",
+  "other",
+] as const;
+
+export const reassignOfficeSchema = z
+  .object({
+    destinationOfficeRef: z.string().min(1, "Select a destination office."),
+    reasonCode: z.enum(REASSIGN_OFFICE_REASON_CODES).default("other"),
+    reasonText: z.string().trim().max(2000).optional().default(""),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.reasonText && value.reasonCode === "other") {
+      ctx.addIssue({ code: "custom", path: ["reasonText"], message: "An explanation is required for Other." });
+    }
+  });
+
 export const archiveDecisionSchema = z.object({
   action: z.enum(["approve", "reject"]),
   rejectionReason: z.string().trim().max(2000).optional().default(""),
