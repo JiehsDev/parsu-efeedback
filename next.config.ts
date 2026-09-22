@@ -10,5 +10,8 @@ const nextConfig: NextConfig = {
   // node_modules instead, where its real file layout is intact.
   serverExternalPackages: ["pdfkit"],
 };
+module.exports = {
+  allowedDevOrigins: ['192.168.1.10'],
+}
 
 export default nextConfig;
