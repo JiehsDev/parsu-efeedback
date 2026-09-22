@@ -90,20 +90,20 @@ describe("Complaint↔student relationship — BR-038/039", () => {
   });
 });
 
-describe("Closed complaints not student-editable — BR-042", () => {
+describe("Closed complaints are final — BR-042", () => {
   // BR-101 (added later) lets the submitting student edit/withdraw their
   // own complaint via PATCH /api/complaints/[id], but only while it's
   // still "submitted" — the route itself enforces that cutoff (an E2E
   // concern, see tests/e2e/edit-withdraw-complaint.spec.ts). Here we only
   // confirm the underlying lifecycle rule a "closed" complaint is bound
   // by: it accepts no direct edits, only a reopen transition.
-  it("BR-042: a closed complaint's only valid transition is reopening (in_progress)", async () => {
+  it("BR-042: a closed complaint has no normal status transitions", async () => {
     const complaint = await baseComplaint({ status: "closed", closedAt: new Date() });
     expect(complaint.status).toBe("closed");
 
     // Reflects ALLOWED_TRANSITIONS.closed in status-transitions.service.ts
-    const allowedFromClosed = ["in_progress"];
-    expect(allowedFromClosed).toEqual(["in_progress"]);
+    const allowedFromClosed: string[] = [];
+    expect(allowedFromClosed).toEqual([]);
   });
 });
 

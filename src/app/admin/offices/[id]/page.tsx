@@ -49,7 +49,7 @@ export default async function AdminOfficeDetailPage({
 
   const [parentOffice, headUser, rawMembers] = await Promise.all([
     o.parentOffice ? Office.findById(o.parentOffice).select("name code").lean() : null,
-    o.headUserRef ? User.findById(o.headUserRef).select("firstName lastName email isActive").lean() : null,
+    o.headUserRef ? User.findById(o.headUserRef).select("firstName lastName email role isActive").lean() : null,
     User.find({ officeRef: id, role: { $ne: "student" } })
       .select("firstName lastName email role isActive")
       .lean(),
@@ -72,6 +72,7 @@ export default async function AdminOfficeDetailPage({
       firstName: m.firstName,
       lastName: m.lastName,
       email: m.email,
+      role: m.role,
       isActive: m.isActive,
     }));
 
@@ -177,6 +178,11 @@ export default async function AdminOfficeDetailPage({
                   {(headUser as any).email} · {(headUser as any).isActive ? "Active" : "Inactive"}
                 </dd>
               )}
+              {headUser && (
+                <dd className="mt-1 text-xs font-medium text-[var(--primary)]">
+                  Role: {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[(headUser as any).role] ?? (headUser as any).role}
+                </dd>
+              )}
             </div>
           </dl>
           {isAdministrator && (
@@ -221,7 +227,7 @@ export default async function AdminOfficeDetailPage({
                           {m.firstName} {m.lastName}
                         </span>
                         <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-                          {m.role.replace("_", " ")}
+                          {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[m.role] ?? m.role}
                         </span>
                         {String(m._id) === String(o.headUserRef) && (
                           <span className="shrink-0 rounded-full bg-[var(--primary)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">

@@ -33,6 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
 
   if (!(await canAccessComplaint(session, complaint))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -28,11 +28,6 @@ adminTest.describe("Rating", () => {
       await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
       await expect(staffPage.getByRole("combobox")).toBeVisible({ timeout: 30_000 });
       await staffPage.getByRole("combobox").click();
-      await staffPage.getByRole("option", { name: "In Progress", exact: true }).click();
-      await staffPage.getByRole("button", { name: "Update Status" }).click();
-      await expect(staffPage.getByText(/status updated to in progress/i)).toBeVisible();
-
-      await staffPage.getByRole("combobox").click();
       await staffPage.getByRole("option", { name: "Resolved", exact: true }).click();
       await staffPage.getByRole("button", { name: "Update Status" }).click();
       await expect(staffPage.getByText(/status updated to resolved/i)).toBeVisible();
@@ -57,7 +52,7 @@ adminTest.describe("Rating", () => {
       const resubmitRes = await studentPage.request.post(`/api/complaints/${id}/rate`, {
         data: { studentRating: 3, studentRatingComment: "should be rejected" },
       });
-      expect(resubmitRes.status()).toBe(409);
+      expect(resubmitRes.status()).toBe(400);
       await studentContext.close();
 
       // BR-069: a non-owning student can neither view the page nor rate via the API.

@@ -9,7 +9,7 @@ export default function Loading() {
       <Skeleton className="h-6 w-40" />
 
       <div className="grid grid-cols-2 gap-1.5 sm:hidden">
-        {Array.from({ length: 7 }).map((_, i) => (
+        {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
             className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-1.5 py-2.5"
@@ -21,7 +21,7 @@ export default function Loading() {
       </div>
 
       <div className="hidden gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 7 }).map((_, i) => (
+        {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
             className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
@@ -81,7 +81,7 @@ export default function Loading() {
         </div>
       </div>
 
-      {/* SLA HEATMAP · LINE CHART (wide) · BAR */}
+      {/* OFFICE PERFORMANCE · LINE CHART (wide) */}
       <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className={CARD}>
           <Skeleton className="h-2.5 w-20" />
@@ -92,19 +92,21 @@ export default function Loading() {
           </div>
         </div>
 
-        <div className={`${CARD} xl:col-span-2`}>
+        <div className={`${CARD} xl:col-span-3`}>
           <Skeleton className="h-2.5 w-24" />
           <Skeleton className="mt-3 h-[220px] w-full rounded-lg sm:h-[260px]" />
         </div>
 
         <div className={CARD}>
-          <Skeleton className="h-2.5 w-20" />
-          <div className="mt-3 space-y-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Skeleton className="h-2.5 w-[76px] shrink-0" />
-                <Skeleton className="h-[7px] flex-1" />
-                <Skeleton className="h-2.5 w-6 shrink-0" />
+          <Skeleton className="h-2.5 w-32" />
+          <div className="mt-3 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-2.5 w-24" />
+                  <Skeleton className="h-2.5 w-14" />
+                </div>
+                <Skeleton className="h-1 w-full" />
               </div>
             ))}
           </div>

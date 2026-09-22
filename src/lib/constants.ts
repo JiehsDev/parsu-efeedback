@@ -79,6 +79,11 @@ export const TIMELINE_EVENT_TYPES = [
   "withdrawn", // BR-101
   "information_requested",
   "information_submitted",
+  "archive_requested",
+  "archive_approved",
+  "archive_rejected",
+  "archived",
+  "restored",
 ] as const;
 export type TimelineEventType = (typeof TIMELINE_EVENT_TYPES)[number];
 
@@ -92,6 +97,9 @@ export const NOTIFICATION_TYPES = [
   "complaint_resolved",
   "report_generated",
   "system_announcement",
+  "archive_request",
+  "archive_decision",
+  "complaint_restored",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

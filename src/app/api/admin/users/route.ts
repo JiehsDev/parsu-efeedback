@@ -9,6 +9,19 @@ import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { userFilterForScope } from "@/lib/admin-scope";
 
+const SCOPED_ROLE_OFFICE_CODES = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" } as const;
+
+async function validateRoleOffice(role: string, officeRef: string | null | undefined) {
+  if (!["vpaa", "vpaf", "osas"].includes(role)) return null;
+  if (!officeRef) return "A scoped administrator must belong to its corresponding office";
+  const office = await Office.findById(officeRef).select("code").lean();
+  const expected = SCOPED_ROLE_OFFICE_CODES[role as keyof typeof SCOPED_ROLE_OFFICE_CODES];
+  if (!office || (office as any).code !== expected) {
+    return `${role.toUpperCase()} must belong to the ${expected} office`;
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireScopedAdmin();
   if (guard.error) return guard.error;
@@ -41,7 +54,18 @@ export async function GET(req: NextRequest) {
     User.countDocuments(filter),
   ]);
 
-  return NextResponse.json({ users, total, page, limit });
+  const headOffices = await Office.find({ headUserRef: { $in: users.map((user: any) => user._id) } })
+    .select("_id name headUserRef")
+    .lean();
+  const headByUser = new Map(
+    headOffices.map((office: any) => [String(office.headUserRef), { _id: String(office._id), name: office.name }]),
+  );
+  const usersWithHeadStatus = users.map((user: any) => ({
+    ...user,
+    officeHead: headByUser.get(String(user._id)) ?? null,
+  }));
+
+  return NextResponse.json({ users: usersWithHeadStatus, total, page, limit });
 }
 
 export async function POST(req: NextRequest) {
@@ -84,6 +108,9 @@ export async function POST(req: NextRequest) {
       );
     }
   }
+
+  const roleOfficeError = await validateRoleOffice(rest.role, rest.officeRef);
+  if (roleOfficeError) return NextResponse.json({ error: roleOfficeError }, { status: 400 });
 
   const existing = await User.findOne({
     $or: [{ email: rest.email }, { employeeOrStudentId: rest.employeeOrStudentId }],

@@ -15,8 +15,8 @@ export const ALLOWED_TRANSITIONS_CLIENT: Record<ComplaintStatus, ComplaintStatus
   in_progress: ["escalated", "resolved"],
   pending_information: ["in_progress"],
   escalated: ["in_progress", "assigned"],
-  resolved: ["closed", "in_progress"],
-  closed: ["in_progress"],
+  resolved: [],
+  closed: [],
   withdrawn: [],
 };
 

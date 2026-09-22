@@ -3,7 +3,11 @@ import { User } from "@/models/User";
 import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
-const HEAD_ELIGIBLE_ROLES = new Set(["office_staff", "administrator", "vpaa", "vpaf", "osas"]);
+export const HEAD_ELIGIBLE_ROLES = new Set(["office_staff", "vpaa", "vpaf", "osas"]);
+
+export function isEligibleOfficeHeadRole(role: string): boolean {
+  return HEAD_ELIGIBLE_ROLES.has(role);
+}
 
 export async function validateOfficeHeadCandidate(officeId: string, userId: string) {
   const [office, user] = await Promise.all([
@@ -20,6 +24,17 @@ export async function validateOfficeHeadCandidate(officeId: string, userId: stri
   }
   if (String((user as any).officeRef ?? "") !== officeId) {
     return { error: "Office head must belong to this office", status: 400 as const };
+  }
+
+  const otherOffice = await Office.findOne({
+    _id: { $ne: officeId },
+    headUserRef: userId,
+  }).select("name").lean();
+  if (otherOffice) {
+    return {
+      error: `This user is already head of ${(otherOffice as any).name}`,
+      status: 409 as const,
+    };
   }
 
   return { office, user };

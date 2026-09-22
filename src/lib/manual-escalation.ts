@@ -74,8 +74,13 @@ export async function resolveManualEscalationTarget(
 
   const headId = (targetOffice as any).headUserRef;
   if (!headId) return null;
-  const staff = await User.findOne({ _id: headId, role: "office_staff", isActive: true })
-    .select("_id firstName lastName email officeRef")
+  const staff = await User.findOne({
+    _id: headId,
+    isActive: true,
+    officeRef: (targetOffice as any)._id,
+    role: { $in: ["office_staff", "vpaa", "vpaf", "osas"] },
+  })
+    .select("_id firstName lastName email role officeRef")
     .lean();
   if (!staff) return null;
 

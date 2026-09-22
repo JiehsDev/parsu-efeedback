@@ -43,7 +43,8 @@ export function FieldError({ id, message }: { id: string; message?: string | nul
 export const invalidControlClass =
   "aria-[invalid=true]:border-[var(--destructive)] aria-[invalid=true]:focus:border-[var(--destructive)] aria-[invalid=true]:focus:ring-[var(--destructive)]";
 
-export function focusFirstInvalid(form: Element) {
+export function focusFirstInvalid(form: Element | null | undefined) {
+  if (!form) return;
   const first = form.querySelector<HTMLElement>('[aria-invalid="true"]');
   first?.scrollIntoView({ behavior: "smooth", block: "center" });
   first?.focus({ preventScroll: true });

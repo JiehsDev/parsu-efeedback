@@ -33,8 +33,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
+  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
   if (!(await canRequestInformation(session, complaint)))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (complaint.status === "resolved" || complaint.status === "closed") {
+    return NextResponse.json(
+      { error: "Resolved and closed complaints are read-only. Reopen the complaint before requesting information." },
+      { status: 400 },
+    );
+  }
   if (complaint.status !== "in_progress") {
     return NextResponse.json(
       { error: "Additional information can only be requested from an in-progress complaint." },

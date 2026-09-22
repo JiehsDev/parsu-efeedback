@@ -9,6 +9,19 @@ import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import type { AdminScope } from "@/lib/admin-scope";
 
+const SCOPED_ROLE_OFFICE_CODES = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" } as const;
+
+async function validateRoleOffice(role: string, officeRef: unknown) {
+  if (!["vpaa", "vpaf", "osas"].includes(role)) return null;
+  if (!officeRef) return "A scoped administrator must belong to its corresponding office";
+  const office = await Office.findById(officeRef).select("code").lean();
+  const expected = SCOPED_ROLE_OFFICE_CODES[role as keyof typeof SCOPED_ROLE_OFFICE_CODES];
+  if (!office || (office as any).code !== expected) {
+    return `${role.toUpperCase()} must belong to the ${expected} office`;
+  }
+  return null;
+}
+
 // vpaa/vpaf may only touch office_staff users already in their
 // own office category; osas may only touch students; administrator is
 // unrestricted. Used both to gate access to an existing user and to
@@ -100,6 +113,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   ) {
     await Office.updateMany({ headUserRef: id }, { $set: { headUserRef: null } });
   }
+
+  const effectiveRole = parsed.data.role ?? (before as any).role;
+  const effectiveOfficeRef = parsed.data.officeRef !== undefined
+    ? parsed.data.officeRef
+    : (before as any).officeRef;
+  const roleOfficeError = await validateRoleOffice(effectiveRole, effectiveOfficeRef);
+  if (roleOfficeError) return NextResponse.json({ error: roleOfficeError }, { status: 400 });
 
   const isForceLogoutOnly = forceLogout && !password && Object.keys(rest).length === 0;
 

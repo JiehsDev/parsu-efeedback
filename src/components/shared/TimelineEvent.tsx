@@ -25,7 +25,12 @@ export function TimelineEvent({ event }: { event: any }) {
   const actorName = actor
     ? `${actor.firstName ?? ""} ${actor.lastName ?? ""}`.trim()
     : "System";
-  const eventLabel = EVENT_LABELS[event.eventType] ?? formatEnumLabel(event.eventType);
+  const eventLabel =
+    event.eventType === "assigned" && event.toValue === "in_progress"
+      ? "Complaint picked up"
+      : event.eventType === "closed" && !event.actorRef
+        ? "Complaint closed automatically"
+        : EVENT_LABELS[event.eventType] ?? formatEnumLabel(event.eventType);
   const isStatusValue = ["submitted", "assigned", "in_progress", "pending_information", "escalated", "resolved", "closed", "withdrawn"].includes(event.fromValue) ||
     ["submitted", "assigned", "in_progress", "pending_information", "escalated", "resolved", "closed", "withdrawn"].includes(event.toValue);
   return (

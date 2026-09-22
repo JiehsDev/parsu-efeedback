@@ -25,6 +25,7 @@ interface MemberOption {
   _id: string;
   firstName: string;
   lastName: string;
+  role: string;
 }
 
 type ScopeKind = "all" | "college_office" | "university_office" | "student";
@@ -177,7 +178,7 @@ export function EditOfficeButton({
                 hint={
                   memberOptions.length === 0
                     ? "No staff assigned to this office yet"
-                    : "Only staff already assigned to this office can be head"
+                    : "Only active eligible users already assigned to this office can be head"
                 }
               >
                 <Select
@@ -191,7 +192,7 @@ export function EditOfficeButton({
                     <SelectItem value="">Not assigned</SelectItem>
                     {memberOptions.map((m) => (
                       <SelectItem key={m._id} value={m._id}>
-                        {m.firstName} {m.lastName}
+                        {m.firstName} {m.lastName} · {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[m.role] ?? m.role}
                       </SelectItem>
                     ))}
                   </SelectContent>

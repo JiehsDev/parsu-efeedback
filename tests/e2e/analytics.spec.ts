@@ -18,13 +18,13 @@ adminTest("administrator sees analytics data", async ({ request }) => {
   expect(data.collegeComparison).not.toBeNull();
 });
 
-adminTest("administrator sees resolution summary metrics on the dashboard", async ({ page }) => {
+adminTest("administrator sees the focused dashboard metrics", async ({ page }) => {
   await page.goto("/admin/dashboard");
-  const metrics = page.getByRole("region", { name: "Resolution metrics" });
-  await expect(metrics).toBeVisible();
-  await expect(metrics.getByText("Avg. first response")).toBeVisible();
-  await expect(metrics.getByText("Avg. resolution")).toBeVisible();
-  await expect(metrics.getByText("SLA compliance")).toBeVisible();
+  await expect(page.getByText("Open Complaints").last()).toBeVisible();
+  await expect(page.getByText("Overdue", { exact: true }).last()).toBeVisible();
+  await expect(page.getByText("Unassigned", { exact: true }).last()).toBeVisible();
+  await expect(page.getByText("SLA compliance", { exact: true }).last()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Resolution metrics" })).toHaveCount(0);
 });
 
 staffTest("office staff sees office-scoped response metrics on the dashboard", async ({ page }) => {

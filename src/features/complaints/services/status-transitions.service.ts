@@ -7,13 +7,17 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   // unpicked-up — who may trigger this (student, owner, only from
   // "submitted") is enforced in the route handler, not here; this only
   // says the state-machine edge itself is legal.
-  submitted: ["assigned", "withdrawn"],
+  submitted: ["assigned", "in_progress", "withdrawn"],
   assigned: ["in_progress", "escalated"],
   in_progress: ["pending_information", "escalated", "resolved"],
   pending_information: ["in_progress"],
   escalated: ["in_progress", "assigned"],
-  resolved: ["closed", "in_progress"], // BR-043: reopening
-  closed: ["in_progress"], // BR-043: reopening even after close
+  // Resolved remains open until the student acknowledges it with a rating.
+  // The rating endpoint owns the resolved -> closed transition.
+  resolved: [],
+  // Closed is final for normal workflows. Any future administrative reopen
+  // must be a separately audited action, not a generic status update.
+  closed: [],
   withdrawn: [], // terminal — a withdrawn complaint is not reopened, resubmit instead
 };
 

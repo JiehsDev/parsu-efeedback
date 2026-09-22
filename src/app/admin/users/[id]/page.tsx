@@ -66,7 +66,7 @@ export default async function AdminUserDetailPage({
 
   const isLocked = u.lockedUntil && new Date(u.lockedUntil) > new Date();
 
-  const offices = await Office.find().select("name type").lean();
+  const offices = await Office.find().select("name code type").lean();
   const editableUser = {
     _id: String(u._id),
     firstName: u.firstName,
@@ -79,6 +79,7 @@ export default async function AdminUserDetailPage({
   const officeOptions = offices.map((o: any) => ({
     _id: String(o._id),
     name: o.name,
+    code: o.code,
     type: o.type,
   }));
 

@@ -26,11 +26,13 @@ import { NotesSection } from "@/components/shared/NotesSection";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggle";
+import { ArchiveApprovalPanel } from "@/components/staff/ArchiveApprovalPanel";
 import { StatusUpdateForm } from "@/components/staff/StatusUpdateForm";
 import type { ComplaintStatus } from "@/lib/constants";
 import { getAdminScope, officeFilterForScope } from "@/lib/admin-scope";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
 import { InformationRequest } from "@/models/InformationRequest";
+import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { InformationRequestPanel } from "@/components/staff/InformationRequestPanel";
 import {
   getOsasAllowedDestinationOffices,
@@ -39,6 +41,7 @@ import {
 } from "@/lib/osas-complaint-scope";
 import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
 import { SlaDetails } from "@/components/shared/SlaDetails";
+import { ReopenComplaintButton } from "@/components/shared/ReopenComplaintButton";
 
 const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--muted-foreground)]",
@@ -78,6 +81,7 @@ export default async function AdminComplaintDetailPage({
     osasCanAssign,
     osasEscalationOffice,
     informationRequests,
+    archiveRequests,
     escalationTarget,
   ] = await Promise.all([
     // Student identity is kept out of the admin view — ID + college only,
@@ -107,6 +111,7 @@ export default async function AdminComplaintDetailPage({
     role === "osas" ? isComplaintInOsasActionScope(c) : false,
     role === "osas" ? getOsasEscalationOffice(c) : null,
     InformationRequest.find({ complaintRef: id }).sort({ requestedAt: -1 }).lean(),
+    ArchiveRequest.find({ complaintRef: id }).sort({ createdAt: -1 }).populate("requestedByRef", "firstName lastName role").lean(),
     resolveManualEscalationTarget(c, role),
   ]);
 
@@ -119,6 +124,8 @@ export default async function AdminComplaintDetailPage({
     notFound();
   }
   const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
+  const pendingArchive = JSON.parse(JSON.stringify(archiveRequests)).find((request: any) => request.status === "pending");
+  const isOfficeHead = String((office as any)?.headUserRef ?? "") === session!.user.id;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -148,11 +155,12 @@ export default async function AdminComplaintDetailPage({
             )}
           </div>
         </div>
-        {isAdmin && (
+        {(isAdmin || isOfficeHead) && (
           <ArchiveComplaintToggle
             complaintId={String(c._id)}
             ticketNumber={c.ticketNumber}
             isArchived={c.isArchived}
+            mode={isAdmin ? "admin" : "head"}
           />
         )}
       </div>
@@ -235,13 +243,15 @@ export default async function AdminComplaintDetailPage({
             </dl>
           </div>
 
-          {isAdmin && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
+          {isOfficeHead && pendingArchive && !c.isArchived && <ArchiveApprovalPanel request={pendingArchive} />}
+          {isAdmin && !c.isArchived && !["resolved", "closed"].includes(c.status) && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
+          {isAdmin && !c.isArchived && ["resolved", "closed"].includes(c.status) && <ReopenComplaintButton complaintId={String(c._id)} />}
 
           {(isAdmin ||
             role === "vpaa" ||
             role === "vpaf" ||
             osasCanAssign ||
-            c.status === "pending_information") && (
+            c.status === "pending_information") && !["resolved", "closed"].includes(c.status) && (
             <InformationRequestPanel
               complaintId={String(c._id)}
               status={c.status}
@@ -250,7 +260,7 @@ export default async function AdminComplaintDetailPage({
             />
           )}
 
-          {["administrator", "vpaa", "vpaf"].includes(role) && c.status !== "withdrawn" && (
+          {["administrator", "vpaa", "vpaf"].includes(role) && !["withdrawn", "resolved", "closed"].includes(c.status) && (
             <AssignmentDialog
               complaintId={String(c._id)}
               currentOfficeId={c.assignedOfficeRef ? String(c.assignedOfficeRef) : null}
@@ -270,7 +280,7 @@ export default async function AdminComplaintDetailPage({
             />
           )}
 
-          {role === "osas" && osasCanAssign && c.status !== "withdrawn" && (
+          {role === "osas" && osasCanAssign && !["withdrawn", "resolved", "closed"].includes(c.status) && (
             <>
               <AssignmentDialog
                 complaintId={String(c._id)}

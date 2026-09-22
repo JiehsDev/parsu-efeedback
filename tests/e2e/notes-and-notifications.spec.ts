@@ -64,7 +64,7 @@ adminTest.describe("Notes visibility and notifications", () => {
       await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
       await expect(staffPage.getByRole("combobox")).toBeVisible({ timeout: 30_000 });
       await staffPage.getByRole("combobox").click();
-      await staffPage.getByRole("option", { name: "In Progress", exact: true }).click();
+      await staffPage.getByRole("option", { name: "Resolved", exact: true }).click();
       await staffPage.getByRole("button", { name: "Update Status" }).click();
       await expect(staffPage.getByText(/status updated to/i)).toBeVisible();
       await staffContext.close();
@@ -72,7 +72,7 @@ adminTest.describe("Notes visibility and notifications", () => {
       // BR-071: unread notification shows up for the student.
       await studentPage.goto("/student/notifications");
       await studentPage.getByRole("button", { name: "Unread" }).click();
-      const notificationRow = studentPage.getByText("Complaint status updated").first();
+      const notificationRow = studentPage.getByText("Complaint resolved").first();
       await expect(notificationRow).toBeVisible();
 
       const unreadBefore = await studentPage.request

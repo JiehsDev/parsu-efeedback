@@ -15,11 +15,12 @@ export const createUserSchema = z
     isActive: z.boolean().optional().default(true),
   })
   .superRefine((data, ctx) => {
-    // BR-009: office_staff need officeRef
-    if (data.role === "office_staff" && !data.officeRef) {
+    // Office staff and scoped administrators are attached to one authoritative
+    // office. Their software role remains distinct from the head designation.
+    if (["office_staff", "vpaa", "vpaf", "osas"].includes(data.role) && !data.officeRef) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "officeRef is required for staff roles",
+        message: "officeRef is required for this role",
         path: ["officeRef"],
       });
     }

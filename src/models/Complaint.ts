@@ -84,6 +84,13 @@ const complaintSchema = new Schema(
 
     // BR-045: complaints are never deleted, only archived by an admin
     isArchived: { type: Boolean, required: true, default: false },
+    archivedAt: { type: Date, default: null },
+    archivedByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    archiveReason: { type: String, default: "" },
+    archiveSource: { type: String, enum: ["staff_request_approved", "office_head_direct", "administrator_direct", null], default: null },
+    restoredAt: { type: Date, default: null },
+    restoredByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    restoreReason: { type: String, default: "" },
   },
   { timestamps: true },
 );
@@ -96,6 +103,7 @@ complaintSchema.index({ assignedStaffRef: 1, status: 1 });
 // Used heavily by the hourly SLA cron (Phase 10)
 complaintSchema.index({ status: 1, slaResolutionDueAt: 1 });
 complaintSchema.index({ status: 1, slaResponseDueAt: 1 });
+complaintSchema.index({ isArchived: 1, assignedOfficeRef: 1, createdAt: -1 });
 
 export type ComplaintDocument = InferSchemaType<typeof complaintSchema>;
 export const Complaint: Model<ComplaintDocument> =

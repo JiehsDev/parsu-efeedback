@@ -19,6 +19,12 @@ import {
   getOsasEscalationOffice,
   isComplaintInOsasActionScope,
 } from "@/lib/osas-complaint-scope";
+
+const OFFICE_HEAD_ROLES = new Set(["office_staff", "vpaa", "vpaf", "osas"]);
+
+function isAllowedAssignmentRole(role: unknown, escalation: boolean) {
+  return role === "office_staff" || (escalation && typeof role === "string" && OFFICE_HEAD_ROLES.has(role));
+}
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) {
@@ -51,12 +57,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
 
   // BR-101: a withdrawn complaint is inert — the student pulled it before
   // anyone acted on it, so it must never become assignable/pickable again.
   if (complaint.status === "withdrawn") {
     return NextResponse.json(
       { error: "This complaint was withdrawn by the student and cannot be assigned." },
+      { status: 400 },
+    );
+  }
+  if (complaint.status === "resolved" || complaint.status === "closed") {
+    return NextResponse.json(
+      { error: "Resolved and closed complaints are read-only. Reopen the complaint before reassigning it." },
       { status: 400 },
     );
   }
@@ -87,7 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const targetStaff = await User.findById(assignedStaffRef).lean();
       if (
         !targetStaff ||
-        (targetStaff as any).role !== "office_staff" ||
+        !isAllowedAssignmentRole((targetStaff as any)?.role, isEscalationAction) ||
         String((targetStaff as any).officeRef) !== sessionOfficeRef
       ) {
         return NextResponse.json(
@@ -134,7 +147,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const targetStaff = await User.findById(assignedStaffRef).lean();
       if (
         !targetStaff ||
-        (targetStaff as any).role !== "office_staff" ||
+        !isAllowedAssignmentRole((targetStaff as any)?.role, isEscalationAction) ||
         String((targetStaff as any).officeRef) !== effectiveOfficeRef
       ) {
         return NextResponse.json(
@@ -184,7 +197,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const targetStaff = await User.findById(assignedStaffRef).lean();
       if (
         !targetStaff ||
-        (targetStaff as any).role !== "office_staff" ||
+        !isAllowedAssignmentRole((targetStaff as any)?.role, isEscalationAction) ||
         String((targetStaff as any).officeRef) !== effectiveOfficeRef
       ) {
         return NextResponse.json(
@@ -208,7 +221,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     if (assignedStaffRef) {
       const targetStaff = await User.findById(assignedStaffRef).lean();
-      if (!targetStaff || (targetStaff as any).role !== "office_staff") {
+      if (!targetStaff || !isAllowedAssignmentRole((targetStaff as any).role, isEscalationAction)) {
         return NextResponse.json({ error: "Target staff is invalid" }, { status: 400 });
       }
     }
@@ -237,9 +250,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     complaint.status = "escalated";
   }
 
-  // Auto-advance status on first assignment out of "submitted"
-  if (!isEscalationAction && complaint.status === "submitted") {
-    complaint.status = "assigned";
+  // Picking up a complaint means a staff member has taken ownership. Move it
+  // directly into active processing; office-only routing may remain assigned
+  // until a person actually owns it.
+  const wasPickedUp =
+    !isEscalationAction &&
+    Boolean(complaint.assignedStaffRef) &&
+    (complaint.status === "submitted" || complaint.status === "assigned");
+  if (wasPickedUp) {
+    complaint.status = "in_progress";
   }
 
   await complaint.save();
@@ -248,9 +267,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     complaintRef: complaint._id,
     eventType: isEscalationAction ? "escalated" : officeChanged ? "reassigned" : "assigned",
     actorRef: userId,
-    fromValue: isEscalationAction ? before.status : String(before.assignedOfficeRef ?? ""),
-    toValue: isEscalationAction ? "escalated" : String(complaint.assignedOfficeRef ?? ""),
-    message: parsed.data.message ?? "",
+    fromValue: isEscalationAction ? before.status : wasPickedUp ? before.status : String(before.assignedOfficeRef ?? ""),
+    toValue: isEscalationAction ? "escalated" : wasPickedUp ? "in_progress" : String(complaint.assignedOfficeRef ?? ""),
+    message: wasPickedUp
+      ? "Complaint picked up. Processing started."
+      : parsed.data.message ?? "",
   });
 
   // BR-047/BR-051: every assign/reassign gets its own immutable record
@@ -275,9 +296,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     action:
       role === "osas" && isEscalationAction
         ? "OSAS_COMPLAINT_ESCALATED"
-        : role === "osas"
+      : role === "osas"
           ? "OSAS_COMPLAINT_REASSIGNED"
-          : officeChanged
+      : wasPickedUp
+        ? "COMPLAINT_PICKED_UP"
+        : officeChanged
             ? "complaint.reassign"
             : "complaint.assign",
     entityType: "Complaint",

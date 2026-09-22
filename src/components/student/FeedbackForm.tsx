@@ -48,7 +48,8 @@ export function FeedbackForm() {
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       setError("Please correct the highlighted fields below.");
-      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
+      const formElement = event.currentTarget;
+      requestAnimationFrame(() => focusFirstInvalid(formElement));
       return;
     }
 

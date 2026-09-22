@@ -7,43 +7,24 @@ import { useToast } from "@/components/shared/Toast";
 import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-field";
 
 async function uploadFile(file: File, complaintId: string) {
-  const presign = await fetch("/api/uploads/presign", {
+  const body = new FormData();
+  body.append("file", file);
+  const upload = await fetch(`/api/complaints/${complaintId}/attachments/upload`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      complaintId,
-      fileName: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-    }),
+    body,
   });
-  const presignData = await presign.json();
-  if (!presign.ok)
+  const uploadData = await upload.json().catch(() => ({}));
+  if (!upload.ok)
     throw new Error(
-      typeof presignData.error === "string" ? presignData.error : `Could not prepare ${file.name}`,
+      typeof uploadData.error === "string"
+        ? uploadData.error
+        : `Could not upload ${file.name}`,
     );
-  const upload = await fetch(presignData.uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-  if (!upload.ok) throw new Error(`Upload failed for ${file.name}`);
-  const attach = await fetch(`/api/complaints/${complaintId}/attachments`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fileUrl: presignData.fileUrl,
-      fileName: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-    }),
-  });
-  const attachData = await attach.json();
-  if (!attach.ok)
-    throw new Error(
-      typeof attachData.error === "string" ? attachData.error : `Could not save ${file.name}`,
-    );
-  return String(attachData.attachment._id);
+  const attachmentId = uploadData.attachment?._id;
+  if (typeof attachmentId !== "string" || !attachmentId) {
+    throw new Error(`Could not save ${file.name}`);
+  }
+  return attachmentId;
 }
 
 export function InformationResponseForm({
@@ -71,7 +52,8 @@ export function InformationResponseForm({
     if (!message.trim()) {
       setMessageError("Please explain the information you are submitting.");
       setError("Please explain the information you are submitting.");
-      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
+      const formElement = event.currentTarget;
+      requestAnimationFrame(() => focusFirstInvalid(formElement));
       return;
     }
     setMessageError(null);

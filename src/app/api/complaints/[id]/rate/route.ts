@@ -28,6 +28,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (String(complaint.studentRef) !== session.user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  if (complaint.isArchived) {
+    return NextResponse.json({ error: "Archived complaints cannot be rated." }, { status: 400 });
+  }
   if (complaint.status !== "resolved") {
     return NextResponse.json({ error: "Only resolved complaints can be rated" }, { status: 400 });
   }
@@ -37,6 +40,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   complaint.studentRating = parsed.data.studentRating;
   complaint.studentRatingComment = parsed.data.studentRatingComment;
+  complaint.status = "closed";
+  complaint.closedAt = new Date();
   await complaint.save();
 
   await ComplaintTimeline.create({
@@ -44,6 +49,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     eventType: "rated",
     actorRef: session.user.id,
     toValue: String(parsed.data.studentRating),
+    message: "Student submitted a satisfaction rating.",
+  });
+
+  await ComplaintTimeline.create({
+    complaintRef: id,
+    eventType: "closed",
+    actorRef: null,
+    fromValue: "resolved",
+    toValue: "closed",
+    message: "Complaint automatically closed after student rating.",
   });
 
   await writeAuditLog({
@@ -54,7 +69,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     afterState: {
       studentRating: parsed.data.studentRating,
       hasComment: Boolean(parsed.data.studentRatingComment),
+      status: "closed",
     },
+    ipAddress: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
+  });
+
+  await writeAuditLog({
+    actorId: null,
+    action: "COMPLAINT_CLOSED",
+    entityType: "Complaint",
+    entityId: id,
+    beforeState: { status: "resolved" },
+    afterState: { status: "closed", reason: "Student submitted resolution rating" },
     ipAddress: req.headers.get("x-forwarded-for"),
     userAgent: req.headers.get("user-agent"),
   });

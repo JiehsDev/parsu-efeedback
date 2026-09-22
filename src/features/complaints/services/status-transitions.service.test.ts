@@ -8,12 +8,13 @@ describe("status-transitions.service — BR-040/041/043", () => {
     expect(isValidTransition("assigned", "in_progress")).toBe(true);
     expect(isValidTransition("in_progress", "pending_information")).toBe(true);
     expect(isValidTransition("in_progress", "resolved")).toBe(true);
-    expect(isValidTransition("resolved", "closed")).toBe(true);
+    expect(isValidTransition("submitted", "in_progress")).toBe(true);
+    expect(isValidTransition("resolved", "closed")).toBe(false);
   });
 
-  it("BR-043: allows reopening after resolution or closure", () => {
-    expect(isValidTransition("resolved", "in_progress")).toBe(true);
-    expect(isValidTransition("closed", "in_progress")).toBe(true);
+  it("keeps resolved and closed out of the normal status workflow", () => {
+    expect(isValidTransition("resolved", "in_progress")).toBe(false);
+    expect(isValidTransition("closed", "in_progress")).toBe(false);
   });
 
   it("rejects skipping states (e.g. submitted straight to resolved)", () => {

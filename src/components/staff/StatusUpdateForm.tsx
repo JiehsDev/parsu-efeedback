@@ -37,7 +37,8 @@ export function StatusUpdateForm({
     event.preventDefault();
     if (!nextStatus) {
       setStatusError("Please select the new complaint status.");
-      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
+      const formElement = event.currentTarget;
+      requestAnimationFrame(() => focusFirstInvalid(formElement));
       return;
     }
     setStatusError(null);

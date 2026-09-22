@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Inbox,
   Route,
-  Star,
   Timer,
   UserX,
   Users,
@@ -44,7 +43,6 @@ import {
 import { QaTrendChart } from "@/components/analytics/QaTrendChart";
 import { QaDonutChart } from "@/components/analytics/QaDonutChart";
 import { QaBarList } from "@/components/analytics/QaBarList";
-import { SlaHeatmap } from "@/components/analytics/SlaHeatmap";
 import { CategoryBarChart } from "@/components/analytics/CategoryBarChart";
 import { PriorityPieChart } from "@/components/analytics/PriorityPieChart";
 import { StatCard, StatChip, type StatCardData } from "@/components/shared/StatCard";
@@ -200,9 +198,7 @@ export default async function AdminDashboardPage() {
     isAdmin ? getSettings() : null,
   ]);
 
-  const avgRating = avgRatingResult[0]?.avg ?? null;
-  const ratingCount = avgRatingResult[0]?.count ?? 0;
-  const formatHours = (hours: number | null) => (hours === null ? "—" : `${hours}h`);
+  void avgRatingResult;
 
   const STATS: StatCardData[] = [
     {
@@ -266,68 +262,14 @@ export default async function AdminDashboardPage() {
       chipText: "text-[var(--muted-foreground)]",
     },
     {
-      label: "Avg. rating",
-      value: avgRating ? avgRating.toFixed(1) : "—",
-      hint: ratingCount > 0 ? `${ratingCount} ratings` : undefined,
-      icon: Star,
-      iconColor: "var(--qa-amber)",
-      tint: "bg-amber-500/15 text-amber-400",
-      chipBorder: "border-amber-500/30",
-      chipBg: "bg-amber-500/10",
-      chipText: "text-amber-400",
-    },
-  ];
-
-  const SUMMARY_STATS: StatCardData[] = [
-    {
-      label: "Resolved",
-      value: analyticsSummary.resolvedComplaints,
-      icon: CheckCircle2,
-      iconColor: "var(--qa-success)",
-      tint: "bg-emerald-500/15 text-emerald-400",
-      chipBorder: "border-emerald-500/30",
-      chipBg: "bg-emerald-500/10",
-      chipText: "text-emerald-400",
-    },
-    {
-      label: "Unresolved",
-      value: analyticsSummary.unresolvedComplaints,
-      icon: Inbox,
-      iconColor: "var(--primary)",
-      tint: "bg-[var(--primary)]/15 text-[var(--primary)]",
-      chipBorder: "border-[var(--primary)]/30",
-      chipBg: "bg-[var(--primary)]/10",
-      chipText: "text-[var(--primary)]",
-    },
-    {
-      label: "Avg. first response",
-      value: formatHours(analyticsSummary.averageFirstResponseHours),
-      icon: Timer,
-      iconColor: "var(--qa-amber)",
-      tint: "bg-amber-500/15 text-amber-400",
-      chipBorder: "border-amber-500/30",
-      chipBg: "bg-amber-500/10",
-      chipText: "text-amber-400",
-    },
-    {
-      label: "Avg. resolution",
-      value: formatHours(analyticsSummary.averageResolutionHours),
-      icon: BarChart3,
-      iconColor: "var(--secondary)",
-      tint: "bg-[var(--secondary)]/15 text-[var(--secondary)]",
-      chipBorder: "border-[var(--secondary)]/30",
-      chipBg: "bg-[var(--secondary)]/10",
-      chipText: "text-[var(--secondary)]",
-    },
-    {
       label: "SLA compliance",
       value: `${analyticsSummary.slaComplianceRate}%`,
       icon: CheckCircle2,
-      iconColor: "var(--qa-success)",
-      tint: "bg-emerald-500/15 text-emerald-400",
-      chipBorder: "border-emerald-500/30",
-      chipBg: "bg-emerald-500/10",
-      chipText: "text-emerald-400",
+      iconColor: "var(--qa-amber)",
+      tint: "bg-amber-500/15 text-amber-400",
+      chipBorder: "border-amber-500/30",
+      chipBg: "bg-amber-500/10",
+      chipText: "text-amber-400",
     },
   ];
 
@@ -453,7 +395,12 @@ export default async function AdminDashboardPage() {
     }))
     .sort((a, b) => b.value - a.value);
 
-  const officeWorkloadData = officeWorkload.map((o: any) => ({ label: o._id, value: o.volume }));
+  const officeWorkloadByName = new Map(officeWorkload.map((o: any) => [String(o._id), o.volume]));
+  const officePerformance = slaByOffice.map((office: any) => ({
+    ...office,
+    open: officeWorkloadByName.get(String(office.office)) ?? 0,
+  }));
+  const primaryStatLabels = new Set(["Open Complaints", "Overdue", "Unassigned", "SLA compliance"]);
   const roleLabel = ROLE_LABELS[session!.user.role] ?? "Administrator";
   const scopeLabel =
     scope.kind === "college_office"
@@ -498,13 +445,13 @@ export default async function AdminDashboardPage() {
       </header>
 
       <div className="grid grid-cols-2 gap-1.5 sm:hidden">
-        {STATS.map((stat) => (
+        {STATS.filter((stat) => primaryStatLabels.has(stat.label)).map((stat) => (
           <StatChip key={stat.label} stat={stat} />
         ))}
       </div>
 
       <div className="hidden gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-        {STATS.map((stat) => (
+        {STATS.filter((stat) => primaryStatLabels.has(stat.label)).map((stat) => (
           <StatCard key={stat.label} stat={stat} compact />
         ))}
       </div>
@@ -513,24 +460,6 @@ export default async function AdminDashboardPage() {
           for vpaa/vpaf/osas this whole row is skipped rather than left half
           empty, since Users-by-role collapses to a single slice once it's
           filtered to just their own office category / students. */}
-      <div
-        role="region"
-        aria-labelledby="admin-resolution-metrics-heading"
-        className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
-      >
-        <h2
-          id="admin-resolution-metrics-heading"
-          className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
-        >
-          Resolution metrics
-        </h2>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-          {SUMMARY_STATS.map((stat) => (
-            <StatCard key={stat.label} stat={stat} compact />
-          ))}
-        </div>
-      </div>
-
       {isAdmin && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div
@@ -655,26 +584,40 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div
           role="region"
-          aria-labelledby="admin-sla-heading"
-          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+          aria-labelledby="admin-office-performance-heading"
+          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:order-2"
         >
           <div className="flex items-center justify-between gap-2">
             <h2
-              id="admin-sla-heading"
+              id="admin-office-performance-heading"
               className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
             >
-              SLA by office
+              Office SLA performance
             </h2>
           </div>
-          <div className="mt-2.5">
-            <SlaHeatmap data={slaByOffice} compact />
+          <div className="mt-3 space-y-3">
+            {officePerformance.length === 0 ? (
+              <p className="text-xs text-[var(--muted-foreground)]">No office performance data yet.</p>
+            ) : officePerformance.slice(0, 8).map((office: any, index: number) => (
+              <div key={office.office} className="min-w-0">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="qa-mono w-4 shrink-0 text-[10px] text-[var(--muted-foreground)]">{index + 1}</span>
+                  <span className="min-w-0 flex-1 truncate font-medium text-[var(--foreground)]">{office.office}</span>
+                  <span className="qa-tabular shrink-0 text-[10px] text-[var(--muted-foreground)]">{office.open} open</span>
+                  <span className="qa-tabular w-10 shrink-0 text-right text-[11px] font-bold" style={{ color: office.percent >= 80 ? "var(--qa-success)" : office.percent >= 50 ? "var(--qa-amber)" : "var(--destructive)" }}>{office.percent}%</span>
+                </div>
+                <div className="mt-1 ml-6 h-1 overflow-hidden rounded-full bg-[var(--muted)]">
+                  <div className="h-full rounded-full bg-[var(--secondary)]" style={{ width: `${office.percent}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div
           role="region"
           aria-labelledby="admin-trend-heading"
-          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-2"
+          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 xl:col-span-3 xl:order-1"
         >
           <div className="flex items-center justify-between gap-2">
             <h2
@@ -694,31 +637,12 @@ export default async function AdminDashboardPage() {
           {trends.length === 0 ? (
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">Not enough data yet.</p>
           ) : (
-            <div className="mt-3 min-h-[220px] sm:min-h-[260px]">
+            <div className="mt-3 h-[240px] sm:h-[280px]">
               <QaTrendChart data={trends} />
             </div>
           )}
         </div>
 
-        <div
-          role="region"
-          aria-labelledby="admin-workload-heading"
-          className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
-        >
-          <h2
-            id="admin-workload-heading"
-            className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase"
-          >
-            Office workload
-          </h2>
-          {officeWorkloadData.length === 0 ? (
-            <p className="mt-2 text-xs text-[var(--muted-foreground)]">No open complaints.</p>
-          ) : (
-            <div className="mt-3">
-              <QaBarList data={officeWorkloadData} subject="office" color="var(--secondary)" />
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
@@ -727,11 +651,16 @@ export default async function AdminDashboardPage() {
           aria-labelledby="admin-category-heading"
           className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
         >
-          <h2 id="admin-category-heading" className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
-            Complaint categories
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="admin-category-heading" className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+              Top complaint categories
+            </h2>
+            <Link href="/admin/reports" className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[var(--primary)] hover:underline">
+              View all in Reports <ArrowRight className="h-2.5 w-2.5" />
+            </Link>
+          </div>
           <div className="mt-3">
-            {categoryBreakdown.length ? <CategoryBarChart data={categoryBreakdown} /> : <p className="text-xs text-[var(--muted-foreground)]">No category data yet.</p>}
+            {categoryBreakdown.length ? <CategoryBarChart data={categoryBreakdown.slice(0, 8)} heightClassName="h-64" /> : <p className="text-xs text-[var(--muted-foreground)]">No category data yet.</p>}
           </div>
         </div>
         <div

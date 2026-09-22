@@ -13,6 +13,8 @@ type RequestRecord = {
   requestedAt: string;
   respondedAt?: string | null;
   responseMessage?: string;
+  requestedByRef?: { firstName?: string; lastName?: string; role?: string } | null;
+  responseAttachmentRefs?: Array<{ fileName?: string }>;
 };
 
 export function InformationRequestPanel({
@@ -87,7 +89,7 @@ export function InformationRequestPanel({
         </div>
         <p className="mt-3 text-sm text-[var(--qa-amber-strong)]">{active.requestMessage}</p>
         <p className="mt-2 text-xs text-[var(--qa-amber-strong)]/75">
-          Requested {new Date(active.requestedAt).toLocaleString()}
+          Requested {new Date(active.requestedAt).toLocaleString()} by {active.requestedByRef?.firstName ?? "staff"} {active.requestedByRef?.lastName ?? ""}
         </p>
       </div>
     );
@@ -111,6 +113,9 @@ export function InformationRequestPanel({
             <FileQuestion className="h-4 w-4 text-[var(--primary)]" />
             Request Additional Information
           </div>
+          <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
+            Ask the student to provide clarification, documents, or other information needed to continue processing this complaint.
+          </p>
           {error && (
             <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -125,6 +130,7 @@ export function InformationRequestPanel({
             placeholder="Tell the student exactly what information is needed."
             className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
+          <p className="-mt-1 text-xs text-[var(--muted-foreground)]">Clearly explain what the student needs to provide so the complaint can continue.</p>
           <textarea
             value={context}
             onChange={(event) => setContext(event.target.value)}
@@ -170,11 +176,17 @@ export function InformationRequestPanel({
                   className="rounded-2xl bg-[var(--muted)]/45 px-3 py-2.5 text-xs"
                 >
                   <p className="font-medium text-[var(--foreground)]">
-                    Requested: {request.requestMessage}
+                    <span className="font-semibold text-[var(--qa-success-strong)]">Information Received</span>
+                    <span className="ml-2">{new Date(request.respondedAt ?? request.requestedAt).toLocaleString()}</span>
                   </p>
                   <p className="mt-1 text-[var(--muted-foreground)]">
                     Response: {request.responseMessage || "Attachment submitted"}
                   </p>
+                  {(request.responseAttachmentRefs?.length ?? 0) > 0 && (
+                    <p className="mt-1 text-[var(--muted-foreground)]">
+                      Attachments: {request.responseAttachmentRefs?.map((attachment) => attachment.fileName).join(", ")}
+                    </p>
+                  )}
                 </div>
               ))}
           </div>

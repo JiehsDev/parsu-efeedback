@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { Bell, Inbox, LayoutGrid, LogOut, Timer, UserRound } from "lucide-react";
+import { Archive, Bell, Inbox, LayoutGrid, LogOut, Timer, UserRound } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/staff/complaints", label: "Queue", icon: Inbox },
   { href: "/staff/sla", label: "SLA", icon: Timer },
+  { href: "/staff/archive-requests", label: "Archive Requests", icon: Archive, requiresHead: true },
+  { href: "/staff/complaints/archived", label: "Archived Complaints", icon: Archive },
 ];
 
 function getInitials(name: string) {
@@ -64,7 +66,7 @@ export function StaffNav({
       </Link>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !(item as any).requiresHead || isOfficeHead).map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link

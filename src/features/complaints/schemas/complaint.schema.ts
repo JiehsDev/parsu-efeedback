@@ -1,6 +1,7 @@
 // src/features/complaints/schemas/complaint.schema.ts
 import { z } from "zod";
 import { COMPLAINT_STATUSES } from "@/lib/constants";
+import { ARCHIVE_REASON_CODES } from "@/lib/archive-policy";
 
 export const createComplaintSchema = z.object({
   categoryRef: z.string().min(1),
@@ -53,11 +54,34 @@ export const rateComplaintSchema = z.object({
   studentRatingComment: z.string().trim().optional().default(""),
 });
 
+export const reopenComplaintSchema = z.object({
+  reason: z.string().trim().min(1).max(2000),
+});
+
 // BR-045: administrator-only, hides a complaint from active views without
 // deleting the record — never a status, so it's its own boolean rather
 // than folded into updateComplaintStatusSchema.
 export const archiveComplaintSchema = z.object({
   isArchived: z.boolean(),
+  reason: z.string().trim().min(1).max(2000),
+});
+
+export const archiveRequestSchema = z.object({
+  reasonCode: z.enum(ARCHIVE_REASON_CODES).default("other"),
+  reasonText: z.string().trim().max(2000).optional().default(""),
+  supportingNote: z.string().trim().max(2000).optional().default(""),
+  // Keep accepting the legacy single reason field for existing clients.
+  reason: z.string().trim().max(2000).optional().default(""),
+}).superRefine((value, ctx) => {
+  const explanation = value.reasonText || value.reason;
+  if (!explanation && value.reasonCode === "other") {
+    ctx.addIssue({ code: "custom", path: ["reasonText"], message: "An explanation is required for Other." });
+  }
+});
+
+export const archiveDecisionSchema = z.object({
+  action: z.enum(["approve", "reject"]),
+  rejectionReason: z.string().trim().max(2000).optional().default(""),
 });
 
 export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;

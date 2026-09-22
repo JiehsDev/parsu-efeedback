@@ -114,7 +114,20 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
           )}
 
           {c.status === "resolved" && c.studentRating === null && (
-            <RatingForm complaintId={String(c._id)} />
+            <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5" aria-labelledby="resolution-completed-heading">
+              <h2 id="resolution-completed-heading" className="text-base font-semibold text-emerald-700 dark:text-emerald-300">Resolution Completed</h2>
+              <p className="mt-1 text-sm text-emerald-800/80 dark:text-emerald-200/80">
+                The responsible office has marked this complaint as resolved. Please rate your experience to complete and close the complaint.
+              </p>
+              <div className="mt-4"><RatingForm complaintId={String(c._id)} /></div>
+            </section>
+          )}
+
+          {c.status === "closed" && (
+            <section className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/35 p-5" aria-labelledby="complaint-closed-heading">
+              <h2 id="complaint-closed-heading" className="text-base font-semibold text-[var(--foreground)]">Complaint Closed</h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">Your resolution rating was submitted and this complaint is now closed.</p>
+            </section>
           )}
 
           <AttachmentGallery complaintId={String(c._id)} />

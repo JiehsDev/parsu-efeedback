@@ -45,4 +45,31 @@ describe("manual escalation hierarchy", () => {
     expect(String(second?.office._id)).toBe(String(vpaa._id));
     expect(String(second?.staff._id)).toBe(String(vpaaHead._id));
   });
+
+  it.each([
+    ["vpaa", "VPAA"],
+    ["vpaf", "VPAF"],
+    ["osas", "OSAS"],
+  ] as const)("resolves a %s scoped-admin head as an escalation target", async (role, code) => {
+    const office = await createTestOffice({ name: code, code });
+    const head = await createTestUser({ role, officeRef: office._id });
+    await office.updateOne({ headUserRef: head._id });
+    const category = await createTestCategory({ defaultOfficeRef: office._id });
+    const staff = await createTestUser({ role: "office_staff", officeRef: office._id });
+    const complaint = await Complaint.create({
+      ticketNumber: `TEST-${code}`,
+      studentRef: (await createTestUser())._id,
+      categoryRef: category._id,
+      title: "Scoped head escalation test",
+      description: "A sufficiently long complaint description for this test.",
+      priority: "medium",
+      status: "in_progress",
+      assignedOfficeRef: office._id,
+      assignedStaffRef: staff._id,
+    });
+
+    const target = await resolveManualEscalationTarget(complaint, "office_staff");
+    expect(String(target?.staff._id)).toBe(String(head._id));
+    expect(target?.staff.role).toBe(role);
+  });
 });

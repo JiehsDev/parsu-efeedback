@@ -53,7 +53,8 @@ function LoginForm() {
     };
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      requestAnimationFrame(() => focusFirstInvalid(event.currentTarget));
+      const formElement = event.currentTarget;
+      requestAnimationFrame(() => focusFirstInvalid(formElement));
       return;
     }
     setIsSubmitting(true);

@@ -36,6 +36,7 @@ interface EditableUser {
 interface OfficeOption {
   _id: string;
   name: string;
+  code: string;
   type: string;
 }
 
@@ -63,13 +64,17 @@ export function EditUserButton({
     password: "",
   });
 
-  const needsOffice = form.role === "office_staff";
+  const needsOffice = ["office_staff", "vpaa", "vpaf", "osas"].includes(form.role);
   const needsCollege = form.role === "student";
   const roleOptions = roleOptionsForScope(scopeKind);
   const officeOptionsForRole =
     scopeKind === "college_office" || scopeKind === "university_office"
       ? offices.filter((o) => o.type === scopeKind)
       : offices;
+  const scopedOfficeCode = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" }[form.role as "vpaa" | "vpaf" | "osas"];
+  const officeOptionsForSelectedRole = scopedOfficeCode
+    ? officeOptionsForRole.filter((office) => office.code === scopedOfficeCode)
+    : officeOptionsForRole;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -158,14 +163,19 @@ export function EditUserButton({
             </FormField>
 
             <FormField label="Role">
-              <Select value={form.role} onValueChange={(value) => setForm((p) => ({ ...p, role: value }))}>
+              <Select value={form.role} onValueChange={(value) => setForm((p) => ({
+                ...p,
+                role: value,
+                officeRef: value === "student" || value === "administrator" ? "" : p.officeRef,
+                collegeRef: value === "student" ? p.collegeRef : "",
+              }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {roleOptions.map((r) => (
                     <SelectItem key={r} value={r}>
-                      {r.replace("_", " ")}
+                      {{ office_staff: "Office Staff", administrator: "Administrator", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS", student: "Student" }[r] ?? r}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -182,7 +192,7 @@ export function EditUserButton({
                     <SelectValue placeholder="Select office" />
                   </SelectTrigger>
                   <SelectContent>
-                    {officeOptionsForRole.map((o) => (
+                    {officeOptionsForSelectedRole.map((o) => (
                       <SelectItem key={o._id} value={o._id}>
                         {o.name}
                       </SelectItem>

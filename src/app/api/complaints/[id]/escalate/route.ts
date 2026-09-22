@@ -34,8 +34,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
-  if (complaint.status === "withdrawn" || complaint.status === "closed") {
-    return NextResponse.json({ error: "This complaint cannot be escalated." }, { status: 400 });
+  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
+  if (["withdrawn", "resolved", "closed"].includes(complaint.status)) {
+    return NextResponse.json({ error: "Resolved, closed, and withdrawn complaints cannot be escalated." }, { status: 400 });
   }
 
   const officeId = String(complaint.assignedOfficeRef ?? "");

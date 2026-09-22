@@ -1,6 +1,7 @@
 import { render } from "react-email";
 import { resend } from "@/lib/resend";
 import { env } from "@/lib/env";
+import type { UserRole } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 import ComplaintSubmitted from "../../../../emails/ComplaintSubmitted";
 import ComplaintAssigned from "../../../../emails/ComplaintAssigned";
@@ -88,6 +89,7 @@ export async function sendComplaintAssignedEmail(params: {
   ticketNumber: string;
   complaintId: string;
   isStaffRecipient: boolean;
+  recipientRole?: UserRole;
 }) {
   await sendEmail(
     params.to,
@@ -97,7 +99,7 @@ export async function sendComplaintAssignedEmail(params: {
       ticketNumber: params.ticketNumber,
       complaintUrl: complaintUrlForRole(
         params.complaintId,
-        params.isStaffRecipient ? "office_staff" : "student",
+        params.isStaffRecipient ? (params.recipientRole ?? "office_staff") : "student",
       ),
       isStaffRecipient: params.isStaffRecipient,
     }),
@@ -167,6 +169,7 @@ export async function sendEscalationEmail(params: {
   ticketNumber: string;
   complaintId: string;
   manual?: boolean;
+  recipientRole?: UserRole;
 }) {
   await sendEmail(
     params.to,
@@ -174,7 +177,7 @@ export async function sendEscalationEmail(params: {
     Escalation({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,
-      complaintUrl: complaintUrlForRole(params.complaintId, "office_staff"),
+      complaintUrl: complaintUrlForRole(params.complaintId, params.recipientRole ?? "office_staff"),
       manual: params.manual,
     }),
   );

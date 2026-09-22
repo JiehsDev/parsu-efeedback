@@ -15,6 +15,7 @@ interface MemberOption {
   firstName: string;
   lastName: string;
   email: string;
+  role: string;
   isActive: boolean;
 }
 
@@ -155,7 +156,7 @@ export function OfficeHeadManager({
                 <SelectContent>
                   {memberOptions.map((member) => (
                     <SelectItem key={member._id} value={member._id}>
-                      {member.firstName} {member.lastName}
+                      {member.firstName} {member.lastName} · {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[member.role] ?? member.role}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -172,6 +173,9 @@ export function OfficeHeadManager({
         <Modal title="Create Head Account" onClose={() => setMode(null)}>
           <form onSubmit={createHead} className="space-y-4">
             {error && <ErrorMessage message={error} />}
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+              Changing this assignment changes the organizational head only. The selected user keeps their existing software role and permissions.
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="First name">
                 <input required className={inputClass} value={form.firstName} onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))} />

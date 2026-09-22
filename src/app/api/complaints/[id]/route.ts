@@ -62,6 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
 
   const body = await req.json();
 
@@ -159,6 +160,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const fromStatus = complaint.status as ComplaintStatus;
   const toStatus = parsed.data.status;
 
+  if (toStatus === "closed") {
+    return NextResponse.json(
+      { error: "Complaints are closed automatically after the student submits a resolution rating." },
+      { status: 400 },
+    );
+  }
+
   // pending_information has a dedicated request/response workflow. Keeping
   // it out of the generic status endpoint prevents a staff member from
   // creating a student-facing state without a request record.
@@ -187,11 +195,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   complaint.status = toStatus;
-  if (toStatus === "resolved") complaint.resolvedAt = new Date();
-  if (toStatus === "closed") complaint.closedAt = new Date();
-  if (fromStatus === "closed" && toStatus === "in_progress") {
-    complaint.reopenCount += 1;
-  }
+  if (toStatus === "resolved" && !complaint.resolvedAt) complaint.resolvedAt = new Date();
 
   await complaint.save();
 

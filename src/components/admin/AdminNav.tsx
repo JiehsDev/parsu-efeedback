@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import {
+  Archive,
   Bell,
   Building2,
   FileBarChart,
@@ -35,6 +36,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 const PRIMARY_NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/admin/complaints", label: "Complaints", icon: Inbox },
+  { href: "/admin/complaints?archived=1", label: "Archived Complaints", icon: Archive },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart },
   { href: "/admin/users", label: "Users", icon: Users },
   // osas manages students only, not Offices — CRUD there is meaningless.

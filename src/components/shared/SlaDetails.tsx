@@ -40,6 +40,13 @@ export function SlaDetails({ complaint, firstResponseAt, events = [], simplified
   const resolutionMet = resolved && resolutionDue ? new Date(complaint.resolvedAt as string).getTime() <= resolutionDue.getTime() : null;
   const state = overdue ? "Overdue" : warningReached ? "Warning" : resolved ? (resolutionMet ? "Met" : "Breached") : "On Track";
   const escalationEvent = events.find((event) => event.eventType === "escalated" && event.message);
+  const stateTone = overdue
+    ? "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"
+    : state === "Warning"
+      ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+      : state === "Met"
+        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+        : "border-[var(--primary)]/25 bg-[var(--primary)]/10 text-[var(--primary)]";
 
   const rows = simplified
     ? [["Current SLA state", state], ["Resolution due", dateLabel(complaint.slaResolutionDueAt)]]
@@ -56,11 +63,14 @@ export function SlaDetails({ complaint, firstResponseAt, events = [], simplified
 
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5" aria-labelledby="sla-details-heading">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
         <Timer className="h-4 w-4 text-[var(--muted-foreground)]" />
         <h2 id="sla-details-heading" className="text-sm font-semibold text-[var(--foreground)]">SLA details</h2>
+        </div>
+        <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${stateTone}`}>{state}</span>
       </div>
-      <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
+      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
         {rows.map(([label, value]) => (
           <div key={label}>
             <dt className="text-xs text-[var(--muted-foreground)]">{label}</dt>

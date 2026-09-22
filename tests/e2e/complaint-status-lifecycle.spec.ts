@@ -2,7 +2,7 @@
 // BR-040, BR-041, BR-042, BR-043, BR-044, BR-045, BR-053
 //
 // Legal transition graph (src/features/complaints/services/status-transitions.service.ts):
-//   submitted -> assigned -> in_progress -> resolved -> closed -> in_progress (reopen)
+//   submitted -> in_progress -> resolved -> closed (after student rating)
 //
 // Drives one complaint through its full lifecycle across three roles
 // (student creates, staff advances it, admin reopens it) using separate
@@ -15,7 +15,7 @@ const CATEGORY_NAME = "Document Request Delays"; // routes to the Registrar's of
 
 adminTest.describe("Complaint status lifecycle", () => {
   adminTest(
-    "BR-040/041/043/044/045/053: legal transitions succeed with timeline entries, illegal ones are rejected, reopening a closed complaint increments reopenCount, and there is no delete UI",
+    "BR-040/041/042/045/053: pickup, resolution, rating-driven closure, illegal transitions, and no delete UI",
     async ({ page: adminPage, browser }) => {
       // --- 1. Student creates the complaint ---
       const studentContext = await browser.newContext({
@@ -37,30 +37,16 @@ adminTest.describe("Complaint status lifecycle", () => {
       // The status-update form only renders once this staff member is the
       // assigned staff — its appearance itself confirms the self-assign
       // succeeded and advanced the complaint out of "submitted".
-      await expect(staffPage.getByRole("combobox")).toBeVisible();
+      await expect(staffPage.getByText("In Progress", { exact: true }).last()).toBeVisible();
 
       // BR-041: from "assigned", only in_progress/escalated are legal — the
       // dropdown must not offer resolved/closed directly.
-      await staffPage.getByRole("combobox").click();
-      await expect(staffPage.getByRole("option", { name: "In Progress", exact: true })).toBeVisible();
-      await expect(staffPage.getByRole("option", { name: "Resolved", exact: true })).toHaveCount(0);
-      await expect(staffPage.getByRole("option", { name: "Closed", exact: true })).toHaveCount(0);
-      await staffPage.getByRole("option", { name: "In Progress", exact: true }).click();
-      await staffPage.getByPlaceholder("Optional note about this change").fill("e2e-to-in-progress");
+      await expect(staffPage.getByRole("combobox")).toBeVisible();
       // Wait for the actual PATCH response, not just the UI text becoming
       // visible — router.refresh() (called on success) re-renders
       // asynchronously, so "text became visible" doesn't reliably mean the
       // server-side save has committed yet, which the next line's direct
       // API call depends on.
-      const [patch1] = await Promise.all([
-        staffPage.waitForResponse(
-          (res) => res.url().includes(`/api/complaints/${id}`) && res.request().method() === "PATCH",
-        ),
-        staffPage.getByRole("button", { name: "Update Status" }).click(),
-      ]);
-      expect(patch1.ok()).toBeTruthy();
-      await expect(staffPage.getByText("e2e-to-in-progress")).toBeVisible();
-
       // BR-041: an illegal transition (in_progress -> closed is not a legal
       // edge; only pending_information/escalated/resolved are) is rejected
       // by the handler even when called directly, not just hidden from the
@@ -83,19 +69,6 @@ adminTest.describe("Complaint status lifecycle", () => {
       expect(patch2.ok()).toBeTruthy();
       await expect(staffPage.getByText("e2e-to-resolved")).toBeVisible();
 
-      // resolved -> closed
-      await staffPage.getByRole("combobox").click();
-      await staffPage.getByRole("option", { name: "Closed", exact: true }).click();
-      await staffPage.getByPlaceholder("Optional note about this change").fill("e2e-to-closed");
-      const [patch3] = await Promise.all([
-        staffPage.waitForResponse(
-          (res) => res.url().includes(`/api/complaints/${id}`) && res.request().method() === "PATCH",
-        ),
-        staffPage.getByRole("button", { name: "Update Status" }).click(),
-      ]);
-      expect(patch3.ok()).toBeTruthy();
-      await expect(staffPage.getByText("e2e-to-closed")).toBeVisible();
-
       // BR-041 no-op: same-status transition is illegal too. The save
       // above is now guaranteed committed (we waited on its PATCH
       // response), so this direct API call is reading the real, current
@@ -108,6 +81,10 @@ adminTest.describe("Complaint status lifecycle", () => {
 
       // --- 3. Student view of the now-closed complaint: no edit/status controls ---
       await studentPage.goto(`/student/complaints/${id}`);
+      await expect(studentPage.getByRole("radiogroup", { name: "Rating" })).toBeVisible();
+      await studentPage.getByRole("button", { name: "Rate 5 stars" }).click();
+      await studentPage.getByRole("button", { name: "Submit Rating" }).click();
+      await expect(studentPage.getByRole("heading", { name: "Complaint Closed" })).toBeVisible();
       await expect(studentPage.getByRole("button", { name: "Update Status" })).toHaveCount(0);
       await expect(studentPage.getByRole("button", { name: "Pick Up This Complaint" })).toHaveCount(0);
       await expect(studentPage.getByRole("button", { name: /submit rating/i })).toHaveCount(0);
@@ -123,10 +100,7 @@ adminTest.describe("Complaint status lifecycle", () => {
       const reopenRes = await adminPage.request.patch(`/api/complaints/${id}`, {
         data: { status: "in_progress", message: "e2e-admin-reopen" },
       });
-      expect(reopenRes.ok()).toBeTruthy();
-      const { complaint: reopened } = await reopenRes.json();
-      expect(reopened.reopenCount).toBe(1);
-      expect(reopened.status).toBe("in_progress");
+      expect(reopenRes.status()).toBe(400);
 
       // --- 5. BR-045: no delete UI anywhere — only archive, admin-only. ---
       await adminPage.goto(`/admin/complaints/${id}`);

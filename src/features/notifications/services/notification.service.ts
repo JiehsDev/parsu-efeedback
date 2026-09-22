@@ -16,11 +16,12 @@ import {
 } from "./email.service";
 
 async function getRecipient(userId: string) {
-  const user = await User.findById(userId).select("email firstName lastName").lean();
+  const user = await User.findById(userId).select("email firstName lastName role").lean();
   if (!user) return null;
   return {
     email: (user as any).email,
     name: `${(user as any).firstName} ${(user as any).lastName}`,
+    role: (user as any).role,
   };
 }
 
@@ -109,6 +110,7 @@ export async function notifyComplaintAssigned(params: {
         ticketNumber: params.ticketNumber,
         complaintId: params.complaintId,
         isStaffRecipient: true,
+        recipientRole: staff.role,
       });
     }
   }
@@ -151,6 +153,7 @@ export async function notifyComplaintRoutedToOffice(params: {
           ticketNumber: params.ticketNumber,
           complaintId: params.complaintId,
           isStaffRecipient: true,
+          recipientRole: recipient.role,
         });
       }
     }),
@@ -209,6 +212,33 @@ export async function notifyComplaintResolved(params: {
   }
 }
 
+export async function notifyComplaintReopened(params: {
+  studentId: string;
+  staffId?: string | null;
+  officeId?: string | null;
+  ticketNumber: string;
+  complaintId: string;
+}) {
+  const recipientIds = new Set<string>([params.studentId]);
+  if (params.staffId) recipientIds.add(params.staffId);
+  if (params.officeId) {
+    const office = await Office.findById(params.officeId).select("headUserRef").lean();
+    if ((office as any)?.headUserRef) recipientIds.add(String((office as any).headUserRef));
+  }
+
+  await Promise.all(
+    [...recipientIds].map((userId) =>
+      createNotification({
+        userRef: userId,
+        type: "status_updated",
+        title: "Complaint reopened",
+        body: `Complaint ${params.ticketNumber} has been reopened for further handling.`,
+        relatedComplaintRef: params.complaintId,
+      }),
+    ),
+  );
+}
+
 export async function notifySlaWarning(params: {
   staffId?: string | null;
   ticketNumber: string;
@@ -259,6 +289,7 @@ export async function notifyEscalation(params: {
       recipientName: recipient.name,
       ticketNumber: params.ticketNumber,
       complaintId: params.complaintId,
+      recipientRole: recipient.role,
     });
   }
 }
@@ -286,6 +317,7 @@ export async function notifyManualEscalation(params: {
       ticketNumber: params.ticketNumber,
       complaintId: params.complaintId,
       manual: true,
+      recipientRole: recipient.role,
     });
   }
   await createNotification({
@@ -358,4 +390,16 @@ export async function notifyInformationSubmitted(params: {
       }
     }),
   );
+}
+
+export async function notifyArchiveRequested(params: { userId: string; ticketNumber: string; complaintId: string; requestId: string; reason: string }) {
+  await createNotification({ userRef: params.userId, type: "archive_request", title: "Archive request needs review", body: `Archive request for ${params.ticketNumber}: ${params.reason}`, relatedComplaintRef: params.complaintId });
+}
+
+export async function notifyArchiveDecision(params: { userId: string; approved: boolean; ticketNumber: string; complaintId: string; reason?: string }) {
+  await createNotification({ userRef: params.userId, type: "archive_decision", title: params.approved ? "Archive request approved" : "Archive request rejected", body: params.approved ? `Archive request for ${params.ticketNumber} was approved.` : `Archive request for ${params.ticketNumber} was rejected${params.reason ? `: ${params.reason}` : "."}`, relatedComplaintRef: params.complaintId });
+}
+
+export async function notifyComplaintRestored(params: { studentId: string; ticketNumber: string; complaintId: string }) {
+  await createNotification({ userRef: params.studentId, type: "complaint_restored", title: "Complaint restored", body: `Complaint ${params.ticketNumber} has been restored for continued handling.`, relatedComplaintRef: params.complaintId });
 }

@@ -9,6 +9,7 @@ export { ComplaintNote } from "./ComplaintNote";
 export { Attachment } from "./Attachment";
 export { RoutingRule } from "./RoutingRule";
 export { SLARule } from "./SLARule";
+export { ArchiveRequest } from "./ArchiveRequest";
 export { Notification } from "./Notification";
 export { AuditLog } from "./AuditLog";
 export { Feedback } from "./Feedback";

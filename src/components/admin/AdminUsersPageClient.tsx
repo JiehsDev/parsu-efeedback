@@ -35,6 +35,7 @@ interface UserRow {
   employeeOrStudentId: string;
   officeRef: { _id: string; name: string; code: string } | null;
   collegeRef: { _id: string; name: string; code: string } | null;
+  officeHead: { _id: string; name: string } | null;
 }
 
 function affiliationLabel(u: UserRow): string {
@@ -43,9 +44,14 @@ function affiliationLabel(u: UserRow): string {
   return "—";
 }
 
+function roleLabel(role: string): string {
+  return { office_staff: "Office Staff", administrator: "Administrator", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS", student: "Student" }[role] ?? role;
+}
+
 interface Office {
   _id: string;
   name: string;
+  code: string;
   type: string;
 }
 
@@ -142,8 +148,12 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const needsOffice = form.role === "office_staff";
+  const needsOffice = ["office_staff", "vpaa", "vpaf", "osas"].includes(form.role);
   const needsCollege = form.role === "student";
+  const scopedOfficeCode = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" }[form.role as "vpaa" | "vpaf" | "osas"];
+  const officeOptionsForSelectedRole = scopedOfficeCode
+    ? officeOptionsForRole.filter((office) => office.code === scopedOfficeCode)
+    : officeOptionsForRole;
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -389,8 +399,13 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
                         {u.firstName} {u.lastName}
                       </span>
                       <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
-                        {u.role.replace("_", " ")}
+                        {roleLabel(u.role)}
                       </span>
+                      {u.officeHead && (
+                        <span className="shrink-0 rounded-full bg-[var(--primary)]/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--primary)] uppercase">
+                          Office Head
+                        </span>
+                      )}
                     </span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-[var(--muted-foreground)]">
                       <span className="truncate">{u.email}</span>
@@ -487,15 +502,20 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
             <FormField label="Role" required>
               <Select
                 value={form.role}
-                onValueChange={(value) => setForm((p) => ({ ...p, role: value }))}
+                onValueChange={(value) => setForm((p) => ({
+                  ...p,
+                  role: value,
+                  officeRef: value === "student" || value === "administrator" ? "" : p.officeRef,
+                  collegeRef: value === "student" ? p.collegeRef : "",
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {roleOptions.map((r) => (
+                    {roleOptions.map((r) => (
                     <SelectItem key={r} value={r}>
-                      {r.replace("_", " ")}
+                      {roleLabel(r)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -512,7 +532,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
                     <SelectValue placeholder="Select office" />
                   </SelectTrigger>
                   <SelectContent>
-                    {officeOptionsForRole.map((o) => (
+                    {officeOptionsForSelectedRole.map((o) => (
                       <SelectItem key={o._id} value={o._id}>
                         {o.name}
                       </SelectItem>
