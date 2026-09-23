@@ -35,7 +35,9 @@ export async function getAssignmentHistoryEntries(
       _id: String(assignment._id),
       kind: assignment.actionType?.endsWith("escalation")
         ? ("escalation" as const)
-        : ("assignment" as const),
+        : assignment.actionType === "release"
+          ? ("release" as const)
+          : ("assignment" as const),
       createdAt: new Date(assignment.createdAt).toISOString(),
       sourceOfficeName: assignment.sourceOfficeRef?.name ?? null,
       destinationOfficeName: assignment.destinationOfficeRef?.name ?? null,

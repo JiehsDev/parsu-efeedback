@@ -3,7 +3,7 @@ import { statusLabel } from "@/lib/display-labels";
 
 export interface AssignmentHistoryEntry {
   _id: string;
-  kind: "assignment" | "escalation";
+  kind: "assignment" | "escalation" | "release";
   createdAt: string;
   sourceOfficeName?: string | null;
   destinationOfficeName?: string | null;
@@ -42,7 +42,9 @@ export function AssignmentHistoryPanel({
                 className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                   entry.kind === "escalation"
                     ? "bg-amber-500/15 text-amber-400"
-                    : "bg-[var(--primary)]/15 text-[var(--primary)]"
+                    : entry.kind === "release"
+                      ? "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]"
+                      : "bg-[var(--primary)]/15 text-[var(--primary)]"
                 }`}
               >
                 <Shuffle className="h-3.5 w-3.5" />
@@ -52,9 +54,11 @@ export function AssignmentHistoryPanel({
                   <p className="text-sm font-medium text-[var(--foreground)]">
                     {entry.kind === "escalation"
                       ? "Escalated"
-                      : entry.reason
-                        ? "Reassigned"
-                        : "Assigned"}
+                      : entry.kind === "release"
+                        ? "Assignment Released"
+                        : entry.reason
+                          ? "Reassigned"
+                          : "Assigned"}
                   </p>
                   <time className="text-xs text-[var(--muted-foreground)]">
                     {new Date(entry.createdAt).toLocaleString()}
@@ -64,7 +68,9 @@ export function AssignmentHistoryPanel({
                   {entry.sourceOfficeName
                     ? `Reassigned from ${entry.sourceOfficeName} to `
                     : "Assigned to "}
-                  {entry.destinationOfficeName ?? "unassigned office"}
+                  {entry.kind === "release"
+                    ? "Complaint returned to office queue"
+                    : entry.destinationOfficeName ?? "unassigned office"}
                 </p>
                 {!simplified && (
                   <div className="mt-1 space-y-0.5 text-xs text-[var(--muted-foreground)]">

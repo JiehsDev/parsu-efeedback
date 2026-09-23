@@ -67,6 +67,7 @@ export const TIMELINE_EVENT_TYPES = [
   "submitted",
   "assigned",
   "reassigned",
+  "assignment_released",
   "status_changed",
   "note_added",
   "attachment_added",
@@ -91,6 +92,7 @@ export type TimelineEventType = (typeof TIMELINE_EVENT_TYPES)[number];
 export const NOTIFICATION_TYPES = [
   "complaint_submitted",
   "complaint_assigned",
+  "assignment_released",
   "status_updated",
   "sla_warning",
   "escalation",

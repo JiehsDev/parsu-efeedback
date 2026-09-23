@@ -39,8 +39,8 @@ adminTest.describe("Complaint status lifecycle", () => {
       // succeeded and advanced the complaint out of "submitted".
       await expect(staffPage.getByText("In Progress", { exact: true }).last()).toBeVisible();
 
-      // BR-041: from "assigned", only in_progress/escalated are legal — the
-      // dropdown must not offer resolved/closed directly.
+      // BR-041: from "assigned", the generic status form only offers
+      // in_progress. Escalation is a separate manual workflow.
       await expect(staffPage.getByRole("combobox")).toBeVisible();
       // Wait for the actual PATCH response, not just the UI text becoming
       // visible — router.refresh() (called on success) re-renders
@@ -48,13 +48,20 @@ adminTest.describe("Complaint status lifecycle", () => {
       // server-side save has committed yet, which the next line's direct
       // API call depends on.
       // BR-041: an illegal transition (in_progress -> closed is not a legal
-      // edge; only pending_information/escalated/resolved are) is rejected
+      // edge; only pending_information/resolved are) is rejected
       // by the handler even when called directly, not just hidden from the
       // dropdown.
       const illegalRes = await staffPage.request.patch(`/api/complaints/${id}`, {
         data: { status: "closed" },
       });
       expect(illegalRes.status()).toBe(400);
+
+      // Escalation is not a generic status update. It must use the manual
+      // escalation workflow so routing and audit history cannot be bypassed.
+      const genericEscalationRes = await staffPage.request.patch(`/api/complaints/${id}`, {
+        data: { status: "escalated" },
+      });
+      expect(genericEscalationRes.status()).toBe(400);
 
       // in_progress -> resolved
       await staffPage.getByRole("combobox").click();

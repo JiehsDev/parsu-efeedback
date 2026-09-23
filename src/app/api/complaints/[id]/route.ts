@@ -172,6 +172,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const fromStatus = complaint.status as ComplaintStatus;
   const toStatus = parsed.data.status;
 
+  // Escalation has its own audited workflow. Keeping it out of the generic
+  // status endpoint prevents callers from bypassing destination and history
+  // rules enforced by the manual escalation routes.
+  if (toStatus === "escalated") {
+    return NextResponse.json(
+      { error: "Use the manual escalation workflow to escalate a complaint." },
+      { status: 400 },
+    );
+  }
+
   if (toStatus === "closed") {
     return NextResponse.json(
       { error: "Complaints are closed automatically after the student submits a resolution rating." },

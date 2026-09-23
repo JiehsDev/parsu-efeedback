@@ -31,9 +31,9 @@ describe("status-transitions.service — BR-040/041/043", () => {
     expect(isValidTransition("in_progress", "in_progress")).toBe(false);
   });
 
-  it("allows escalation from active states", () => {
-    expect(isValidTransition("assigned", "escalated")).toBe(true);
-    expect(isValidTransition("in_progress", "escalated")).toBe(true);
+  it("keeps escalation out of the generic status workflow", () => {
+    expect(isValidTransition("assigned", "escalated")).toBe(false);
+    expect(isValidTransition("in_progress", "escalated")).toBe(false);
     expect(isValidTransition("escalated", "in_progress")).toBe(true);
   });
 

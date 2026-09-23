@@ -8,8 +8,10 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   // "submitted") is enforced in the route handler, not here; this only
   // says the state-machine edge itself is legal.
   submitted: ["assigned", "in_progress", "withdrawn"],
-  assigned: ["in_progress", "escalated"],
-  in_progress: ["pending_information", "escalated", "resolved"],
+  // Escalation is a distinct audited workflow. It must not be reachable
+  // through the generic status-update endpoint.
+  assigned: ["in_progress"],
+  in_progress: ["pending_information", "resolved"],
   pending_information: ["in_progress"],
   escalated: ["in_progress", "assigned"],
   // Resolved remains open until the student acknowledges it with a rating.

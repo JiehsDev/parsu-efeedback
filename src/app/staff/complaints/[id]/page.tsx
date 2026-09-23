@@ -16,6 +16,7 @@ import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPan
 import { StatusUpdateForm } from "@/components/staff/StatusUpdateForm";
 import { InformationRequestPanel } from "@/components/staff/InformationRequestPanel";
 import { AssignSelfButton } from "@/components/staff/AssignSelfButton";
+import { ReleaseAssignmentButton } from "@/components/staff/ReleaseAssignmentButton";
 import { NotesSection } from "@/components/shared/NotesSection";
 import { AttachmentGallery } from "@/components/shared/AttachmentGallery";
 import { CopyButton } from "@/components/shared/CopyButton";
@@ -110,6 +111,7 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
              {isOfficeHead && !c.isArchived && !["withdrawn", "resolved", "closed"].includes(c.status) && <AssignmentDialog complaintId={String(c._id)} currentOfficeId={session.user.officeRef ?? null} currentOfficeName={currentOfficeName} currentStaffId={c.assignedStaffRef ? String(c.assignedStaffRef) : null} currentStaffName={currentStaffName} offices={[{ _id: session.user.officeRef!, name: currentOfficeName, type: (office as any)?.type }]} canChangeOffice={false} label={c.assignedStaffRef ? "Change Assignee" : "Assign Staff"} action={c.assignedStaffRef ? "reassign" : "assign"} />}
              {canReassignOffice && <ReassignOfficeDialog complaintId={String(c._id)} currentOfficeName={currentOfficeName} eligibleOffices={reassignmentOffices} />}
              {!c.isArchived && !["resolved", "closed"].includes(c.status) && String(c.assignedStaffRef) === session.user.id && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
+             {!c.isArchived && !["resolved", "closed", "withdrawn"].includes(c.status) && String(c.assignedStaffRef) === session.user.id && <ReleaseAssignmentButton complaintId={String(c._id)} />}
              {isOfficeHead && c.status === "resolved" && <ReopenComplaintButton complaintId={String(c._id)} />}
             {c.status === "resolved" && <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">Resolved · Awaiting Student Confirmation</p>}
              {!c.isArchived && !["resolved", "closed"].includes(c.status) && (String(c.assignedStaffRef ?? "") === session.user.id || c.status === "pending_information") && <InformationRequestPanel complaintId={String(c._id)} status={c.status} canRequest={String(c.assignedStaffRef ?? "") === session.user.id} requests={requests} />}

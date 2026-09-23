@@ -160,6 +160,26 @@ export async function notifyComplaintRoutedToOffice(params: {
   );
 }
 
+export async function notifyAssignmentReleased(params: {
+  officeId: string;
+  ticketNumber: string;
+  complaintId: string;
+  reason: string;
+}) {
+  await connectToDatabase();
+  const office = await Office.findById(params.officeId).select("name headUserRef").lean();
+  const headUserId = (office as any)?.headUserRef;
+  if (!headUserId) return;
+
+  await createNotification({
+    userRef: String(headUserId),
+    type: "assignment_released",
+    title: "Complaint returned to your queue",
+    body: `Complaint ${params.ticketNumber} was released by its assigned staff member and is awaiting reassignment. Reason: ${params.reason}`,
+    relatedComplaintRef: params.complaintId,
+  });
+}
+
 export async function notifyComplaintClosedByStudent(params: {
   complaintId: string;
   ticketNumber: string;

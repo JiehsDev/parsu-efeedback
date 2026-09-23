@@ -11,8 +11,8 @@ import type { ComplaintStatus } from "@/lib/constants";
 // own UI (EditWithdrawComplaint), not something staff pick for them.
 export const ALLOWED_TRANSITIONS_CLIENT: Record<ComplaintStatus, ComplaintStatus[]> = {
   submitted: ["assigned"],
-  assigned: ["in_progress", "escalated"],
-  in_progress: ["escalated", "resolved"],
+  assigned: ["in_progress"],
+  in_progress: ["resolved"],
   pending_information: ["in_progress"],
   escalated: ["in_progress", "assigned"],
   resolved: [],

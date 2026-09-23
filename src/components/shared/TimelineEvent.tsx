@@ -7,6 +7,7 @@ const EVENT_LABELS: Record<string, string> = {
   submitted: "Complaint submitted",
   assigned: "Assigned to office",
   reassigned: "Reassigned",
+  assignment_released: "Assignment released",
   status_changed: "Status changed",
   note_added: "Internal note added",
   attachment_added: "Attachment added",

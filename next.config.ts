@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["pdfkit"],
 };
 module.exports = {
-  allowedDevOrigins: ['192.168.1.10'],
-}
+  allowedDevOrigins: ["192.168.1.10"],
+};
 
 export default nextConfig;

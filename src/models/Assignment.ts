@@ -34,7 +34,7 @@ const assignmentSchema = new Schema(
       // "office_reassignment": the Office-Head-only lateral transfer to
       // another office of the same/equivalent organizational level —
       // distinct from "manual_escalation" (upward, to a higher authority).
-      enum: ["assign", "reassign", "manual_escalation", "sla_escalation", "office_reassignment"],
+      enum: ["assign", "reassign", "release", "manual_escalation", "sla_escalation", "office_reassignment"],
       default: "assign",
     },
   },
