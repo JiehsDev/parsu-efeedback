@@ -12,7 +12,13 @@ import RoutingRule from "@/models/RoutingRule";
 import SLARule from "@/models/SLARule";
 import { InformationRequest } from "@/models/InformationRequest";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
+import { Assignment } from "@/models/Assignment";
+import { Attachment } from "@/models/Attachment";
+import { AuditLog } from "@/models/AuditLog";
+import { ComplaintNote } from "@/models/ComplaintNote";
+import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Counter } from "@/models/Counter";
+import { Notification } from "@/models/Notification";
 import { getSettings } from "@/features/settings/services/settings.service";
 import { FEEDBACK_CATEGORIES } from "@/features/feedback/constants";
 import type { PriorityLevel } from "@/lib/constants";
@@ -330,9 +336,16 @@ export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    // Clear existing collections for a clean setup
+    // Clear existing collections for a clean setup. Complaint-dependent data
+    // is cleared first so a rerun leaves no orphaned demo history or links.
     await InformationRequest.deleteMany({});
     await ArchiveRequest.deleteMany({});
+    await Assignment.deleteMany({});
+    await Attachment.deleteMany({});
+    await AuditLog.deleteMany({ entityType: "Complaint" });
+    await ComplaintNote.deleteMany({});
+    await ComplaintTimeline.deleteMany({});
+    await Notification.deleteMany({ relatedComplaintRef: { $ne: null } });
     await User.deleteMany({});
     await Office.deleteMany({});
     await Category.deleteMany({});
@@ -424,6 +437,16 @@ export async function GET(req: NextRequest) {
     const generalServicesOffice = await Office.create({
       name: "General Services Office",
       code: "GSO",
+      type: "university_office",
+      parentOffice: null,
+    });
+
+    // ICTO is an operational university office. It intentionally has no
+    // invented parent/escalation destination; existing hierarchy rules remain
+    // unchanged unless an administrator configures one later.
+    const ictoOffice = await Office.create({
+      name: "Information and Communication Technology Office",
+      code: "ICTO",
       type: "university_office",
       parentOffice: null,
     });
@@ -610,6 +633,67 @@ export async function GET(req: NextRequest) {
         defaultOfficeRef: ovpafOffice._id,
         defaultPriority: "medium",
       },
+      // --- ICTO (information technology services and support) ---
+      {
+        name: "User Accounts",
+        description: "Student PBox, institutional email, password reset, account activation, faculty/staff accounts, and other ICT credentials",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Online System Support",
+        description: "Enrollment system, Student Clearance, Entrant's Applications, Student Accounts, and other supported university online systems",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Internet and Network",
+        description: "Wi-Fi connectivity, internet connection, and network access",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "ICT Equipment Servicing",
+        description: "Desktop and laptop repair, printer concerns, software installation, troubleshooting, and technical support",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Website and Digital Services",
+        description: "Website access, online services, and system/service availability",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Multimedia",
+        description: "Livestreaming technical support, video coverage, remote audit/accreditation support, and LED panel troubleshooting and maintenance",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "ICT Facilities",
+        description: "ICT laboratory access, network facilities, and ICT equipment access",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Cybersecurity",
+        description: "Phishing, leaked passwords, suspicious emails, and unauthorized access or password concerns",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "critical",
+      },
+      {
+        name: "System Errors",
+        description: "Login errors, unavailable systems, and technical or system issues",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "General ICT Inquiry",
+        description: "ICT services, ICT procedures, and general technical assistance",
+        defaultOfficeRef: ictoOffice._id,
+        defaultPriority: "low",
+      },
     ] as const;
 
     const allCategories: {
@@ -784,6 +868,28 @@ export async function GET(req: NextRequest) {
         role: "office_staff",
         employeeOrStudentId: "EMP-0099",
         officeRef: qaOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "ICTO",
+        lastName: "Head",
+        email: "icto.head@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0100",
+        officeRef: ictoOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "ICTO",
+        lastName: "Staff",
+        email: "icto.staff@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0101",
+        officeRef: ictoOffice._id,
         tokenVersion: 1,
         isActive: true,
       },
@@ -1027,16 +1133,21 @@ export async function GET(req: NextRequest) {
       [ovpafOffice._id, "vpaf@parsu.edu.ph"],
       [qaOffice._id, "qa@parsu.edu.ph"],
       [generalServicesOffice._id, "staff4@parsu.edu.ph"],
+      [ictoOffice._id, "icto.head@parsu.edu.ph"],
     ] as const;
     for (const [officeId, email] of officeHeadAssignments) {
       const head = insertedUsers.find((u) => u.email === email);
       if (!head) throw new Error(`Could not find seeded head account ${email}`);
       await Office.updateOne({ _id: officeId }, { $set: { headUserRef: head._id } });
     }
+    const ictoHeadUser = insertedUsers.find((u) => u.email === "icto.head@parsu.edu.ph");
 
     // 4. Bulk-reserve a contiguous block of ticket numbers (one atomic
     // increment instead of one Counter round-trip per complaint).
-    const COMPLAINT_COUNT = 300;
+    // Structural seed only: demo complaint generation is intentionally off.
+    // Keep the lifecycle code below available for future fixture work, but
+    // this seed must leave the database with zero pre-seeded complaints.
+    const COMPLAINT_COUNT = 0;
     const settings = await getSettings();
     const year = new Date().getFullYear();
     const counterId = `ticketNumber:${year}`;
@@ -1161,7 +1272,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    const insertedComplaints = await Complaint.insertMany(complaintDocs);
+    const insertedComplaints = complaintDocs.length ? await Complaint.insertMany(complaintDocs) : [];
 
     // 4b. Seed the actual sub-resources behind two lifecycle states that
     // otherwise only exist as a bare `status` string with nothing backing
@@ -1231,16 +1342,20 @@ export async function GET(req: NextRequest) {
     });
     await Feedback.insertMany(feedbackDocs);
 
+    const ictoCategories = additionalCategories.filter(
+      (category) => String(category.defaultOfficeRef) === String(ictoOffice._id),
+    ).length;
+
     return NextResponse.json({
-      message: "Database seeded with a full data set for analytics.",
+      message: "Database seeded with structural data only; no complaint tickets were generated.",
       counts: {
         users: insertedUsers.length,
         colleges: colleges.length,
         categories: allCategories.length,
-        complaints: complaintDocs.length,
+        complaints: 0,
         feedback: feedbackDocs.length,
-        informationRequests: pendingInfoComplaints.length,
-        archiveRequests: ARCHIVE_REQUEST_COUNT,
+        informationRequests: 0,
+        archiveRequests: 0,
       },
       offices: {
         primaryCollege: primaryCollege._id,
@@ -1250,7 +1365,20 @@ export async function GET(req: NextRequest) {
         ovpafOffice: ovpafOffice._id,
         qaOffice: qaOffice._id,
         generalServicesOffice: generalServicesOffice._id,
+        ictoOffice: ictoOffice._id,
         complaintCategory: complaintCategory._id,
+      },
+      icto: {
+        office: {
+          id: ictoOffice._id,
+          name: ictoOffice.name,
+          code: ictoOffice.code,
+          headUserRef: ictoHeadUser?._id ?? null,
+        },
+        accounts: ["icto.head@parsu.edu.ph", "icto.staff@parsu.edu.ph"],
+        categoryCount: ictoCategories,
+        routingRuleCount: ictoCategories,
+        escalation: "No special escalation route configured",
       },
       verifyRoutingAccounts: {
         note: "Log in as each office_staff account below (password ParSU_test2026) and confirm complaints for that office appear on their dashboard. \"(head)\" accounts are Office.headUserRef for that office and can Assign Staff / Change Assignee / Reassign Office; the rest are ordinary staff who can only Pick Up / Release.",
@@ -1265,6 +1393,7 @@ export async function GET(req: NextRequest) {
         ovpaa: ["staff6@parsu.edu.ph (head)", "staff13@parsu.edu.ph"],
         ovpaf: ["staff7@parsu.edu.ph (head)", "staff14@parsu.edu.ph"],
         qualityAssurance: ["qa@parsu.edu.ph (head)", "staff15@parsu.edu.ph"],
+        icto: ["icto.head@parsu.edu.ph (head)", "icto.staff@parsu.edu.ph"],
       },
     });
   } catch (error: any) {
