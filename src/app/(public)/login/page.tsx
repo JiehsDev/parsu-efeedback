@@ -190,12 +190,6 @@ function LoginForm() {
         </form>
       </div>
 
-      <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
-        Student?{" "}
-        <Link href="/register" className="font-medium text-[var(--primary)] hover:underline">
-          Create an account
-        </Link>
-      </p>
     </main>
   );
 }

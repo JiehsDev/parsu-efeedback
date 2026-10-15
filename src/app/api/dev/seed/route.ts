@@ -451,6 +451,17 @@ export async function GET(req: NextRequest) {
       parentOffice: null,
     });
 
+    // University Health Services Unit is an operational office with no
+    // invented parent or escalation destination.
+    const hsuOffice = await Office.create({
+      name: "University Health Services Unit",
+      code: "HSU",
+      email: "clinic@parsu.edu.ph",
+      location: "Back of the CBM and IT Building",
+      type: "university_office",
+      parentOffice: null,
+    });
+
     // Administrator doesn't belong to any office/college per BR — it's a
     // distinct permission set, not staff+extra (architecture.md §6).
     // officeRef/collegeRef stay null for this role.
@@ -632,6 +643,61 @@ export async function GET(req: NextRequest) {
         description: "Tuition payment posting delays, fee assessment discrepancies",
         defaultOfficeRef: ovpafOffice._id,
         defaultPriority: "medium",
+      },
+      // --- University Health Services Unit ---
+      {
+        name: "Consultation",
+        description: "General request for health consultation",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Physical Examination",
+        description: "Request or concern related to physical examination",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Weight and Height Monitoring",
+        description: "Request for weight and height monitoring",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "low",
+      },
+      {
+        name: "BP Monitoring",
+        description: "Request for blood pressure monitoring",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Blood Chemistry",
+        description: "Inquiry or request related to blood chemistry",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Wound Treatment",
+        description: "Request for wound treatment or care",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "high",
+      },
+      {
+        name: "Issuance of Medicines",
+        description: "Request or inquiry regarding medicines issued by the university clinic",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Issuance of Medical Certificate for Off-Campus Activity",
+        description: "Request for a medical certificate required for off-campus activity",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "medium",
+      },
+      {
+        name: "Speakership Invitation for Health Education Campaign",
+        description: "Request or invitation for HSU participation in a health education campaign",
+        defaultOfficeRef: hsuOffice._id,
+        defaultPriority: "low",
       },
       // --- ICTO (information technology services and support) ---
       {
@@ -894,6 +960,28 @@ export async function GET(req: NextRequest) {
         isActive: true,
       },
       {
+        firstName: "HSU",
+        lastName: "Head",
+        email: "hsu.head@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0102",
+        officeRef: hsuOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
+        firstName: "HSU",
+        lastName: "Staff",
+        email: "hsu.staff@parsu.edu.ph",
+        passwordHash: commonPasswordHash,
+        role: "office_staff",
+        employeeOrStudentId: "EMP-0103",
+        officeRef: hsuOffice._id,
+        tokenVersion: 1,
+        isActive: true,
+      },
+      {
         firstName: "System",
         lastName: "Administrator",
         email: "admin@parsu.edu.ph",
@@ -1134,6 +1222,7 @@ export async function GET(req: NextRequest) {
       [qaOffice._id, "qa@parsu.edu.ph"],
       [generalServicesOffice._id, "staff4@parsu.edu.ph"],
       [ictoOffice._id, "icto.head@parsu.edu.ph"],
+      [hsuOffice._id, "hsu.head@parsu.edu.ph"],
     ] as const;
     for (const [officeId, email] of officeHeadAssignments) {
       const head = insertedUsers.find((u) => u.email === email);
@@ -1141,6 +1230,7 @@ export async function GET(req: NextRequest) {
       await Office.updateOne({ _id: officeId }, { $set: { headUserRef: head._id } });
     }
     const ictoHeadUser = insertedUsers.find((u) => u.email === "icto.head@parsu.edu.ph");
+    const hsuHeadUser = insertedUsers.find((u) => u.email === "hsu.head@parsu.edu.ph");
 
     // 4. Bulk-reserve a contiguous block of ticket numbers (one atomic
     // increment instead of one Counter round-trip per complaint).
@@ -1345,6 +1435,9 @@ export async function GET(req: NextRequest) {
     const ictoCategories = additionalCategories.filter(
       (category) => String(category.defaultOfficeRef) === String(ictoOffice._id),
     ).length;
+    const hsuCategories = additionalCategories.filter(
+      (category) => String(category.defaultOfficeRef) === String(hsuOffice._id),
+    ).length;
 
     return NextResponse.json({
       message: "Database seeded with structural data only; no complaint tickets were generated.",
@@ -1366,6 +1459,7 @@ export async function GET(req: NextRequest) {
         qaOffice: qaOffice._id,
         generalServicesOffice: generalServicesOffice._id,
         ictoOffice: ictoOffice._id,
+        hsuOffice: hsuOffice._id,
         complaintCategory: complaintCategory._id,
       },
       icto: {
@@ -1378,6 +1472,21 @@ export async function GET(req: NextRequest) {
         accounts: ["icto.head@parsu.edu.ph", "icto.staff@parsu.edu.ph"],
         categoryCount: ictoCategories,
         routingRuleCount: ictoCategories,
+        escalation: "No special escalation route configured",
+      },
+      hsu: {
+        office: {
+          id: hsuOffice._id,
+          name: hsuOffice.name,
+          code: hsuOffice.code,
+          email: hsuOffice.email,
+          location: hsuOffice.location,
+          headUserRef: hsuHeadUser?._id ?? null,
+        },
+        accounts: ["hsu.head@parsu.edu.ph", "hsu.staff@parsu.edu.ph"],
+        categoryCount: hsuCategories,
+        routingRuleCount: hsuCategories,
+        routingVerification: `${hsuCategories} categories -> HSU`,
         escalation: "No special escalation route configured",
       },
       verifyRoutingAccounts: {
@@ -1394,6 +1503,7 @@ export async function GET(req: NextRequest) {
         ovpaf: ["staff7@parsu.edu.ph (head)", "staff14@parsu.edu.ph"],
         qualityAssurance: ["qa@parsu.edu.ph (head)", "staff15@parsu.edu.ph"],
         icto: ["icto.head@parsu.edu.ph (head)", "icto.staff@parsu.edu.ph"],
+        hsu: ["hsu.head@parsu.edu.ph (head)", "hsu.staff@parsu.edu.ph"],
       },
     });
   } catch (error: any) {

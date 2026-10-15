@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -135,8 +136,14 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   return (
     <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)] lg:w-56">
       <Link href="/admin/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--foreground)] text-xs font-bold text-[var(--card)]">
-          P
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-0.5 ring-1 ring-[var(--border)]">
+          <Image
+            src="/LOGO.png"
+            alt=""
+            width={28}
+            height={28}
+            className="h-full w-full object-contain"
+          />
         </span>
         <span className="hidden text-[13px] font-bold tracking-tight text-[var(--foreground)] lg:inline">
           {workspaceLabel}

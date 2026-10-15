@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { GraduationCap } from "lucide-react";
+import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { homeRouteForRole } from "@/middleware/rbac";
 
@@ -32,8 +32,8 @@ export default async function PublicLayout({ children }: { children: React.React
         />
 
         <Link href="/" className="relative flex items-center gap-2.5 text-white">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20">
-            <GraduationCap className="h-5 w-5" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1 ring-1 ring-white/20">
+            <Image src="/LOGO.png" alt="" width={32} height={32} className="h-full w-full object-contain" />
           </span>
           <span className="text-base font-semibold tracking-tight">ParSU e-Feedback</span>
         </Link>
@@ -56,8 +56,8 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* Form panel */}
       <div className="flex flex-1 flex-col">
         <div className="flex items-center gap-2.5 px-4 pt-6 sm:px-6 lg:hidden">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)] ring-1 ring-[var(--primary)]/30">
-            <GraduationCap className="h-[18px] w-[18px]" />
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1 ring-1 ring-[var(--primary)]/30">
+            <Image src="/LOGO.png" alt="" width={28} height={28} className="h-full w-full object-contain" />
           </span>
           <span className="text-sm font-semibold tracking-tight text-[var(--foreground)]">
             ParSU e-Feedback

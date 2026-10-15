@@ -1,7 +1,18 @@
 // src/app/student/dashboard/page.tsx
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Bell, ClipboardList, MessageSquareWarning, Plus, Timer, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Bell,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  FileText,
+  MessageSquareWarning,
+  Plus,
+  Timer,
+  Zap,
+} from "lucide-react";
 import { Types } from "mongoose";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
@@ -106,6 +117,41 @@ export default async function StudentDashboardPage() {
     },
   ];
 
+  const QUICK_ACTIONS = [
+    {
+      label: "Open complaints",
+      description: "Still being processed",
+      value: openCount,
+      href: "/student/complaints",
+      icon: FileText,
+      iconClass: "bg-[var(--primary)]/10 text-[var(--primary)]",
+    },
+    {
+      label: "Action required",
+      description: "Needs your response",
+      value: awaitingYou,
+      href: "/student/complaints?status=pending_information",
+      icon: MessageSquareWarning,
+      iconClass: "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]",
+    },
+    {
+      label: "Overdue complaints",
+      description: "Deadline exceeded",
+      value: overdueCount,
+      href: "/student/complaints?due=overdue",
+      icon: Clock3,
+      iconClass: "bg-[var(--qa-rose-soft)] text-[var(--qa-rose-strong)]",
+    },
+    {
+      label: "Resolved complaints",
+      description: "Marked as resolved",
+      value: resolvedCount,
+      href: "/student/complaints?view=resolved",
+      icon: CheckCircle2,
+      iconClass: "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]",
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -120,6 +166,55 @@ export default async function StudentDashboardPage() {
           Submit Complaint
         </Link>
       </div>
+
+      <section aria-labelledby="quick-actions-heading">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <h2
+            id="quick-actions-heading"
+            className="text-xs font-semibold tracking-[0.08em] text-[var(--muted-foreground)] uppercase"
+          >
+            Quick actions
+          </h2>
+          <Link
+            href="/student/complaints"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline"
+          >
+            View complaints
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {QUICK_ACTIONS.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.label}
+                href={action.href}
+                className="group flex min-h-[92px] items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 transition-colors hover:border-[var(--primary)]/35 hover:bg-[var(--muted)]/35"
+              >
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${action.iconClass}`}>
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-semibold text-[var(--foreground)]">
+                      {action.label}
+                    </span>
+                    <span className="qa-tabular text-xl leading-none font-semibold text-[var(--foreground)]">
+                      {action.value}
+                    </span>
+                  </span>
+                  <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
+                    {action.description}
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-[var(--muted-foreground)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--primary)]" />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       {/* The one thing on this page that is genuinely blocked on the student.
           "Pending information" means an office asked a question and is waiting

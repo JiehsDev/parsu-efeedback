@@ -19,6 +19,9 @@ const officeSchema = new Schema(
     // BR-019: unique office code (also used for colleges)
     code: { type: String, required: true, unique: true, uppercase: true, trim: true },
 
+    email: { type: String, default: null, trim: true },
+    location: { type: String, default: null, trim: true },
+
     // Optional hierarchy, e.g. a department office under a college
     parentOffice: { type: Schema.Types.ObjectId, ref: "Office", default: null },
 

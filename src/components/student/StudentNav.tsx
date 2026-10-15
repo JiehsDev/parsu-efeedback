@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -60,8 +61,14 @@ export function StudentNav({ userName }: { userName: string }) {
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
         <div className="flex items-center gap-6">
           <Link href="/student/dashboard" className="flex shrink-0 items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--primary)] text-sm font-bold text-[var(--primary-foreground)]">
-              P
+            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 ring-1 ring-[var(--border)]">
+              <Image
+                src="/LOGO.png"
+                alt=""
+                width={32}
+                height={32}
+                className="h-full w-full object-contain"
+              />
             </span>
             <span className="hidden text-sm font-semibold tracking-tight text-[var(--foreground)] sm:inline">
               ParSU e-Feedback
