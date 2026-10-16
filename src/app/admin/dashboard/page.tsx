@@ -527,6 +527,9 @@ export default async function AdminDashboardPage() {
             >
               Users by role
             </h2>
+            <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+              Shows the number of active users in each role.
+            </p>
             {roleData.length === 0 ? (
               <p className="mt-2 text-xs text-[var(--muted-foreground)]">No data yet.</p>
             ) : (
@@ -594,6 +597,9 @@ export default async function AdminDashboardPage() {
             >
               Office SLA performance
             </h2>
+            <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+              Shows how well each office meets its deadlines.
+            </p>
           </div>
           <div className="mt-3 space-y-3">
             {officePerformance.length === 0 ? (
@@ -634,6 +640,9 @@ export default async function AdminDashboardPage() {
               <ArrowRight className="h-2.5 w-2.5" />
             </Link>
           </div>
+          <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+            Shows complaint volume and deadline performance over time.
+          </p>
           {trends.length === 0 ? (
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">Not enough data yet.</p>
           ) : (
@@ -659,6 +668,9 @@ export default async function AdminDashboardPage() {
               View all in Reports <ArrowRight className="h-2.5 w-2.5" />
             </Link>
           </div>
+          <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+            Shows which complaint topics are most common.
+          </p>
           <div className="mt-3">
             {categoryBreakdown.length ? <CategoryBarChart data={categoryBreakdown.slice(0, 8)} heightClassName="h-64" /> : <p className="text-xs text-[var(--muted-foreground)]">No category data yet.</p>}
           </div>
@@ -671,6 +683,9 @@ export default async function AdminDashboardPage() {
           <h2 id="admin-priority-heading" className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
             Priority mix
           </h2>
+          <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+            Shows how complaints are split by urgency.
+          </p>
           <div className="mt-3">
             {priorityBreakdown.length ? <PriorityPieChart data={priorityBreakdown} /> : <p className="text-xs text-[var(--muted-foreground)]">No priority data yet.</p>}
           </div>
@@ -682,6 +697,9 @@ export default async function AdminDashboardPage() {
           <h2 id="admin-college-heading" className="text-[11px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
             College comparison
           </h2>
+          <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+            Shows the number of complaints from each college.
+          </p>
           <div className="mt-3">
             {collegeComparison.length ? (
               <QaBarList data={collegeComparison.map((item: any) => ({ label: item.college, value: item.volume }))} subject="college" color="var(--primary)" />
