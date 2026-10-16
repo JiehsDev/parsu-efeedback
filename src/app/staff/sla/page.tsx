@@ -40,13 +40,14 @@ function buildHref(params: Record<string, string | undefined>) {
 }
 
 function SummaryCard({ label, value, subtext, tone, icon: Icon }: { label: string; value: number; subtext: string; tone: "neutral" | "rose" | "amber" | "green"; icon: typeof Inbox }) {
-  const styles = {
-    neutral: "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
-    rose: "border-[var(--qa-rose)]/30 bg-[var(--qa-rose-soft)] text-[var(--qa-rose-strong)]",
-    amber: "border-[var(--qa-amber)]/30 bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]",
-    green: "border-[var(--qa-success)]/30 bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]",
+  const iconClass = {
+    neutral: "bg-[var(--primary)]/10 text-[var(--primary)]",
+    rose: "bg-[var(--qa-rose-soft)] text-[var(--qa-rose-strong)]",
+    amber: "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]",
+    green: "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]",
   }[tone];
-  return <div className={`rounded-2xl border px-4 py-3.5 ${styles}`}><div className="flex items-start justify-between gap-3"><div><p className="text-2xl font-bold leading-none tracking-tight tabular-nums">{value}</p><p className="mt-1.5 text-xs font-semibold">{label}</p></div><Icon className="h-4 w-4 opacity-75" /></div><p className="mt-2 text-[11px] opacity-80">{subtext}</p></div>;
+  const valueClass = tone === "rose" ? "text-[var(--qa-rose-strong)]" : tone === "amber" ? "text-[var(--qa-amber-strong)]" : tone === "green" ? "text-[var(--qa-success-strong)]" : "text-[var(--foreground)]";
+  return <div className="flex min-h-[84px] items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"><span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconClass}`}><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-[var(--foreground)]">{label}</span><span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">{subtext}</span></span><span className={`qa-tabular shrink-0 text-2xl leading-none font-semibold tracking-tight ${valueClass}`}>{value}</span></div>;
 }
 
 function SlaRow({ item }: { item: SlaItem }) {

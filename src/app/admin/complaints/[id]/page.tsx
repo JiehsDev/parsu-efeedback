@@ -68,7 +68,9 @@ export default async function AdminComplaintDetailPage({
   // No isArchived filter here, unlike every role-scoped complaint page —
   // an admin has to be able to open an already-archived complaint in order
   // to restore it (see ArchiveComplaintToggle below).
-  const complaint = await Complaint.findById(id).lean();
+  const complaint = await Complaint.findById(id)
+    .populate("resolvedByRef", "firstName lastName")
+    .lean();
   if (!complaint) notFound();
 
   const c = complaint as any;
@@ -128,6 +130,11 @@ export default async function AdminComplaintDetailPage({
   }
   if (role === "osas" && !(await isComplaintInOsasActionScope(c))) redirect("/admin/complaints");
   const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
+  const resolutionEvent = [...(timeline as any[])].reverse().find((event) => event.toValue === "resolved");
+  const resolver = c.resolvedByRef ?? resolutionEvent?.actorRef ?? null;
+  const resolverName = resolver
+    ? `${resolver.firstName ?? ""} ${resolver.lastName ?? ""}`.trim()
+    : "Not recorded";
   const pendingArchive = JSON.parse(JSON.stringify(archiveRequests)).find((request: any) => request.status === "pending");
   const isOfficeHead = String((office as any)?.headUserRef ?? "") === session!.user.id;
 
@@ -266,6 +273,15 @@ export default async function AdminComplaintDetailPage({
                   {new Date(c.submittedAt).toLocaleString()}
                 </dd>
               </div>
+              {(c.status === "resolved" || c.status === "closed") && (
+                <div>
+                  <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                    <UserIcon className="h-3.5 w-3.5" />
+                    Resolved By
+                  </dt>
+                  <dd className="mt-1.5 text-[var(--foreground)]">{resolverName}</dd>
+                </div>
+              )}
             </dl>
           </div>
 

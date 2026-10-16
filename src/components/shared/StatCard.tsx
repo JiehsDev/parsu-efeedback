@@ -28,27 +28,16 @@ export interface StatCardData {
 export function StatCard({ stat, compact = false }: { stat: StatCardData; compact?: boolean }) {
   if (compact) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
-            {stat.label}
-          </p>
-          <stat.icon
-            className="h-3.5 w-3.5 shrink-0"
-            style={{ color: stat.iconColor ?? "var(--muted-foreground)" }}
-          />
-        </div>
-        <p className="qa-tabular mt-1.5 text-[22px] leading-none font-bold tracking-tight text-[var(--foreground)]">
-          {stat.value}
-        </p>
-        {stat.delta && (
-          <p
-            className="mt-1 text-[10.5px] font-semibold"
-            style={{ color: stat.deltaColor ?? "var(--muted-foreground)" }}
-          >
-            {stat.delta}
-          </p>
-        )}
+      <div className="flex min-h-[84px] items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3">
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${stat.chipBg} ${stat.chipText}`}>
+          <stat.icon className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-xs font-semibold text-[var(--foreground)]">{stat.label}</span>
+          {stat.hint && <span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">{stat.hint}</span>}
+          {stat.delta && <span className="mt-1 block truncate text-[10.5px] font-semibold" style={{ color: stat.deltaColor ?? "var(--muted-foreground)" }}>{stat.delta}</span>}
+        </span>
+        <span className="qa-tabular shrink-0 text-2xl leading-none font-semibold tracking-tight text-[var(--foreground)]">{stat.value}</span>
       </div>
     );
   }
@@ -59,34 +48,23 @@ export function StatCard({ stat, compact = false }: { stat: StatCardData; compac
   const numberClassName = stat.emphasize ? stat.chipText : "text-[var(--foreground)]";
 
   const content = (
-    <>
-      <div className="flex items-center justify-between gap-2">
-        <p className={`text-[11px] font-semibold tracking-wide uppercase ${labelClassName}`}>
-          {stat.label}
-        </p>
-        <div className="relative h-4 w-4 shrink-0">
-          <stat.icon
-            className="absolute inset-0 h-4 w-4 transition-opacity group-hover:opacity-0"
-            style={{ color: stat.iconColor ?? "var(--muted-foreground)" }}
-          />
-          {stat.href && (
-            <ArrowUpRight
-              className="absolute inset-0 h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100"
-              style={{ color: stat.iconColor ?? "var(--muted-foreground)" }}
-            />
-          )}
-        </div>
-      </div>
-      <p className={`qa-tabular mt-3 text-4xl font-bold tracking-tight ${numberClassName}`}>
-        {stat.value}
-      </p>
-      {stat.hint && <p className="mt-1 text-xs text-[var(--muted-foreground)]">{stat.hint}</p>}
-    </>
+    <div className="flex min-h-[92px] items-center gap-3">
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.chipBg} ${stat.chipText}`}>
+        <stat.icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={`block truncate text-xs font-semibold ${labelClassName}`}>{stat.label}</span>
+        {stat.hint && <span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">{stat.hint}</span>}
+        {stat.delta && <span className="mt-1 block truncate text-[10.5px] font-semibold" style={{ color: stat.deltaColor ?? "var(--muted-foreground)" }}>{stat.delta}</span>}
+      </span>
+      <span className={`qa-tabular shrink-0 text-3xl leading-none font-bold tracking-tight ${numberClassName}`}>{stat.value}</span>
+      {stat.href && <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--muted-foreground)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />}
+    </div>
   );
 
-  const cardClassName = `group relative rounded-3xl border p-5 transition-all ${
-    stat.emphasize ? `${stat.chipBorder} ${stat.chipBg}` : "border-[var(--border)] bg-[var(--card)]"
-  } ${stat.href ? "hover:-translate-y-0.5 hover:shadow-md" : ""}`;
+  const cardClassName = `group relative rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 transition-colors ${
+    stat.href ? "hover:bg-[var(--muted)]/45" : ""
+  }`;
 
   if (stat.href) {
     return (

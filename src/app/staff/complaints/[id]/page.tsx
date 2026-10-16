@@ -47,7 +47,7 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
   await connectToDatabase();
   const { id } = await params;
 
-  const complaint = await Complaint.findById(id).read("primary").populate({
+  const complaint = await Complaint.findById(id).read("primary").populate("resolvedByRef", "firstName lastName").populate({
     path: "studentRef",
     select: "employeeOrStudentId collegeRef",
     populate: { path: "collegeRef", select: "name" },
@@ -70,6 +70,11 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
   const currentOfficeName = (office as any)?.name ?? "Your office";
   const currentStaffName = assignedStaff ? `${(assignedStaff as any).firstName} ${(assignedStaff as any).lastName}` : null;
   const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
+  const resolutionEvent = [...(timeline as any[])].reverse().find((event) => event.toValue === "resolved");
+  const resolver = c.resolvedByRef ?? resolutionEvent?.actorRef ?? null;
+  const resolverName = resolver
+    ? `${resolver.firstName ?? ""} ${resolver.lastName ?? ""}`.trim()
+    : "Not recorded";
   const requests = JSON.parse(JSON.stringify(informationRequests));
   const activeRequest = requests.find((request: any) => request.status === "open");
   const archiveHistory = JSON.parse(JSON.stringify(archiveRequests));
@@ -113,7 +118,7 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
              {!c.isArchived && !["resolved", "closed"].includes(c.status) && String(c.assignedStaffRef) === session.user.id && <StatusUpdateForm complaintId={String(c._id)} currentStatus={c.status} />}
              {!c.isArchived && !["resolved", "closed", "withdrawn"].includes(c.status) && String(c.assignedStaffRef) === session.user.id && <ReleaseAssignmentButton complaintId={String(c._id)} />}
              {isOfficeHead && c.status === "resolved" && <ReopenComplaintButton complaintId={String(c._id)} />}
-            {c.status === "resolved" && <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">Resolved · Awaiting Student Confirmation</p>}
+            {c.status === "resolved" && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-700 dark:text-emerald-300"><p className="font-medium">Resolved · Awaiting Student Confirmation</p><p className="mt-1">Resolved by {resolverName}</p></div>}
              {!c.isArchived && !["resolved", "closed"].includes(c.status) && (String(c.assignedStaffRef ?? "") === session.user.id || c.status === "pending_information") && <InformationRequestPanel complaintId={String(c._id)} status={c.status} canRequest={String(c.assignedStaffRef ?? "") === session.user.id} requests={requests} />}
             {c.isArchived ? <p className="rounded-xl bg-[var(--muted)] px-3 py-2 text-xs text-[var(--muted-foreground)]">Archived complaints are read-only until restored.</p> : isOfficeHead && pendingArchive ? <ArchiveApprovalPanel request={pendingArchive} /> : isOfficeHead && canArchive ? <ArchiveComplaintToggle complaintId={String(c._id)} ticketNumber={c.ticketNumber} isArchived={false} mode="head" /> : !isOfficeHead && session.user.role === "office_staff" && canArchive && !pendingArchive && (!c.assignedStaffRef || String(c.assignedStaffRef) === session.user.id) ? <ArchiveRequestButton complaintId={String(c._id)} /> : pendingArchive ? <p className="rounded-xl bg-[var(--qa-amber-soft)] px-3 py-2 text-xs text-[var(--qa-amber-strong)]">Archive Request Pending</p> : null}
             {String(c.assignedStaffRef ?? "") === session.user.id && escalationTarget && c.status !== "withdrawn" && <div className="space-y-3"><div className="rounded-xl border border-[var(--qa-amber)]/30 bg-[var(--qa-amber-soft)] px-3 py-2.5"><p className="text-[11px] font-semibold tracking-wide text-[var(--qa-amber-strong)] uppercase">Next escalation target</p><p className="mt-1 text-sm font-semibold text-[var(--qa-amber-strong)]">{escalationTarget.office.name} Office Head</p><p className="mt-0.5 text-xs text-[var(--qa-amber-strong)]/80">{escalationTarget.staff.firstName} {escalationTarget.staff.lastName} · {escalationTarget.staff.email}</p></div><AssignmentDialog complaintId={String(c._id)} currentOfficeId={String(c.assignedOfficeRef)} currentOfficeName={currentOfficeName} currentStaffId={String(c.assignedStaffRef)} currentStaffName={currentStaffName} offices={[{ _id: String(escalationTarget.office._id), name: escalationTarget.office.name, type: escalationTarget.office.type }]} canChangeOffice action="escalate" label="Escalate Complaint" destinationOfficeId={String(escalationTarget.office._id)} destinationStaffId={String(escalationTarget.staff._id)} /></div>}

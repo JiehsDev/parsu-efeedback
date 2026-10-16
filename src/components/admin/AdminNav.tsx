@@ -124,7 +124,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
         className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
           active
             ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
-            : "font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+            : "font-medium text-white/75 hover:bg-white/10 hover:text-white"
         }`}
       >
         <item.icon className="h-[17px] w-[17px] shrink-0" />
@@ -134,18 +134,18 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   }
 
   return (
-    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)] lg:w-56">
+    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-white/15 bg-[var(--primary)] lg:w-56">
       <Link href="/admin/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-0.5 ring-1 ring-[var(--border)]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
           <Image
-            src="/LOGO.png"
+            src="/LOGO.jpg"
             alt=""
             width={28}
             height={28}
             className="h-full w-full object-contain"
           />
         </span>
-        <span className="hidden text-[13px] font-bold tracking-tight text-[var(--foreground)] lg:inline">
+        <span className="hidden text-[13px] font-bold tracking-tight text-white lg:inline">
           {workspaceLabel}
         </span>
       </Link>
@@ -161,7 +161,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
             stay administrator-only — not shown to any scoped sub-admin. */}
         {!isScopedSubAdmin && (
           <>
-            <p className="mt-3 mb-1 px-3 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+            <p className="mt-3 mb-1 px-3 text-[10px] font-semibold tracking-wide text-white/60 uppercase">
               <span className="hidden lg:inline">Configuration</span>
               <span className="lg:hidden">···</span>
             </p>
@@ -170,12 +170,12 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
         )}
       </nav>
 
-      <div className="shrink-0 border-t border-[var(--border)]/70 p-2.5">
+      <div className="shrink-0 border-t border-white/15 p-2.5">
         <div className="flex items-center gap-2">
           <Link
             href="/admin/notifications"
             title="Notifications"
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)]/60 hover:text-[var(--foreground)]"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
@@ -190,16 +190,16 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-[var(--muted)]/60"
+              className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-white/10"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--muted)] text-[11px] font-bold text-[var(--foreground)]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15 text-[11px] font-bold text-white">
                 {initials}
               </span>
               <span className="hidden min-w-0 flex-1 text-left lg:block">
-                <span className="block truncate text-[12.5px] font-semibold text-[var(--foreground)]">
+                <span className="block truncate text-[12.5px] font-semibold text-white">
                   {userName}
                 </span>
-                <span className="block truncate text-[10.5px] text-[var(--muted-foreground)]">
+                <span className="block truncate text-[10.5px] text-white/65">
                   {roleLabel}
                 </span>
               </span>

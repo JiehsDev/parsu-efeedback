@@ -80,6 +80,7 @@ const complaintSchema = new Schema(
     // the `timestamps: true` option below and cover "Created"/"Updated")
     submittedAt: { type: Date, required: true, default: () => new Date() },
     resolvedAt: { type: Date, default: null },
+    resolvedByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
     closedAt: { type: Date, default: null },
 
     // Rating is optional: a resolved complaint closes either because the

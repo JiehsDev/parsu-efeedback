@@ -57,25 +57,25 @@ export function StudentNav({ userName }: { userName: string }) {
   const initials = getInitials(userName);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--border)]/70 bg-[var(--card)]/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-white/15 bg-[var(--primary)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
         <div className="flex items-center gap-6">
           <Link href="/student/dashboard" className="flex shrink-0 items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 ring-1 ring-[var(--border)]">
+            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
               <Image
-                src="/LOGO.png"
+                src="/LOGO.jpg"
                 alt=""
                 width={32}
                 height={32}
                 className="h-full w-full object-contain"
               />
             </span>
-            <span className="hidden text-sm font-semibold tracking-tight text-[var(--foreground)] sm:inline">
+            <span className="hidden text-sm font-semibold tracking-tight text-[var(--primary-foreground)] sm:inline">
               ParSU e-Feedback
             </span>
           </Link>
 
-          <nav className="flex items-center gap-0.5 rounded-full bg-[var(--muted)]/50 p-1">
+          <nav className="flex items-center gap-0.5 rounded-full bg-white/10 p-1">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
@@ -85,7 +85,7 @@ export function StudentNav({ userName }: { userName: string }) {
                   className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
                     active
                       ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                      : "text-white/75 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   <item.icon className="h-3.5 w-3.5" />
@@ -99,7 +99,7 @@ export function StudentNav({ userName }: { userName: string }) {
         <div className="flex items-center gap-2">
           <Link
             href="/student/notifications"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)]/60 hover:text-[var(--foreground)]"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
@@ -114,7 +114,7 @@ export function StudentNav({ userName }: { userName: string }) {
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary)]/15 text-xs font-semibold text-[var(--primary)] ring-1 ring-[var(--primary)]/30 transition-transform hover:scale-105"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-xs font-semibold text-white ring-1 ring-white/30 transition-transform hover:scale-105"
             >
               {initials}
             </button>

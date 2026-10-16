@@ -1355,6 +1355,7 @@ export async function GET(req: NextRequest) {
         reopenCount: 0,
         submittedAt,
         resolvedAt,
+        resolvedByRef: isResolved ? assignedStaffRef : null,
         closedAt,
         isArchived: false,
         createdAt: submittedAt,

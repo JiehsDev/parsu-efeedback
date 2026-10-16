@@ -1,5 +1,6 @@
 // src/app/api/complaints/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
@@ -217,7 +218,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   complaint.status = toStatus;
-  if (toStatus === "resolved" && !complaint.resolvedAt) complaint.resolvedAt = new Date();
+  if (toStatus === "resolved") {
+    if (!complaint.resolvedAt) complaint.resolvedAt = new Date();
+    complaint.resolvedByRef = new Types.ObjectId(session.user.id);
+  }
 
   await complaint.save();
 

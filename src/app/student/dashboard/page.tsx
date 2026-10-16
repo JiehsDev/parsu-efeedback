@@ -32,17 +32,17 @@ import {
 const HOW_IT_WORKS = [
   {
     icon: Zap,
-    title: "Routed instantly",
+    title: "Routed Instantly",
     body: "Sent to the right office the moment you submit — no manual triage.",
   },
   {
     icon: Timer,
-    title: "Tracked against a deadline",
+    title: "Tracked Against a Deadline",
     body: "Escalated automatically if the office is at risk of missing it.",
   },
   {
     icon: Bell,
-    title: "You get notified",
+    title: "You Get Notified",
     body: "When it is assigned, when it is updated, and when it is resolved.",
   },
 ];
@@ -93,60 +93,37 @@ export default async function StudentDashboardPage() {
   const SUMMARY = [
     {
       label: "Open",
-      value: openCount,
-      href: "/student/complaints",
-      emphasis: "",
-    },
-    {
-      label: "Needs your reply",
-      value: awaitingYou,
-      href: "/student/complaints?status=pending_information",
-      emphasis: awaitingYou > 0 ? "text-[var(--qa-amber-strong)]" : "",
-    },
-    {
-      label: "Past due",
-      value: overdueCount,
-      href: "/student/complaints?due=overdue",
-      emphasis: overdueCount > 0 ? "text-[var(--qa-rose-strong)]" : "",
-    },
-    {
-      label: "Resolved",
-      value: resolvedCount,
-      href: "/student/complaints?view=resolved",
-      emphasis: "",
-    },
-  ];
-
-  const QUICK_ACTIONS = [
-    {
-      label: "Open complaints",
       description: "Still being processed",
       value: openCount,
       href: "/student/complaints",
+      emphasis: "",
       icon: FileText,
       iconClass: "bg-[var(--primary)]/10 text-[var(--primary)]",
     },
     {
-      label: "Action required",
+      label: "Needs Your Reply",
       description: "Needs your response",
       value: awaitingYou,
       href: "/student/complaints?status=pending_information",
+      emphasis: awaitingYou > 0 ? "text-[var(--qa-amber-strong)]" : "",
       icon: MessageSquareWarning,
       iconClass: "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]",
     },
     {
-      label: "Overdue complaints",
+      label: "Past Due",
       description: "Deadline exceeded",
       value: overdueCount,
       href: "/student/complaints?due=overdue",
+      emphasis: overdueCount > 0 ? "text-[var(--qa-rose-strong)]" : "",
       icon: Clock3,
       iconClass: "bg-[var(--qa-rose-soft)] text-[var(--qa-rose-strong)]",
     },
     {
-      label: "Resolved complaints",
+      label: "Resolved",
       description: "Marked as resolved",
       value: resolvedCount,
       href: "/student/complaints?view=resolved",
+      emphasis: "",
       icon: CheckCircle2,
       iconClass: "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]",
     },
@@ -166,55 +143,6 @@ export default async function StudentDashboardPage() {
           Submit Complaint
         </Link>
       </div>
-
-      <section aria-labelledby="quick-actions-heading">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <h2
-            id="quick-actions-heading"
-            className="text-xs font-semibold tracking-[0.08em] text-[var(--muted-foreground)] uppercase"
-          >
-            Quick actions
-          </h2>
-          <Link
-            href="/student/complaints"
-            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline"
-          >
-            View complaints
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {QUICK_ACTIONS.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="group flex min-h-[92px] items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 transition-colors hover:border-[var(--primary)]/35 hover:bg-[var(--muted)]/35"
-              >
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${action.iconClass}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-[var(--foreground)]">
-                      {action.label}
-                    </span>
-                    <span className="qa-tabular text-xl leading-none font-semibold text-[var(--foreground)]">
-                      {action.value}
-                    </span>
-                  </span>
-                  <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
-                    {action.description}
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-[var(--muted-foreground)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--primary)]" />
-              </Link>
-            );
-          })}
-        </div>
-      </section>
 
       {/* The one thing on this page that is genuinely blocked on the student.
           "Pending information" means an office asked a question and is waiting
@@ -243,16 +171,18 @@ export default async function StudentDashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className="bg-[var(--card)] px-4 py-3 transition-colors hover:bg-[var(--muted)]/50"
+              className="group flex min-h-[84px] items-center gap-2.5 bg-[var(--card)] px-3.5 py-3 transition-colors hover:bg-[var(--muted)]/50 sm:px-4"
             >
-              <p
-                className={`qa-tabular text-2xl leading-none font-semibold tracking-tight ${
-                  s.emphasis || (s.value === 0 ? "text-[var(--muted-foreground)]" : "text-[var(--foreground)]")
-                }`}
-              >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.iconClass}`}>
+                <s.icon className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-xs font-medium text-[var(--foreground)]">{s.label}</span>
+                <span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">{s.description}</span>
+              </span>
+              <span className={`qa-tabular shrink-0 text-2xl leading-none font-semibold tracking-tight ${s.emphasis || (s.value === 0 ? "text-[var(--muted-foreground)]" : "text-[var(--foreground)]")}`}>
                 {s.value}
-              </p>
-              <p className="mt-1.5 text-xs text-[var(--muted-foreground)]">{s.label}</p>
+              </span>
             </Link>
           ))}
         </div>
@@ -264,7 +194,7 @@ export default async function StudentDashboardPage() {
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
               <ClipboardList className="h-4 w-4" />
             </span>
-            <p className="mt-3 text-sm font-medium text-[var(--foreground)]">No complaints yet</p>
+            <p className="mt-3 text-sm font-medium text-[var(--foreground)]">No Complaints Yet</p>
             <p className="mt-1 text-sm text-[var(--muted-foreground)]">
               Here is what happens after you submit one.
             </p>
@@ -273,7 +203,7 @@ export default async function StudentDashboardPage() {
               className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3.5 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
             >
               <Plus className="h-4 w-4" />
-              Submit your first complaint
+              Submit Your First Complaint
             </Link>
           </div>
 
@@ -294,12 +224,12 @@ export default async function StudentDashboardPage() {
       ) : (
         <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
-            <h2 className="text-sm font-semibold text-[var(--foreground)]">Recent activity</h2>
+              <h2 className="text-sm font-semibold text-[var(--foreground)]">Recent Activity</h2>
             <Link
               href="/student/complaints"
               className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline"
             >
-              View all {totalCount}
+              View All {totalCount}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>

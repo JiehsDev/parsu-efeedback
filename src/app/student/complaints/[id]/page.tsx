@@ -42,7 +42,9 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
   await connectToDatabase();
   const { id } = await params;
 
-  const complaint = await Complaint.findById(id).lean();
+  const complaint = await Complaint.findById(id)
+    .populate("resolvedByRef", "firstName lastName")
+    .lean();
   if (!complaint || String((complaint as any).studentRef) !== session!.user.id) {
     notFound();
   }
@@ -60,6 +62,11 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
       .lean(),
   ]);
   const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
+  const resolutionEvent = [...(timeline as any[])].reverse().find((event) => event.toValue === "resolved");
+  const resolver = c.resolvedByRef ?? resolutionEvent?.actorRef ?? null;
+  const resolverName = resolver
+    ? `${resolver.firstName ?? ""} ${resolver.lastName ?? ""}`.trim()
+    : "Not recorded";
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -208,6 +215,15 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
                   <dd className="mt-1.5 text-[var(--foreground)]">
                     {new Date(c.resolvedAt).toLocaleString()}
                   </dd>
+                </div>
+              )}
+              {(c.status === "resolved" || c.status === "closed") && (
+                <div>
+                  <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    Resolved By
+                  </dt>
+                  <dd className="mt-1.5 text-[var(--foreground)]">{resolverName}</dd>
                 </div>
               )}
             </dl>
