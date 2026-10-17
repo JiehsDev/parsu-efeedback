@@ -34,7 +34,7 @@ export default async function PublicLayout({ children }: { children: React.React
         <Link href="/" className="relative flex items-center gap-2.5 text-white">
           <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
             <Image
-              src="/LOGO.jpg"
+              src="/new_logo.jpg"
               alt=""
               width={32}
               height={32}
@@ -64,7 +64,7 @@ export default async function PublicLayout({ children }: { children: React.React
         <div className="flex items-center gap-2.5 px-4 pt-6 sm:px-6 lg:hidden">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
             <Image
-            src="/LOGO.jpg"
+            src="/new_logo.jpg"
               alt=""
               width={28}
               height={28}

@@ -60,7 +60,7 @@ export function StaffNav({
       <Link href="/staff/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
           <Image
-            src="/LOGO.jpg"
+            src="/new_logo.jpg"
             alt=""
             width={28}
             height={28}

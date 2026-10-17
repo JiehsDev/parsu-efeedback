@@ -96,5 +96,5 @@ export const proxy = auth((req) => {
 
 // src/proxy.ts
 export const config = {
-  matcher: ["/((?!api/auth|api/cron|api/colleges|_next/static|_next/image|favicon.ico|favicon.png|LOGO.jpg).*)"],
+  matcher: ["/((?!api/auth|api/cron|api/colleges|_next/static|_next/image|favicon.ico|favicon.png|LOGO.jpg|new_logo.jpg).*)"],
 };

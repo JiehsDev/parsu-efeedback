@@ -63,7 +63,7 @@ export function StudentNav({ userName }: { userName: string }) {
           <Link href="/student/dashboard" className="flex shrink-0 items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
               <Image
-                src="/LOGO.jpg"
+                src="/new_logo.jpg"
                 alt=""
                 width={32}
                 height={32}
