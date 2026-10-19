@@ -62,6 +62,19 @@ async function seedTwoOfficesTwoStatuses() {
 }
 
 describe("queryReportData — BR-080/081", () => {
+  it("includes resolution details, legacy fallback and previous-resolution labels", async () => {
+    const { resolvedOnTime, submitted } = await seedTwoOfficesTwoStatuses();
+    resolvedOnTime.resolutionSummary = "Replaced projector lamp.\nVerified operation.";
+    await resolvedOnTime.save();
+    submitted.status = "in_progress";
+    submitted.resolutionSummary = "Previous repair.";
+    await submitted.save();
+    const rows = await queryReportData({});
+    expect(rows.find((row) => row.ticketNumber === "TEST-B-1")?.resolutionSummary).toBe(resolvedOnTime.resolutionSummary);
+    expect(rows.find((row) => row.ticketNumber === "TEST-B-2")?.resolutionSummary).toBe("No resolution details recorded.");
+    expect(rows.find((row) => row.ticketNumber === "TEST-A-1")?.resolutionSummary).toBe("Previous resolution: Previous repair.");
+  });
+
   it("BR-080: with no filters, returns rows for every non-archived complaint", async () => {
     await seedTwoOfficesTwoStatuses();
     const rows = await queryReportData({});

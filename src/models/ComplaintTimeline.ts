@@ -22,6 +22,7 @@ const complaintTimelineSchema = new Schema(
     fromValue: { type: String, default: null },
     toValue: { type: String, default: null },
     message: { type: String, default: "" },
+    resolutionSummary: { type: String, default: "" },
   },
   {
     // No updatedAt — timeline entries are immutable, one timestamp only

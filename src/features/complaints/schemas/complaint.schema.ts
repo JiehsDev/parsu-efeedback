@@ -9,10 +9,16 @@ export const createComplaintSchema = z.object({
   description: z.string().trim().min(20),
 });
 
-export const updateComplaintStatusSchema = z.object({
-  status: z.enum(COMPLAINT_STATUSES),
-  message: z.string().trim().optional(),
-});
+export const updateComplaintStatusSchema = z
+  .object({
+    status: z.enum(COMPLAINT_STATUSES),
+    message: z.string().trim().optional(),
+    resolutionSummary: z
+      .string()
+      .trim()
+      .max(4000, "Resolution details must be 4,000 characters or fewer.")
+      .optional(),
+  });
 
 // BR-101: a student may edit their own complaint's title/description, but
 // only while it's still "submitted" (not yet picked up by staff) —

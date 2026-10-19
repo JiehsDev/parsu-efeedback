@@ -45,8 +45,13 @@ export function TimelineEvent({ event, viewerRole = "handler" }: { event: any; v
       <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
         {actorName}{actor?.role ? ` · ${roleLabel(actor.role)}` : ""}
       </p>
+      {event.resolutionSummary && (
+        <p className="mt-1 text-sm whitespace-pre-wrap break-words text-[var(--foreground)]">
+          <span className="font-medium">Resolution details: </span>{event.resolutionSummary}
+        </p>
+      )}
       {event.message && (
-        <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">{event.message}</p>
+        <p className="mt-0.5 text-sm whitespace-pre-wrap break-words text-[var(--muted-foreground)]">{event.message}</p>
       )}
       {isStatusValue && (event.fromValue || event.toValue) && (
         <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">

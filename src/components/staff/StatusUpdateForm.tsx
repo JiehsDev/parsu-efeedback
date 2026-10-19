@@ -27,6 +27,8 @@ export function StatusUpdateForm({
   const { show: showToast } = useToast();
   const [nextStatus, setNextStatus] = useState("");
   const [message, setMessage] = useState("");
+  const [resolutionSummary, setResolutionSummary] = useState("");
+  const [resolutionError, setResolutionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -42,26 +44,37 @@ export function StatusUpdateForm({
       return;
     }
     setStatusError(null);
+    setResolutionError(null);
     setError(null);
     setIsSubmitting(true);
 
-    const res = await fetch(`/api/complaints/${complaintId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: nextStatus, message }),
-    });
-    setIsSubmitting(false);
+    try {
+      const res = await fetch(`/api/complaints/${complaintId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: nextStatus,
+          message,
+          ...(nextStatus === "resolved" ? { resolutionSummary } : {}),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(typeof data.error === "string" ? data.error : "Could not update status.");
+        setResolutionError(data.fieldErrors?.resolutionSummary?.[0] ?? null);
+        return;
+      }
 
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Could not update status.");
-      return;
+      showToast(`Status updated to ${STATUS_LABELS[nextStatus as ComplaintStatus]}`);
+      setMessage("");
+      setResolutionSummary("");
+      setNextStatus("");
+      router.refresh();
+    } catch {
+      setError("Could not update status. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    showToast(`Status updated to ${STATUS_LABELS[nextStatus as ComplaintStatus]}`);
-    setMessage("");
-    setNextStatus("");
-    router.refresh();
   }
 
   if (options.length === 0) return null;
@@ -89,7 +102,14 @@ export function StatusUpdateForm({
       )}
 
       <div className="mt-3">
-        <Select value={nextStatus} onValueChange={setNextStatus}>
+        <Select
+          value={nextStatus}
+          onValueChange={(value) => {
+            setNextStatus(value);
+            setResolutionError(null);
+          }}
+          disabled={isSubmitting}
+        >
           <FieldLabel required>Status</FieldLabel>
           <SelectTrigger aria-invalid={!!statusError} aria-describedby="status-update-status-error">
             <SelectValue placeholder="Change to…" />
@@ -105,9 +125,41 @@ export function StatusUpdateForm({
         <FieldError id="status-update-status-error" message={statusError} />
       </div>
 
+      {nextStatus === "resolved" && (
+        <div className="mt-3 space-y-1.5">
+          <FieldLabel htmlFor="resolution-summary" optional>
+            Resolution details
+          </FieldLabel>
+          <p id="resolution-summary-help" className="text-xs text-[var(--muted-foreground)]">
+            Explain what was done to resolve this complaint. This will be visible to the student.
+          </p>
+          <textarea
+            id="resolution-summary"
+            value={resolutionSummary}
+            onChange={(event) => {
+              setResolutionSummary(event.target.value);
+              setResolutionError(null);
+            }}
+            maxLength={4000}
+            rows={4}
+            disabled={isSubmitting}
+            aria-invalid={!!resolutionError}
+            aria-describedby="resolution-summary-help resolution-summary-error"
+            placeholder="Describe the actions taken and the outcome"
+            className={`${inputClass} pl-3`}
+          />
+          <FieldError id="resolution-summary-error" message={resolutionError} />
+        </div>
+      )}
+
       <div className="relative mt-2">
+        <label htmlFor="status-update-note" className="sr-only">
+          Optional note about this change
+        </label>
         <MessageSquare className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
         <textarea
+          id="status-update-note"
+          disabled={isSubmitting}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Optional note about this change"

@@ -163,7 +163,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // reassignment/escalation via /api/complaints/[id]/assign.
   const parsed = updateComplaintStatusSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: parsed.error.issues[0]?.message ?? "Invalid status update.",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
+    );
   }
 
   if (!(await canAccessComplaint(session, complaint))) {
@@ -219,7 +225,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   complaint.status = toStatus;
   if (toStatus === "resolved") {
-    if (!complaint.resolvedAt) complaint.resolvedAt = new Date();
+    complaint.resolutionSummary = parsed.data.resolutionSummary ?? "";
+    complaint.resolvedAt = new Date();
     complaint.resolvedByRef = new Types.ObjectId(session.user.id);
   }
 
@@ -232,6 +239,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     fromValue: fromStatus,
     toValue: toStatus,
     message: parsed.data.message ?? "",
+    resolutionSummary: toStatus === "resolved" ? complaint.resolutionSummary : "",
   });
 
   await writeAuditLog({
@@ -240,7 +248,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     entityType: "Complaint",
     entityId: complaint._id,
     beforeState: { status: fromStatus },
-    afterState: { status: toStatus },
+    afterState: {
+      status: toStatus,
+      ...(toStatus === "resolved" ? { resolutionSummary: complaint.resolutionSummary } : {}),
+    },
     ipAddress: req.headers.get("x-forwarded-for"),
     userAgent: req.headers.get("user-agent"),
   });

@@ -19,6 +19,7 @@ import { Office } from "@/models/Office";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { ComplaintNote } from "@/models/ComplaintNote";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ComplaintResolution } from "@/components/shared/ComplaintResolution";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { AssignmentDialog } from "@/components/shared/AssignmentDialog";
 import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
@@ -207,6 +208,13 @@ export default async function AdminComplaintDetailPage({
               {c.description}
             </p>
           </div>
+
+          <ComplaintResolution
+            summary={c.resolutionSummary}
+            status={c.status}
+            resolvedAt={c.resolvedAt}
+            resolverName={resolverName}
+          />
 
           <AttachmentGallery complaintId={String(c._id)} />
 

@@ -14,6 +14,7 @@ const COLUMNS = [
   { key: "studentCollege", label: "College" },
   { key: "submittedAt", label: "Submitted" },
   { key: "resolvedAt", label: "Resolved" },
+  { key: "resolutionSummary", label: "Resolution details" },
   { key: "slaCompliant", label: "SLA Met" },
 ] as const;
 
@@ -23,7 +24,7 @@ export function generateCsv(rows: ReportRow[]): Buffer {
     COLUMNS.map((c) => {
       const value = String((row as any)[c.key] ?? "");
       // Escape commas/quotes per basic CSV rules
-      return value.includes(",") || value.includes('"') ? `"${value.replace(/"/g, '""')}"` : value;
+      return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
     }).join(","),
   );
   return Buffer.from([header, ...lines].join("\n"), "utf-8");
@@ -33,7 +34,12 @@ export async function generateExcel(rows: ReportRow[]): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Report");
 
-  sheet.columns = COLUMNS.map((c) => ({ header: c.label, key: c.key, width: 20 }));
+  sheet.columns = COLUMNS.map((c) => ({
+    header: c.label,
+    key: c.key,
+    width: c.key === "resolutionSummary" ? 60 : 20,
+  }));
+  sheet.getColumn("resolutionSummary").alignment = { wrapText: true, vertical: "top" };
   sheet.getRow(1).font = { bold: true };
   rows.forEach((row) => sheet.addRow(row));
 
@@ -55,39 +61,20 @@ export async function generatePdf(rows: ReportRow[], title: string): Promise<Buf
     doc.fontSize(9).text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
     doc.moveDown(1.5);
 
-    const colWidths = [90, 140, 70, 60, 100, 100, 70, 90, 65, 65, 50];
-    const startX = doc.page.margins.left;
-    let y = doc.y;
-
-    doc.fontSize(8).font("Helvetica-Bold");
-    let x = startX;
-    COLUMNS.forEach((col, i) => {
-      doc.text(col.label, x, y, { width: colWidths[i] });
-      if (colWidths[i]) {
-        x += colWidths[i];
-      }
-    });
-    y += 15;
-    doc
-      .moveTo(startX, y)
-      .lineTo(startX + colWidths.reduce((a, b) => a + b, 0), y)
-      .stroke();
-    y += 5;
-
-    doc.font("Helvetica").fontSize(7);
-    rows.forEach((row) => {
-      if (y > doc.page.height - 50) {
-        doc.addPage();
-        y = doc.page.margins.top;
-      }
-      x = startX;
-      COLUMNS.forEach((col, i) => {
-        doc.text(String((row as any)[col.key] ?? ""), x, y, { width: colWidths[i] });
-        if (colWidths[i]) {
-          x += colWidths[i];
-        }
+    // Flowing text lets long, multiline resolutions span pages without
+    // overlapping subsequent complaints or clipping at a fixed row height.
+    rows.forEach((row, index) => {
+      if (index > 0) doc.addPage();
+      doc.font("Helvetica-Bold").fontSize(11).text(`${row.ticketNumber} - ${row.title}`);
+      doc.moveDown(0.5);
+      COLUMNS.filter((col) => col.key !== "ticketNumber" && col.key !== "title").forEach((col) => {
+        doc.font("Helvetica-Bold").fontSize(9).text(`${col.label}:`);
+        doc
+          .font("Helvetica")
+          .fontSize(9)
+          .text(String(row[col.key] ?? ""));
+        doc.moveDown(0.5);
       });
-      y += 14;
     });
 
     doc.end();

@@ -17,6 +17,7 @@ import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Office } from "@/models/Office";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ComplaintResolution } from "@/components/shared/ComplaintResolution";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
 import { ResolutionActions, ClosedResolutionSummary } from "@/components/student/ResolutionActions";
@@ -119,6 +120,13 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
               officeName={(assignedOffice as any).name}
             />
           )}
+
+          <ComplaintResolution
+            summary={c.resolutionSummary}
+            status={c.status}
+            resolvedAt={c.resolvedAt}
+            resolverName={resolverName}
+          />
 
           {c.status === "resolved" && <ResolutionActions complaintId={String(c._id)} />}
 

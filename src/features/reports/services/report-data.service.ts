@@ -29,6 +29,7 @@ export interface ReportRow {
   studentCollege: string;
   submittedAt: string;
   resolvedAt: string;
+  resolutionSummary: string;
   slaCompliant: string;
 }
 
@@ -123,6 +124,9 @@ export async function queryReportData(filters: ReportFilters): Promise<ReportRow
       studentCollege: c.studentCollege?.name ?? "—",
       submittedAt: new Date(c.submittedAt).toLocaleDateString(),
       resolvedAt: c.resolvedAt ? new Date(c.resolvedAt).toLocaleDateString() : "—",
+      resolutionSummary: c.resolutionSummary
+        ? `${["resolved", "closed"].includes(c.status) ? "" : "Previous resolution: "}${c.resolutionSummary}`
+        : ["resolved", "closed"].includes(c.status) ? "No resolution details recorded." : "",
       slaCompliant,
     };
   });

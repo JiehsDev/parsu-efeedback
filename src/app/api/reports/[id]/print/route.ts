@@ -33,6 +33,7 @@ const COLUMNS: { key: keyof ReportRow; label: string }[] = [
   { key: "studentCollege", label: "College" },
   { key: "submittedAt", label: "Submitted" },
   { key: "resolvedAt", label: "Resolved" },
+  { key: "resolutionSummary", label: "Resolution details" },
   { key: "slaCompliant", label: "SLA Met" },
 ];
 
@@ -71,7 +72,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   h1 { font-size: 18px; text-transform: capitalize; margin: 0 0 4px; }
   .meta { font-size: 12px; color: #555; margin-bottom: 16px; }
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
   th { background: #f2f2f2; }
   tbody tr:nth-child(even) { background: #fafafa; }
   @media print {
