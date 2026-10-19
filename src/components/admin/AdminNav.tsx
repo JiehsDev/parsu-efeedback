@@ -136,12 +136,12 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   return (
     <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-white/15 bg-[var(--primary)] lg:w-56">
       <Link href="/admin/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
           <Image
             src="/new_logo.jpg"
             alt=""
-            width={28}
-            height={28}
+            width={24}
+            height={24}
             className="h-full w-full object-contain"
           />
         </span>

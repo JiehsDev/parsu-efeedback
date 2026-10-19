@@ -6,6 +6,9 @@ import { auth } from "@/lib/auth";
 import { r2Client, isR2Configured } from "@/lib/r2";
 import { env } from "@/lib/env";
 import { GeneratedReport } from "@/models/GeneratedReport";
+import { complaintFilterForScope, getAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
+import { queryReportData } from "@/features/reports/services/report-data.service";
+import { generateCsv, generateExcel, generatePdf } from "@/features/reports/services/report-file.service";
 
 const CONTENT_TYPES: Record<string, string> = {
   csv: "text/csv",
@@ -35,6 +38,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if ((report as any).status !== "ready" || !(report as any).downloadUrl) {
     return NextResponse.json({ error: "Report is not ready" }, { status: 400 });
+  }
+
+  // Rebuild scoped downloads using current permissions. Older stored files
+  // may have been generated before OSAS complaints were made private.
+  if (isScopedAdminRole(session.user.role)) {
+    const rows = await queryReportData(
+      (report as any).filters ?? {},
+      await complaintFilterForScope(getAdminScope(session.user.role)),
+    );
+    const format = report.format;
+    const buffer = format === "csv" ? generateCsv(rows)
+      : format === "excel" ? await generateExcel(rows)
+      : await generatePdf(rows, report.reportType);
+    return new NextResponse(Buffer.from(buffer), {
+      headers: {
+        "Content-Type": CONTENT_TYPES[format] ?? "application/octet-stream",
+        "Content-Disposition": `attachment; filename="${report.reportType}-${id}.${format === "excel" ? "xlsx" : format}"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
   }
 
   if (!isR2Configured() || !r2Client) {

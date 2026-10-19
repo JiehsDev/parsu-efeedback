@@ -61,6 +61,14 @@ beforeEach(() => {
 });
 
 describe("complaint resolution", () => {
+  it.each(["submitted", "escalated"])("requires the assignment workflow to mark %s complaints assigned", async (status) => {
+    complaint.status = status;
+    const response = await update({ status: "assigned" });
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain("select a staff member");
+    expect(complaint.save).not.toHaveBeenCalled();
+    expect(mocks.timeline).not.toHaveBeenCalled();
+  });
   it.each([undefined, "", " \n "])(
     "allows resolution without details",
     async (resolutionSummary) => {

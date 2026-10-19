@@ -200,7 +200,7 @@ const accountRows = [
   ["admin@parsu.edu.ph", "administrator", "Active", "System Administrator", "No office or college scope"],
   ["vpaa@parsu.edu.ph", "vpaa", "Active", "Dr. Juan Cruz", "College-office sub-admin"],
   ["vpaf@parsu.edu.ph", "vpaf", "Active", "Rosario Villanueva", "University-office sub-admin"],
-  ["osas@parsu.edu.ph", "osas", "Active", "Cristina Bautista", "Student-domain sub-admin; Office.headUserRef for OSAS"],
+  ["osasdirector@parsu.edu.ph", "osas", "Active", "Cristina Bautista", "Student-domain sub-admin; Office.headUserRef for OSAS"],
 ];
 
 title("ParSU e-Feedback");
@@ -213,7 +213,7 @@ bullets([
   "QA is not a separate application role in the current implementation; qa@parsu.edu.ph is an office_staff account assigned to the Quality Assurance Office.",
   "Administrator is unrestricted. VPAA, VPAF, and OSAS use the admin area but are data-scoped by backend guards.",
   "Office Head authority is Office.headUserRef, not a separate software role: every seeded college and university office now has one distinct head account plus at least one ordinary (non-head) office_staff account, so head-only actions (Assign Staff, Change Assignee, Reassign Office) can be tested against a real non-head staff member in every office. The Registrar has two ordinary staff accounts.",
-  "OSAS is the one office whose head is not an office_staff account: osas@parsu.edu.ph (role osas) is Office.headUserRef for OSAS, per BR — VPAA/VPAF/OSAS retain their own software role even while acting as an office head.",
+  "OSAS is the one office whose head is not an office_staff account: osasdirector@parsu.edu.ph (role osas) is Office.headUserRef for OSAS, per BR — VPAA/VPAF/OSAS retain their own software role even while acting as an office head.",
 ]);
 
 h1("Role Summary");
@@ -300,13 +300,13 @@ p("\"Head\" is the account referenced by Office.headUserRef for that office (onl
 table(
   ["Office / head", "Routing categories", "Staff accounts (non-head)"],
   [
-    ["CECS | Head: Noel Aguilar (staff5@)", "Faculty & Teaching Performance", "staff8@parsu.edu.ph"],
-    ["CED | Head: Andrea Castillo (dean.ced@)", "Faculty & Teaching Performance - College of Education", "staff9@parsu.edu.ph"],
-    ["CBM | Head: Christian Mendoza (dean.cbm@)", "Faculty & Teaching Performance - College of Business & Management", "staff10@parsu.edu.ph"],
-    ["COS | Head: Rosa Navarro (dean.cos@)", "Faculty & Teaching Performance - College of Science", "staff11@parsu.edu.ph"],
-    ["CAH | Head: Katrina Ocampo (dean.cah@)", "Faculty & Teaching Performance - College of Arts and Humanities", "staff12@parsu.edu.ph"],
+    ["CECS | Head: Noel Aguilar (staff5@)", "Faculty & Non Teaching Performance", "staff8@parsu.edu.ph"],
+    ["CED | Head: Andrea Castillo (dean.ced@)", "Faculty & Non Teaching Performance - College of Education", "staff9@parsu.edu.ph"],
+    ["CBM | Head: Christian Mendoza (dean.cbm@)", "Faculty & Non Teaching Performance - College of Business & Management", "staff10@parsu.edu.ph"],
+    ["COS | Head: Rosa Navarro (dean.cos@)", "Faculty & Non Teaching Performance - College of Science", "staff11@parsu.edu.ph"],
+    ["CAH | Head: Katrina Ocampo (dean.cah@)", "Faculty & Non Teaching Performance - College of Arts and Humanities", "staff12@parsu.edu.ph"],
     ["OUR | Head: Maria Santos (staff@)", "Grade Concern; Document Request Delays; Staff Service & Responsiveness; Administrative Process Concerns", "staff3@parsu.edu.ph, staff17@parsu.edu.ph"],
-    ["OSAS | Head: Cristina Bautista (osas@, role=osas)", "Campus Safety & Security; Student Services & Assistance; Health & Medical Services; Scholarships & Financial Assistance", "staff2@parsu.edu.ph"],
+    ["OSAS | Head: Cristina Bautista (osasdirector@, role=osas)", "Campus Safety & Security; Student Services & Assistance; Health & Medical Services; Scholarships & Financial Assistance", "staff2@parsu.edu.ph"],
     ["OVPAA | Head: Carlos Mercado (staff6@)", "Curriculum & Class Scheduling; Academic Advising & Consultation; Library Services & Resources", "staff13@parsu.edu.ph"],
     ["OVPAF | Head: Bea Salonga (staff7@)", "Student Payment & Cashier Concerns", "staff14@parsu.edu.ph"],
     ["GSO | Head: Liza Domingo (staff4@)", "Classroom & Laboratory Facilities; Restroom & Sanitation; Campus Wi-Fi & IT Infrastructure", "staff16@parsu.edu.ph"],

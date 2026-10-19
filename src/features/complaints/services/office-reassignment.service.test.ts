@@ -46,6 +46,17 @@ async function setup(status: ComplaintStatus = "in_progress") {
 }
 
 describe("reassignOffice", () => {
+  it("returns assigned complaints to submitted when an office transfer clears the assignee", async () => {
+    const { complaint, head, college } = await setup("assigned");
+    const result = await reassignOffice({
+      complaintId: String(complaint._id), actorId: String(head._id), actorRole: "office_staff",
+      destinationOfficeId: String(college._id), reason: "Handled by the college.",
+    });
+    expect("error" in result).toBe(false);
+    const saved = (await Complaint.findById(complaint._id))!;
+    expect(saved.status).toBe("submitted");
+    expect(saved.assignedStaffRef).toBeNull();
+  });
   it("rejects an ordinary (non-head) office_staff", async () => {
     const { complaint, staff, college } = await setup();
     const result = await reassignOffice({

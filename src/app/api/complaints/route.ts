@@ -20,6 +20,7 @@ import {
 } from "@/features/routing-engine/services/routing.service";
 import { User } from "@/models/User";
 import { getSettings } from "@/features/settings/services/settings.service";
+import { complaintFilterForScope, getAdminScope } from "@/lib/admin-scope";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -164,6 +165,10 @@ export async function GET(req: NextRequest) {
     filter.studentRef = id;
   } else if (role === "office_staff") {
     filter.assignedOfficeRef = officeRef;
+  } else if (["administrator", "vpaa", "vpaf", "osas"].includes(role)) {
+    Object.assign(filter, await complaintFilterForScope(getAdminScope(role)));
+  } else {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (status) filter.status = status;

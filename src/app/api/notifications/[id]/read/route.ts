@@ -4,6 +4,8 @@ import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Notification } from "@/models/Notification";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import { Complaint } from "@/models/Complaint";
+import { complaintFilterForScope, getAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
 
 export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -19,6 +21,13 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
 
   // Users can only mark their own notifications as read
   if (String(notification.userRef) !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (notification.relatedComplaintRef && isScopedAdminRole(session.user.role) &&
+    !(await Complaint.exists({
+      _id: notification.relatedComplaintRef,
+      ...(await complaintFilterForScope(getAdminScope(session.user.role))),
+    }))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

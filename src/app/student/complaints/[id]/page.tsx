@@ -18,6 +18,7 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Office } from "@/models/Office";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ComplaintResolution } from "@/components/shared/ComplaintResolution";
+import { ComplaintUpdateMessages } from "@/components/shared/ComplaintUpdateMessages";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
 import { ResolutionActions, ClosedResolutionSummary } from "@/components/student/ResolutionActions";
@@ -120,6 +121,8 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
               officeName={(assignedOffice as any).name}
             />
           )}
+
+          <ComplaintUpdateMessages events={timeline} viewerRole="student" />
 
           <ComplaintResolution
             summary={c.resolutionSummary}

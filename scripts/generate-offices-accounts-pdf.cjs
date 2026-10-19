@@ -164,35 +164,35 @@ const SEED_PASSWORD = "ParSU_test2026";
 const officeRows = [
   [
     "College of Engineering &\nComputational Sciences\n(CECS - college)",
-    "Faculty & Teaching Performance",
+    "Faculty & Non Teaching Performance",
     "Noel Aguilar\nstaff5@parsu.edu.ph",
     "staff5@parsu.edu.ph (head)\nstaff8@parsu.edu.ph (Grace Manalo)",
     SEED_PASSWORD,
   ],
   [
     "College of Education\n(CED - college)",
-    "Faculty & Teaching Performance -\nCollege of Education",
+    "Faculty & Non Teaching Performance -\nCollege of Education",
     "Andrea Castillo\ndean.ced@parsu.edu.ph",
     "dean.ced@parsu.edu.ph (head)\nstaff9@parsu.edu.ph (Roberto Tolentino)",
     SEED_PASSWORD,
   ],
   [
     "College of Business &\nManagement (CBM - college)",
-    "Faculty & Teaching Performance -\nCollege of Business & Management",
+    "Faculty & Non Teaching Performance -\nCollege of Business & Management",
     "Christian Mendoza\ndean.cbm@parsu.edu.ph",
     "dean.cbm@parsu.edu.ph (head)\nstaff10@parsu.edu.ph (Michelle Diaz)",
     SEED_PASSWORD,
   ],
   [
     "College of Science\n(COS - college)",
-    "Faculty & Teaching Performance -\nCollege of Science",
+    "Faculty & Non Teaching Performance -\nCollege of Science",
     "Rosa Navarro\ndean.cos@parsu.edu.ph",
     "dean.cos@parsu.edu.ph (head)\nstaff11@parsu.edu.ph (Daniel Espinosa)",
     SEED_PASSWORD,
   ],
   [
     "College of Arts and\nHumanities (CAH - college)",
-    "Faculty & Teaching Performance -\nCollege of Arts and Humanities",
+    "Faculty & Non Teaching Performance -\nCollege of Arts and Humanities",
     "Katrina Ocampo\ndean.cah@parsu.edu.ph",
     "dean.cah@parsu.edu.ph (head)\nstaff12@parsu.edu.ph (Julia Lopez)",
     SEED_PASSWORD,
@@ -207,7 +207,7 @@ const officeRows = [
   [
     "Office of Student Affairs\nand Services (OSAS - university)",
     "Campus Safety & Security; Student\nServices & Assistance; Health &\nMedical Services; Scholarships &\nFinancial Assistance",
-    "Cristina Bautista\nosas@parsu.edu.ph (role=osas)",
+    "Cristina Bautista\nosasdirector@parsu.edu.ph (role=osas)",
     "staff2@parsu.edu.ph (Pedro Penduko)",
     SEED_PASSWORD,
   ],
@@ -270,7 +270,7 @@ const accountRows = [
   ["admin@parsu.edu.ph", "administrator", "Active", "System Administrator", "No office or college scope", SEED_PASSWORD],
   ["vpaa@parsu.edu.ph", "vpaa", "Active", "Dr. Juan Cruz", "College-office sub-admin", SEED_PASSWORD],
   ["vpaf@parsu.edu.ph", "vpaf", "Active", "Rosario Villanueva", "University-office sub-admin", SEED_PASSWORD],
-  ["osas@parsu.edu.ph", "osas", "Active", "Cristina Bautista", "Student-domain sub-admin; Office.headUserRef for OSAS", SEED_PASSWORD],
+  ["osasdirector@parsu.edu.ph", "osas", "Active", "Cristina Bautista", "Student-domain sub-admin; Office.headUserRef for OSAS", SEED_PASSWORD],
 ];
 
 const collegeStudentRows = [
@@ -295,7 +295,7 @@ bullets([
   `All seeded test accounts share the password ${SEED_PASSWORD} unless marked Inactive.`,
   "Every one of the 11 seeded offices/colleges has one assigned head/dean plus at least one distinct, non-head office_staff login — so head-only actions (Assign Staff, Change Assignee, Reassign Office) can be exercised against a real staff member in every office, not just tested via the head's own account.",
   "The Office of the University Registrar (OUR) has two non-head staff logins (staff3@parsu.edu.ph, staff17@parsu.edu.ph) so Change Assignee between two ordinary staff can be tested there specifically.",
-  "OSAS is the one office whose head is not an office_staff account: osas@parsu.edu.ph (Cristina Bautista, role osas) is Office.headUserRef for OSAS; staff2@parsu.edu.ph is OSAS's ordinary staff account. Every other office's head is an office_staff account.",
+  "OSAS is the one office whose head is not an office_staff account: osasdirector@parsu.edu.ph (Cristina Bautista, role osas) is Office.headUserRef for OSAS; staff2@parsu.edu.ph is OSAS's ordinary staff account. Every other office's head is an office_staff account.",
   "QA is not a separate application role; qa@parsu.edu.ph is an office_staff account assigned to the Quality Assurance Office.",
   "Verified directly against the live database: 11/11 offices have an active head and at least one active non-head staff login; all 5 colleges have active enrolled students; sample password hashes (admin, dean.ced, staff, student) matched the shared seed password.",
 ]);

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Notification } from "@/models/Notification";
+import { Complaint } from "@/models/Complaint";
+import { complaintFilterForScope, getAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -17,11 +19,18 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Number(searchParams.get("limit") ?? 20));
 
   const filter: Record<string, unknown> = { userRef: session.user.id };
+  if (isScopedAdminRole(session.user.role)) {
+    const complaints = await Complaint.find(await complaintFilterForScope(getAdminScope(session.user.role))).select("_id").lean();
+    filter.$or = [
+      { relatedComplaintRef: null },
+      { relatedComplaintRef: { $in: complaints.map((complaint) => complaint._id) } },
+    ];
+  }
   if (unreadOnly) filter.isRead = false;
 
   const [notifications, unreadCount] = await Promise.all([
     Notification.find(filter).sort({ createdAt: -1 }).limit(limit).lean(),
-    Notification.countDocuments({ userRef: session.user.id, isRead: false }),
+    Notification.countDocuments({ ...filter, isRead: false }),
   ]);
 
   return NextResponse.json({ notifications, unreadCount });

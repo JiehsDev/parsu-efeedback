@@ -11,6 +11,9 @@
 // between the dean dashboard and /api/analytics/trends.
 import type { UserRole, OfficeType } from "@/lib/constants";
 import { Office } from "@/models/Office";
+import { Types } from "mongoose";
+import { getOsasComplaintFilter } from "@/lib/osas-complaint-scope";
+import { Complaint } from "@/models/Complaint";
 
 export type AdminScope =
   | { kind: "all" }
@@ -61,29 +64,42 @@ export async function userFilterForScope(scope: AdminScope): Promise<Record<stri
   return officeIds ? { officeRef: { $in: officeIds } } : {};
 }
 
-/** Mongo filter for the Complaint collection under this scope: vpaa/vpaf see complaints assigned to their office category; osas/administrator see every complaint (osas's view is framed by student attributes, not office). */
+/** OSAS sees its complaints; other sub-admins exclude them. Only administrator is unrestricted. */
 export async function complaintFilterForScope(scope: AdminScope): Promise<Record<string, unknown>> {
+  if (scope.kind === "all") return {};
+  const osasFilter = await getOsasComplaintFilter();
+  // Keep authorization inside $and so search/office filters cannot replace it.
+  if (scope.kind === "student") return { $and: [osasFilter] };
   const officeIds = await officeIdsForScope(scope);
-  return officeIds ? { assignedOfficeRef: { $in: officeIds } } : {};
+  return {
+    $and: [
+      { assignedOfficeRef: { $in: (officeIds ?? []).map((id) => new Types.ObjectId(id)) } },
+      { $nor: [osasFilter] },
+    ],
+  };
 }
 
 /**
  * QA-style read access, folded into vpaa/vpaf/osas rather than kept as a
  * separate role: vpaa/vpaf may read (not mutate) any complaint sitting in
  * their office category — same "full detail, notes, attachments" access
- * administrator gets — and osas reads every complaint (its scope
- * spans both office categories, framed by student attributes). Used by the
+ * administrator gets — while OSAS complaints are private to OSAS among
+ * sub-admins. Used by the
  * shared /api/complaints/[id]/** routes (also hit by the admin complaint
  * detail page's NotesSection/AttachmentGallery), not just /admin/**.
  */
 export async function isComplaintInAdminScope(
   scope: AdminScope,
-  complaint: { assignedOfficeRef?: unknown },
+  complaint: { _id?: unknown; assignedOfficeRef?: unknown; categoryRef?: unknown },
 ): Promise<boolean> {
-  if (scope.kind === "all" || scope.kind === "student") return true;
-  if (!complaint.assignedOfficeRef) return false;
-  const office = await Office.findById(complaint.assignedOfficeRef).select("type").lean();
-  return (office as any)?.type === scope.kind;
+  if (scope.kind === "all") return true;
+  if (!complaint._id) return false;
+  return Boolean(
+    await Complaint.exists({
+      _id: complaint._id,
+      ...(await complaintFilterForScope(scope)),
+    }),
+  );
 }
 
 /**

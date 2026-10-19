@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { archiveComplaint, isOfficeHead, restoreComplaint } from "@/lib/archive-workflow";
 import { archiveComplaintSchema } from "@/features/complaints/schemas/complaint.schema";
+import { getAdminScope, isComplaintInAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -14,6 +15,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
+  if (isScopedAdminRole(session.user.role) &&
+    !(await isComplaintInAdminScope(getAdminScope(session.user.role), complaint))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const isAdmin = session.user.role === "administrator";
   const head = await isOfficeHead(session.user.id, complaint.assignedOfficeRef);
   if (!isAdmin && !head) return NextResponse.json({ error: "Only the responsible office head or administrator can archive complaints directly." }, { status: 403 });

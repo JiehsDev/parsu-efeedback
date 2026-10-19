@@ -396,7 +396,7 @@ export async function getSlaTrendSeries(params: {
   }));
 }
 
-export async function getCollegeComparison(monthsBack = 6) {
+export async function getCollegeComparison(monthsBack = 6, scopeMatch: Record<string, unknown> = {}) {
   const since = new Date();
   since.setMonth(since.getMonth() - monthsBack);
 
@@ -419,7 +419,7 @@ export async function getCollegeComparison(monthsBack = 6) {
       },
     },
     { $unwind: "$college" },
-    { $match: { createdAt: { $gte: since }, isArchived: false } },
+    { $match: { ...scopeMatch, createdAt: { $gte: since }, isArchived: false } },
     {
       $group: {
         _id: "$college.name",

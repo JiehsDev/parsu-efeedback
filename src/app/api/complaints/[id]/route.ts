@@ -178,6 +178,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const fromStatus = complaint.status as ComplaintStatus;
   const toStatus = parsed.data.status;
+  if (toStatus === "assigned") {
+    return NextResponse.json(
+      { error: "Use Assign Staff and select a staff member to assign this complaint." },
+      { status: 400 },
+    );
+  }
 
   // Escalation has its own audited workflow. Keeping it out of the generic
   // status endpoint prevents callers from bypassing destination and history

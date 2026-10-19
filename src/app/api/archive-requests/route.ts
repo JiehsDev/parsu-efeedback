@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { Office } from "@/models/Office";
+import { Complaint } from "@/models/Complaint";
+import { complaintFilterForScope, getAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
 
 export async function GET() {
   const session = await auth();
@@ -12,6 +14,10 @@ export async function GET() {
   const offices = isAdmin ? null : await Office.find({ headUserRef: session.user.id }).select("_id").lean();
   if (!isAdmin && !offices?.length) return NextResponse.json({ requests: [] });
   const filter: Record<string, any> = isAdmin ? { status: "pending" } : { status: "pending", officeRef: { $in: offices!.map((office) => office._id) } };
+  if (isScopedAdminRole(session.user.role)) {
+    const complaints = await Complaint.find(await complaintFilterForScope(getAdminScope(session.user.role))).select("_id").lean();
+    filter.complaintRef = { $in: complaints.map((complaint) => complaint._id) };
+  }
   const requests = await ArchiveRequest.find(filter)
     .sort({ createdAt: -1 })
     .populate("complaintRef", "ticketNumber title description status assignedOfficeRef assignedStaffRef archiveReason")

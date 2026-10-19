@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { Office } from "@/models/Office";
+import { Complaint } from "@/models/Complaint";
+import { complaintFilterForScope, getAdminScope } from "@/lib/admin-scope";
 import { ArchiveApprovalPanel } from "@/components/staff/ArchiveApprovalPanel";
 
 export default async function AdminArchiveRequestsPage() {
@@ -20,6 +22,10 @@ export default async function AdminArchiveRequestsPage() {
   const filter: Record<string, any> = isAdministrator
     ? { status: "pending" }
     : { status: "pending", officeRef: { $in: (headedOffices ?? []).map((office) => office._id) } };
+  if (!isAdministrator) {
+    const complaints = await Complaint.find(await complaintFilterForScope(getAdminScope(session.user.role))).select("_id").lean();
+    filter.complaintRef = { $in: complaints.map((complaint) => complaint._id) };
+  }
   const requests = await ArchiveRequest.find(filter)
     .sort({ createdAt: -1 })
     .populate({ path: "complaintRef", select: "ticketNumber title description status assignedOfficeRef assignedStaffRef", populate: [{ path: "assignedOfficeRef", select: "name type" }, { path: "assignedStaffRef", select: "firstName lastName" }] })

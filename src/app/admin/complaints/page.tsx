@@ -13,7 +13,6 @@ import { ListSearchInput } from "@/components/shared/ListSearchInput";
 import { ListSortSelect } from "@/components/shared/ListSortSelect";
 import { escapeRegExp } from "@/lib/utils";
 import { getAdminScope, complaintFilterForScope, officeFilterForScope } from "@/lib/admin-scope";
-import { isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest first" },
@@ -81,9 +80,7 @@ export default async function AdminComplaintsPage({
     .sort({ createdAt: sortOrder })
     .limit(200)
     .lean();
-  const scopedComplaints = scope.kind === "student"
-    ? (await Promise.all(complaints.map(async (complaint: any) => (await isComplaintInOsasActionScope(complaint)) ? complaint : null))).filter(Boolean)
-    : complaints;
+  const scopedComplaints = complaints;
 
   function withParam(key: string, value: string | undefined) {
     const params = new URLSearchParams();

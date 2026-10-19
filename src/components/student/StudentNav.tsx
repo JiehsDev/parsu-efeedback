@@ -61,12 +61,12 @@ export function StudentNav({ userName }: { userName: string }) {
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
         <div className="flex items-center gap-6">
           <Link href="/student/dashboard" className="flex shrink-0 items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
+            <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
               <Image
                 src="/new_logo.jpg"
                 alt=""
-                width={32}
-                height={32}
+                width={24}
+                height={24}
                 className="h-full w-full object-contain"
               />
             </span>

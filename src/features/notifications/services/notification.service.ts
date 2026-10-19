@@ -4,6 +4,8 @@ import { Notification } from "@/models/Notification";
 import { User } from "@/models/User";
 import { Office } from "@/models/Office";
 import type { NotificationType } from "@/lib/constants";
+import { Complaint } from "@/models/Complaint";
+import { getAdminScope, isComplaintInAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
 import {
   sendComplaintSubmittedEmail,
   sendComplaintAssignedEmail,
@@ -15,9 +17,13 @@ import {
   sendInformationSubmittedEmail,
 } from "./email.service";
 
-async function getRecipient(userId: string) {
+async function getRecipient(userId: string, complaintId?: string | null) {
   const user = await User.findById(userId).select("email firstName lastName role").lean();
   if (!user) return null;
+  if (complaintId && isScopedAdminRole(user.role)) {
+    const complaint = await Complaint.findById(complaintId).select("_id assignedOfficeRef categoryRef").lean();
+    if (!complaint || !(await isComplaintInAdminScope(getAdminScope(user.role), complaint))) return null;
+  }
   return {
     email: (user as any).email,
     name: `${(user as any).firstName} ${(user as any).lastName}`,
@@ -35,6 +41,7 @@ interface CreateNotificationParams {
 
 async function createNotification(params: CreateNotificationParams): Promise<void> {
   await connectToDatabase();
+  if (params.relatedComplaintRef && !(await getRecipient(params.userRef, params.relatedComplaintRef))) return;
   await Notification.create({
     userRef: params.userRef,
     type: params.type,
@@ -57,7 +64,7 @@ export async function notifyComplaintSubmitted(params: {
     relatedComplaintRef: params.complaintId,
   });
 
-  const recipient = await getRecipient(params.studentId);
+  const recipient = await getRecipient(params.studentId, params.complaintId);
   if (recipient) {
     await sendComplaintSubmittedEmail({
       to: recipient.email,
@@ -82,7 +89,7 @@ export async function notifyComplaintAssigned(params: {
     relatedComplaintRef: params.complaintId,
   });
 
-  const student = await getRecipient(params.studentId);
+  const student = await getRecipient(params.studentId, params.complaintId);
   if (student) {
     await sendComplaintAssignedEmail({
       to: student.email,
@@ -102,7 +109,7 @@ export async function notifyComplaintAssigned(params: {
       relatedComplaintRef: params.complaintId,
     });
 
-    const staff = await getRecipient(params.staffId);
+    const staff = await getRecipient(params.staffId, params.complaintId);
     if (staff) {
       await sendComplaintAssignedEmail({
         to: staff.email,
@@ -145,7 +152,7 @@ export async function notifyComplaintRoutedToOffice(params: {
         relatedComplaintRef: params.complaintId,
       });
 
-      const recipient = await getRecipient(userId);
+      const recipient = await getRecipient(userId, params.complaintId);
       if (recipient) {
         await sendComplaintAssignedEmail({
           to: recipient.email,
@@ -231,7 +238,7 @@ export async function notifyStatusUpdated(params: {
     relatedComplaintRef: params.complaintId,
   });
 
-  const recipient = await getRecipient(params.studentId);
+  const recipient = await getRecipient(params.studentId, params.complaintId);
   if (recipient) {
     await sendComplaintUpdatedEmail({
       to: recipient.email,
@@ -257,7 +264,7 @@ export async function notifyComplaintResolved(params: {
     relatedComplaintRef: params.complaintId,
   });
 
-  const recipient = await getRecipient(params.studentId);
+  const recipient = await getRecipient(params.studentId, params.complaintId);
   if (recipient) {
     await sendComplaintResolvedEmail({
       to: recipient.email,
@@ -311,7 +318,7 @@ export async function notifySlaWarning(params: {
     relatedComplaintRef: params.complaintId,
   });
 
-  const recipient = await getRecipient(params.staffId);
+  const recipient = await getRecipient(params.staffId, params.complaintId);
   if (recipient) {
     await sendSlaWarningEmail({
       to: recipient.email,
@@ -338,7 +345,7 @@ export async function notifyEscalation(params: {
     relatedComplaintRef: params.complaintId,
   });
 
-  const recipient = await getRecipient(params.staffId);
+  const recipient = await getRecipient(params.staffId, params.complaintId);
   if (recipient) {
     await sendEscalationEmail({
       to: recipient.email,
@@ -365,7 +372,7 @@ export async function notifyManualEscalation(params: {
     body: `Complaint ${params.ticketNumber} was escalated to you. Reason: ${params.reason}`,
     relatedComplaintRef: params.complaintId,
   });
-  const recipient = await getRecipient(params.staffId);
+  const recipient = await getRecipient(params.staffId, params.complaintId);
   if (recipient) {
     await sendEscalationEmail({
       to: recipient.email,
@@ -383,7 +390,7 @@ export async function notifyManualEscalation(params: {
     body: `Complaint ${params.ticketNumber} was escalated for higher-level review.`,
     relatedComplaintRef: params.complaintId,
   });
-  const student = await getRecipient(params.studentId);
+  const student = await getRecipient(params.studentId, params.complaintId);
   if (student) {
     await sendComplaintUpdatedEmail({
       to: student.email,
@@ -447,7 +454,7 @@ export async function notifyInformationRequested(params: {
     body: `Additional information is required for complaint ${params.ticketNumber}.`,
     relatedComplaintRef: params.complaintId,
   });
-  const recipient = await getRecipient(params.studentId);
+  const recipient = await getRecipient(params.studentId, params.complaintId);
   if (recipient) {
     await sendInformationRequestedEmail({
       to: recipient.email,
@@ -473,7 +480,7 @@ export async function notifyInformationSubmitted(params: {
         body: `The student submitted additional information for complaint ${params.ticketNumber}.`,
         relatedComplaintRef: params.complaintId,
       });
-      const recipient = await getRecipient(staffId);
+      const recipient = await getRecipient(staffId, params.complaintId);
       if (recipient) {
         await sendInformationSubmittedEmail({
           to: recipient.email,

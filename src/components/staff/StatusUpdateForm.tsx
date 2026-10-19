@@ -152,20 +152,22 @@ export function StatusUpdateForm({
         </div>
       )}
 
-      <div className="relative mt-2">
-        <label htmlFor="status-update-note" className="sr-only">
-          Optional note about this change
-        </label>
-        <MessageSquare className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
-        <textarea
-          id="status-update-note"
-          disabled={isSubmitting}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Optional note about this change"
-          rows={2}
-          className={`${inputClass} py-2.5`}
-        />
+      <div className="mt-3 space-y-1.5">
+        <FieldLabel htmlFor="status-update-note" optional>
+          Update message
+        </FieldLabel>
+        <div className="relative">
+          <MessageSquare className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-[var(--muted-foreground)]" />
+          <textarea
+            id="status-update-note"
+            disabled={isSubmitting}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Add a message about this status change"
+            rows={2}
+            className={`${inputClass} py-2.5`}
+          />
+        </div>
       </div>
 
       <button

@@ -11,6 +11,7 @@ import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ComplaintResolution } from "@/components/shared/ComplaintResolution";
+import { ComplaintUpdateMessages } from "@/components/shared/ComplaintUpdateMessages";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { AssignmentDialog } from "@/components/shared/AssignmentDialog";
 import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
@@ -106,6 +107,8 @@ export default async function StaffComplaintDetailPage({ params }: { params: Pro
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(320px,4fr)]">
         <main className="min-w-0 space-y-5">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-xl shadow-black/10 sm:p-7" aria-labelledby="description-heading"><h2 id="description-heading" className="text-sm font-semibold text-[var(--foreground)]">Description</h2><p className="mt-2 max-w-4xl text-sm leading-relaxed whitespace-pre-line text-[var(--foreground)]/90">{c.description}</p>{!c.assignedStaffRef && c.status !== "withdrawn" && <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5 text-sm text-amber-400"><UserX className="h-4 w-4 shrink-0" />Nobody has picked this up yet.</div>}</section>
+          <ComplaintUpdateMessages events={timeline} viewerRole="staff" />
+
           <ComplaintResolution
             summary={c.resolutionSummary}
             status={c.status}

@@ -36,10 +36,10 @@ export const DEFAULT_SLA_HOURS: Record<
   PriorityLevel,
   { responseHours: number; resolutionHours: number }
 > = {
-  critical: { responseHours: 4, resolutionHours: 24 },
-  high: { responseHours: 8, resolutionHours: 48 },
-  medium: { responseHours: 24, resolutionHours: 120 },
-  low: { responseHours: 48, resolutionHours: 168 },
+  critical: { responseHours: 72, resolutionHours: 72 },
+  high: { responseHours: 72, resolutionHours: 72 },
+  medium: { responseHours: 72, resolutionHours: 72 },
+  low: { responseHours: 72, resolutionHours: 72 },
 };
 
 // --- Complaint status (BR-041 lifecycle, reconciled — see

@@ -35,7 +35,7 @@ export async function GET() {
   } else {
     scopeMatch = await complaintFilterForScope(getAdminScope(role));
   }
-  const collegeComparison = role === "office_staff" ? [] : await getCollegeComparison();
+  const collegeComparison = role === "office_staff" ? [] : await getCollegeComparison(6, scopeMatch);
 
   const [summary, trends, categoryBreakdown, priorityBreakdown, officeBreakdown] = await Promise.all([
     getAnalyticsSummary(scopeMatch),

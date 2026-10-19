@@ -102,7 +102,7 @@ adminTest.describe("Assignment scoping", () => {
       const collegeComplaintStudentPage = await collegeComplaintStudentContext.newPage();
       const { id: collegeComplaint } = await submitComplaint(
         collegeComplaintStudentPage,
-        "Faculty & Teaching Performance",
+        "Faculty & Non Teaching Performance",
         `E2E assign-scope college ${Date.now()}`,
         "Automated E2E test complaint for VPAA office-category scoping. Safe to ignore.",
       );
@@ -260,7 +260,7 @@ adminTest.describe("Assignment scoping", () => {
       const osasContext = await browser.newContext({ storageState: "tests/e2e/.auth/osas.json" });
       const osasPage = await osasContext.newPage();
 
-      // osas@parsu.edu.ph is Office.headUserRef for the OSAS office in the
+      // osasdirector@parsu.edu.ph is Office.headUserRef for the OSAS office in the
       // seed data, so this actor IS the office head here — the new
       // "Reassign Office" action is visible and usable via the dedicated
       // endpoint.

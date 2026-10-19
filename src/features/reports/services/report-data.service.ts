@@ -39,8 +39,12 @@ export interface ReportRow {
 // The caller (API route) is responsible for constraining officeRef/collegeRef
 // to what the requesting role is actually allowed to see (BR-092..096) —
 // this function just applies whatever filter object it's given.
-export async function queryReportData(filters: ReportFilters): Promise<ReportRow[]> {
+export async function queryReportData(
+  filters: ReportFilters,
+  accessFilter: Record<string, unknown> = {},
+): Promise<ReportRow[]> {
   const pipeline: any[] = [
+    { $match: accessFilter },
     {
       // Projected here (not just hidden downstream) so the student's name
       // never leaves the database in the first place — only the ID and
@@ -88,7 +92,7 @@ export async function queryReportData(filters: ReportFilters): Promise<ReportRow
   const match: Record<string, unknown> = { isArchived: false };
   if (filters.officeRef) {
     match.assignedOfficeRef = new Types.ObjectId(filters.officeRef);
-  } else if (filters.officeRefIn?.length) {
+  } else if (filters.officeRefIn) {
     match.assignedOfficeRef = { $in: filters.officeRefIn.map((id) => new Types.ObjectId(id)) };
   }
   if (filters.collegeRef) match["student.collegeRef"] = new Types.ObjectId(filters.collegeRef);

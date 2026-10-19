@@ -440,7 +440,7 @@ table(
     ["BR-060", "UPLOAD_ALLOWED_MIME_TYPES", "see .env.example"],
     ["BR-061", "UPLOAD_MAX_FILE_SIZE_MB", "10 MB"],
     ["BR-036", "TICKET_NUMBER_PREFIX", "PARSU"],
-    ["BR-033", "SLA warning threshold percent (per SLA rule); suggested hours by priority: critical 4/24, high 8/48, medium 24/120, low 48/168 (response/resolution)", "80%"],
+    ["BR-033", "SLA warning threshold percent (per SLA rule); suggested hours by priority: critical 72/72, high 72/72, medium 72/72, low 72/72 (response/resolution)", "80%"],
   ],
   [70, 340, 88],
   { boldFirst: true },

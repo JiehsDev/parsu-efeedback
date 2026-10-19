@@ -10,11 +10,12 @@ import type { ComplaintStatus } from "@/lib/constants";
 // and withdrawal (BR-101) is a student-only self-service action with its
 // own UI (EditWithdrawComplaint), not something staff pick for them.
 export const ALLOWED_TRANSITIONS_CLIENT: Record<ComplaintStatus, ComplaintStatus[]> = {
-  submitted: ["assigned"],
+  // Assign Staff owns assignment and requires a target, outside this dropdown.
+  submitted: [],
   assigned: ["in_progress"],
   in_progress: ["resolved"],
   pending_information: ["in_progress"],
-  escalated: ["in_progress", "assigned"],
+  escalated: ["in_progress"],
   resolved: [],
   closed: [],
   withdrawn: [],

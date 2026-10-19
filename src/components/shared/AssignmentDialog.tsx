@@ -29,7 +29,6 @@ interface StaffOption {
   email?: string;
 }
 
-const OFFICE_LEVEL = "__office_level__";
 const REASSIGNMENT_REASONS = [
   "Misrouted complaint",
   "Requires another office",
@@ -71,13 +70,14 @@ export function AssignmentDialog({
     destinationOfficeId ?? currentOfficeId ?? offices[0]?._id ?? "",
   );
   const [selectedStaffId, setSelectedStaffId] = useState<string>(
-    destinationStaffId ?? currentStaffId ?? OFFICE_LEVEL,
+    destinationStaffId ?? currentStaffId ?? "",
   );
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reasonError, setReasonError] = useState<string | null>(null);
+  const [staffError, setStaffError] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [customReason, setCustomReason] = useState("");
   const requiresReason = action === "reassign" || action === "escalate";
@@ -107,7 +107,8 @@ export function AssignmentDialog({
   useEffect(() => {
     if (!isOpen) return;
     setSelectedOfficeId(destinationOfficeId ?? currentOfficeId ?? offices[0]?._id ?? "");
-    setSelectedStaffId(destinationStaffId ?? currentStaffId ?? OFFICE_LEVEL);
+    setSelectedStaffId(destinationStaffId ?? currentStaffId ?? "");
+    setStaffError(null);
     setReason("");
     setCustomReason("");
     setError(null);
@@ -118,6 +119,12 @@ export function AssignmentDialog({
       setError("Select an office before saving.");
       return;
     }
+    const targetStaff = staff.find((member) => member._id === selectedStaffId);
+    if (action !== "escalate" && (loadingStaff || !targetStaff)) {
+      setStaffError("Select a staff member to assign this complaint to.");
+      return;
+    }
+    setStaffError(null);
     const transferReason = requiresReason
       ? reason === "Other"
         ? customReason.trim()
@@ -139,9 +146,10 @@ export function AssignmentDialog({
 
     const ok = await confirm({
       title,
-      message: `Assign this complaint to ${selectedOfficeName}${
-        selectedStaffId === OFFICE_LEVEL ? " at office level" : ""
-      }? This will append a new ${action === "escalate" ? "escalation" : "assignment"} history record.`,
+      message:
+        action === "escalate"
+          ? `Escalate this complaint to ${selectedOfficeName}?`
+          : `Assign this complaint to ${targetStaff!.firstName} ${targetStaff!.lastName} in ${selectedOfficeName}? This will append a new assignment history record.`,
       confirmLabel: title,
       danger: currentOfficeId !== null && selectedOfficeId !== currentOfficeId,
     });
@@ -155,7 +163,7 @@ export function AssignmentDialog({
     };
     if (canChangeOffice || selectedOfficeId !== currentOfficeId)
       payload.assignedOfficeRef = selectedOfficeId;
-    payload.assignedStaffRef = selectedStaffId === OFFICE_LEVEL ? null : selectedStaffId;
+    payload.assignedStaffRef = selectedStaffId || null;
 
     const res = await fetch(
       action === "escalate"
@@ -220,13 +228,18 @@ export function AssignmentDialog({
             {(canChangeOffice || action === "escalate") && (
               <FormField
                 label="Destination office"
-                hint={action === "escalate" ? "The destination is computed from the escalation hierarchy." : undefined}
+                hint={
+                  action === "escalate"
+                    ? "The destination is computed from the escalation hierarchy."
+                    : undefined
+                }
               >
                 <Select
                   value={selectedOfficeId}
                   onValueChange={(value) => {
                     setSelectedOfficeId(value);
-                    setSelectedStaffId(OFFICE_LEVEL);
+                    setSelectedStaffId("");
+                    setStaffError(null);
                   }}
                   disabled={!canChangeOffice || action === "escalate"}
                 >
@@ -245,13 +258,26 @@ export function AssignmentDialog({
             )}
 
             {action !== "escalate" && (
-              <FormField label="Assigned staff" hint="Leave at office level if no individual owner is selected.">
-                <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Office level" />
+              <FormField
+                label="Assigned staff"
+                required
+                hint="Select the staff member responsible for this complaint."
+              >
+                <Select
+                  value={selectedStaffId}
+                  onValueChange={(value) => {
+                    setSelectedStaffId(value);
+                    setStaffError(null);
+                  }}
+                  disabled={loadingStaff || isSubmitting}
+                >
+                  <SelectTrigger
+                    aria-invalid={!!staffError}
+                    aria-describedby="assignment-staff-error"
+                  >
+                    <SelectValue placeholder="Select staff member" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={OFFICE_LEVEL}>Office level / unassigned</SelectItem>
                     {staff.map((member) => (
                       <SelectItem key={member._id} value={member._id}>
                         {member.firstName} {member.lastName}
@@ -259,6 +285,12 @@ export function AssignmentDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError id="assignment-staff-error" message={staffError} />
+                {!loadingStaff && staff.length === 0 && (
+                  <p className="mt-1.5 text-xs text-[var(--muted-foreground)]">
+                    No active staff members are available in this office.
+                  </p>
+                )}
                 {loadingStaff && (
                   <p className="mt-1.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -335,6 +367,8 @@ export function AssignmentDialog({
               disabled={
                 isSubmitting ||
                 !selectedOfficeId ||
+                (action !== "escalate" &&
+                  (loadingStaff || !staff.some((member) => member._id === selectedStaffId))) ||
                 (requiresReason && (!reason || (reason === "Other" && !customReason.trim())))
               }
               className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"

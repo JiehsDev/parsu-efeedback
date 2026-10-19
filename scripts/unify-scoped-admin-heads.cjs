@@ -30,7 +30,7 @@ const APPLY = process.argv.includes("--apply");
 const mappings = [
   { role: "vpaa", email: "vpaa@parsu.edu.ph", officeCode: "OVPAA" },
   { role: "vpaf", email: "vpaf@parsu.edu.ph", officeCode: "OVPAF" },
-  { role: "osas", email: "osas@parsu.edu.ph", officeCode: "OSAS" },
+  { role: "osas", email: "osasdirector@parsu.edu.ph", officeCode: "OSAS" },
 ];
 
 async function main() {

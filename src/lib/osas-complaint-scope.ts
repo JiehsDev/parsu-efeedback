@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { Complaint } from "@/models/Complaint";
 import { Category } from "@/models/Category";
 import { Office } from "@/models/Office";
 import { RoutingRule } from "@/models/RoutingRule";
@@ -6,10 +7,6 @@ import { SLARule } from "@/models/SLARule";
 
 const OSAS_CODE = "OSAS";
 const OVPAA_CODE = "OVPAA";
-
-function sameId(a: unknown, b: unknown) {
-  return String(a ?? "") === String(b ?? "");
-}
 
 export async function getOsasOffice() {
   return Office.findOne({ code: OSAS_CODE, isActive: true }).lean();
@@ -19,26 +16,32 @@ export async function getOvpaaOffice() {
   return Office.findOne({ code: OVPAA_CODE, isActive: true }).lean();
 }
 
-export async function isComplaintInOsasActionScope(complaint: any): Promise<boolean> {
-  const osasOffice = await getOsasOffice();
-  if (!osasOffice) return false;
-  const osasOfficeId = String((osasOffice as any)._id);
-  if (sameId(complaint.assignedOfficeRef, osasOfficeId)) return true;
-
-  const [category, routingRule, slaRule] = await Promise.all([
-    complaint.categoryRef ? Category.findById(complaint.categoryRef).select("defaultOfficeRef").lean() : null,
-    complaint.categoryRef
-      ? RoutingRule.findOne({ categoryRef: complaint.categoryRef, isActive: true }).select("targetOfficeRef").lean()
-      : null,
-    complaint.categoryRef
-      ? SLARule.findOne({ categoryRef: complaint.categoryRef, isActive: true }).select("escalateToOfficeRef").lean()
-      : null,
+// Include inactive offices/categories as well: historical OSAS complaints
+// retain their privacy after configuration changes or office reassignment.
+export async function getOsasComplaintFilter(): Promise<Record<string, unknown>> {
+  const office = await Office.findOne({ code: OSAS_CODE }).select("_id").lean();
+  if (!office) return { _id: { $in: [] } };
+  const officeId = office._id;
+  const [categories, routes, rules] = await Promise.all([
+    Category.find({ defaultOfficeRef: officeId }).select("_id").lean(),
+    RoutingRule.find({ targetOfficeRef: officeId, isActive: true }).select("categoryRef").lean(),
+    SLARule.find({ escalateToOfficeRef: officeId, isActive: true }).select("categoryRef").lean(),
   ]);
+  const categoryIds = [
+    ...categories.map((category) => category._id),
+    ...routes.map((route) => route.categoryRef),
+    ...rules.map((rule) => rule.categoryRef),
+  ].filter(Boolean);
+  return { $or: [{ assignedOfficeRef: officeId }, { categoryRef: { $in: categoryIds } }] };
+}
 
-  return (
-    sameId((category as any)?.defaultOfficeRef, osasOfficeId) ||
-    sameId((routingRule as any)?.targetOfficeRef, osasOfficeId) ||
-    sameId((slaRule as any)?.escalateToOfficeRef, osasOfficeId)
+export async function isComplaintInOsasActionScope(complaint: any): Promise<boolean> {
+  if (!complaint._id) return false;
+  return Boolean(
+    await Complaint.exists({
+      _id: complaint._id,
+      ...(await getOsasComplaintFilter()),
+    }),
   );
 }
 
@@ -46,18 +49,28 @@ export async function getOsasAllowedDestinationOffices(complaint: any) {
   if (!(await isComplaintInOsasActionScope(complaint))) return [];
 
   const ids = new Set<string>();
-  const [osasOffice, ovpaaOffice, category, routingRule, slaRule, collegeOffices] = await Promise.all([
-    getOsasOffice(),
-    getOvpaaOffice(),
-    complaint.categoryRef ? Category.findById(complaint.categoryRef).select("defaultOfficeRef").lean() : null,
-    complaint.categoryRef
-      ? RoutingRule.findOne({ categoryRef: complaint.categoryRef, isActive: true }).select("targetOfficeRef").lean()
-      : null,
-    complaint.categoryRef
-      ? SLARule.findOne({ categoryRef: complaint.categoryRef, isActive: true }).select("escalateToOfficeRef").lean()
-      : null,
-    Office.find({ type: "college_office", isActive: true }).select("name code type").sort({ name: 1 }).lean(),
-  ]);
+  const [osasOffice, ovpaaOffice, category, routingRule, slaRule, collegeOffices] =
+    await Promise.all([
+      getOsasOffice(),
+      getOvpaaOffice(),
+      complaint.categoryRef
+        ? Category.findById(complaint.categoryRef).select("defaultOfficeRef").lean()
+        : null,
+      complaint.categoryRef
+        ? RoutingRule.findOne({ categoryRef: complaint.categoryRef, isActive: true })
+            .select("targetOfficeRef")
+            .lean()
+        : null,
+      complaint.categoryRef
+        ? SLARule.findOne({ categoryRef: complaint.categoryRef, isActive: true })
+            .select("escalateToOfficeRef")
+            .lean()
+        : null,
+      Office.find({ type: "college_office", isActive: true })
+        .select("name code type")
+        .sort({ name: 1 })
+        .lean(),
+    ]);
 
   for (const office of [osasOffice, ovpaaOffice]) {
     if (office) ids.add(String((office as any)._id));

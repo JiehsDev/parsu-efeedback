@@ -17,6 +17,7 @@ import { notifyOfficeReassignment } from "@/features/notifications/services/noti
 import { isOfficeHead } from "@/lib/office-head";
 import { getEligibleReassignmentOffices } from "@/lib/office-reassignment-scope";
 import type { UserRole } from "@/lib/constants";
+import { getAdminScope, isComplaintInAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
 
 export type OfficeReassignmentResult =
   | { complaint: ComplaintDocument }
@@ -33,6 +34,10 @@ export async function reassignOffice(params: {
 }): Promise<OfficeReassignmentResult> {
   const complaint = await Complaint.findById(params.complaintId);
   if (!complaint) return { error: "Complaint not found", status: 404 };
+  if (isScopedAdminRole(params.actorRole) &&
+    !(await isComplaintInAdminScope(getAdminScope(params.actorRole), complaint))) {
+    return { error: "Forbidden", status: 403 };
+  }
 
   if (complaint.isArchived) {
     return { error: "Archived complaints cannot be reassigned.", status: 400 };
@@ -90,10 +95,12 @@ export async function reassignOffice(params: {
   const before = {
     assignedOfficeRef: complaint.assignedOfficeRef,
     assignedStaffRef: complaint.assignedStaffRef,
+    status: complaint.status,
   };
 
   complaint.assignedOfficeRef = destinationOffice._id as any;
   complaint.assignedStaffRef = null;
+  if (complaint.status === "assigned") complaint.status = "submitted";
   await complaint.save();
 
   await Assignment.create({

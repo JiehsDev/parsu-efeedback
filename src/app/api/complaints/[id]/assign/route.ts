@@ -8,6 +8,7 @@ import { Office } from "@/models/Office";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Assignment } from "@/models/Assignment";
 import { assignComplaintSchema } from "@/features/complaints/schemas/assign.schema";
+import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import {
   notifyComplaintAssigned,
@@ -52,11 +53,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   const parsed = assignComplaintSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({
+      error: parsed.error.issues[0]?.message ?? "Invalid assignment.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    }, { status: 400 });
   }
 
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (["vpaa", "vpaf", "osas"].includes(role) &&
+    !(await isComplaintInAdminScope(getAdminScope(role), complaint))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
 
   // BR-101: a withdrawn complaint is inert — the student pulled it before
@@ -260,6 +268,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // --- Apply changes ---
 
+  if (!isEscalationAction) {
+    const target = await User.findById(assignedStaffRef).lean();
+    const officeId = assignedOfficeRef ?? String(complaint.assignedOfficeRef ?? "");
+    if (!target || !target.isActive || target.role !== "office_staff" || String(target.officeRef ?? "") !== officeId) {
+      return NextResponse.json({ error: "Select an active staff member from the complaint's office." }, { status: 400 });
+    }
+  }
+
   const before = {
     assignedOfficeRef: complaint.assignedOfficeRef,
     assignedStaffRef: complaint.assignedStaffRef,
@@ -281,15 +297,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     complaint.status = "escalated";
   }
 
-  // Picking up a complaint means a staff member has taken ownership. Move it
-  // directly into active processing; office-only routing may remain assigned
-  // until a person actually owns it.
+  // Self-pickup starts processing; explicit delegation assigns the chosen
+  // staff member without claiming they have already started work.
   const wasPickedUp =
     !isEscalationAction &&
+    action === undefined &&
+    role === "office_staff" &&
+    String(complaint.assignedStaffRef) === userId &&
     Boolean(complaint.assignedStaffRef) &&
     (complaint.status === "submitted" || complaint.status === "assigned");
   if (wasPickedUp) {
     complaint.status = "in_progress";
+  } else if (!isEscalationAction) {
+    complaint.status = "assigned";
   }
 
   await complaint.save();
@@ -298,8 +318,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     complaintRef: complaint._id,
     eventType: isEscalationAction ? "escalated" : officeChanged ? "reassigned" : "assigned",
     actorRef: userId,
-    fromValue: isEscalationAction ? before.status : wasPickedUp ? before.status : String(before.assignedOfficeRef ?? ""),
-    toValue: isEscalationAction ? "escalated" : wasPickedUp ? "in_progress" : String(complaint.assignedOfficeRef ?? ""),
+    fromValue: before.status,
+    toValue: complaint.status,
     message: wasPickedUp
       ? "Complaint picked up. Processing started."
       : parsed.data.message ?? "",

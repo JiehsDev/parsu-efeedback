@@ -21,7 +21,7 @@ import { Counter } from "@/models/Counter";
 import { Notification } from "@/models/Notification";
 import { getSettings } from "@/features/settings/services/settings.service";
 import { FEEDBACK_CATEGORIES } from "@/features/feedback/constants";
-import type { PriorityLevel } from "@/lib/constants";
+import { DEFAULT_SLA_HOURS, type PriorityLevel } from "@/lib/constants";
 
 // --- Small seeding helpers (test data only, not exported/reused elsewhere) ---
 function randInt(min: number, max: number) {
@@ -49,15 +49,7 @@ function addHours(date: Date, hours: number) {
   return new Date(date.getTime() + hours * 60 * 60 * 1000);
 }
 
-const PRIORITY_SLA_HOURS: Record<
-  PriorityLevel,
-  { responseHours: number; resolutionHours: number }
-> = {
-  critical: { responseHours: 4, resolutionHours: 24 },
-  high: { responseHours: 8, resolutionHours: 48 },
-  medium: { responseHours: 24, resolutionHours: 120 },
-  low: { responseHours: 48, resolutionHours: 168 },
-};
+const PRIORITY_SLA_HOURS = DEFAULT_SLA_HOURS;
 
 const FIRST_NAMES = [
   "Juan",
@@ -212,7 +204,7 @@ const COMPLAINT_TEMPLATES: Record<string, { title: string; description: string }
         "The office was unexpectedly closed during posted hours, and no notice was given beforehand.",
     },
   ],
-  "Faculty & Teaching Performance": [
+  "Faculty & Non Teaching Performance": [
     {
       title: "Frequent absences affecting course progress",
       description:
@@ -555,32 +547,32 @@ export async function GET(req: NextRequest) {
       // college office (not OVPAA) so a college's own performance is
       // tracked at the college level. ---
       {
-        name: "Faculty & Teaching Performance",
+        name: "Faculty & Non Teaching Performance",
         description:
           "Excessive absenteeism, late arrivals, poor instruction, or unprofessional behavior",
         defaultOfficeRef: primaryCollege._id,
         defaultPriority: "high",
       },
       {
-        name: "Faculty & Teaching Performance - College of Education",
+        name: "Faculty & Non Teaching Performance - College of Education",
         description: "Teaching quality, faculty attendance, and classroom conduct concerns for CED",
         defaultOfficeRef: otherColleges[0]!._id,
         defaultPriority: "high",
       },
       {
-        name: "Faculty & Teaching Performance - College of Business & Management",
+        name: "Faculty & Non Teaching Performance - College of Business & Management",
         description: "Teaching quality, faculty attendance, and classroom conduct concerns for CBM",
         defaultOfficeRef: otherColleges[1]!._id,
         defaultPriority: "high",
       },
       {
-        name: "Faculty & Teaching Performance - College of Science",
+        name: "Faculty & Non Teaching Performance - College of Science",
         description: "Teaching quality, faculty attendance, and classroom conduct concerns for COS",
         defaultOfficeRef: otherColleges[2]!._id,
         defaultPriority: "high",
       },
       {
-        name: "Faculty & Teaching Performance - College of Arts and Humanities",
+        name: "Faculty & Non Teaching Performance - College of Arts and Humanities",
         description: "Teaching quality, faculty attendance, and classroom conduct concerns for CAH",
         defaultOfficeRef: otherColleges[3]!._id,
         defaultPriority: "high",
@@ -612,6 +604,12 @@ export async function GET(req: NextRequest) {
       // organizations, activities, dormitories/boarding houses, plus
       // safety/health as student-welfare concerns — per the OSAS
       // reference note) ---
+      {
+        name: "Student Conduct & Peer Concerns",
+        description: "Bullying, harassment, conflicts, and misconduct involving other students",
+        defaultOfficeRef: osasOffice._id,
+        defaultPriority: "high",
+      },
       {
         name: "Campus Safety & Security",
         description:
@@ -1020,7 +1018,7 @@ export async function GET(req: NextRequest) {
       {
         firstName: "Cristina",
         lastName: "Bautista",
-        email: "osas@parsu.edu.ph",
+        email: "osasdirector@parsu.edu.ph",
         passwordHash: commonPasswordHash,
         role: "osas",
         employeeOrStudentId: "EMP-0017",
@@ -1216,7 +1214,7 @@ export async function GET(req: NextRequest) {
       [otherColleges[2]!._id, "dean.cos@parsu.edu.ph"],
       [otherColleges[3]!._id, "dean.cah@parsu.edu.ph"],
       [registrarOffice._id, "staff@parsu.edu.ph"],
-      [osasOffice._id, "osas@parsu.edu.ph"],
+      [osasOffice._id, "osasdirector@parsu.edu.ph"],
       [ovpaaOffice._id, "vpaa@parsu.edu.ph"],
       [ovpafOffice._id, "vpaf@parsu.edu.ph"],
       [qaOffice._id, "qa@parsu.edu.ph"],
@@ -1493,7 +1491,7 @@ export async function GET(req: NextRequest) {
       verifyRoutingAccounts: {
         note: "Log in as each office_staff account below (password ParSU_test2026) and confirm complaints for that office appear on their dashboard. \"(head)\" accounts are Office.headUserRef for that office and can Assign Staff / Change Assignee / Reassign Office; the rest are ordinary staff who can only Pick Up / Release.",
         registrar: ["staff@parsu.edu.ph (head)", "staff3@parsu.edu.ph", "staff17@parsu.edu.ph"],
-        osas: ["osas@parsu.edu.ph (head, role=osas)", "staff2@parsu.edu.ph"],
+        osas: ["osasdirector@parsu.edu.ph (head, role=osas)", "staff2@parsu.edu.ph"],
         generalServices: ["staff4@parsu.edu.ph (head)", "staff16@parsu.edu.ph"],
         cecs: ["staff5@parsu.edu.ph (head)", "staff8@parsu.edu.ph"],
         ced: ["dean.ced@parsu.edu.ph (head)", "staff9@parsu.edu.ph"],

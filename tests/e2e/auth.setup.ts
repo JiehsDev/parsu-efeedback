@@ -25,7 +25,7 @@ const ROLES: Array<{ role: UserRole; email: string; storageFile: string }> = [
   },
   { role: "vpaa", email: "vpaa@parsu.edu.ph", storageFile: "tests/e2e/.auth/vpaa.json" },
   { role: "vpaf", email: "vpaf@parsu.edu.ph", storageFile: "tests/e2e/.auth/vpaf.json" },
-  { role: "osas", email: "osas@parsu.edu.ph", storageFile: "tests/e2e/.auth/osas.json" },
+  { role: "osas", email: "osasdirector@parsu.edu.ph", storageFile: "tests/e2e/.auth/osas.json" },
 ];
 
 for (const { role, email, storageFile } of ROLES) {

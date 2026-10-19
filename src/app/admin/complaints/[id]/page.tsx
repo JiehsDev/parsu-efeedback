@@ -20,6 +20,7 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { ComplaintNote } from "@/models/ComplaintNote";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ComplaintResolution } from "@/components/shared/ComplaintResolution";
+import { ComplaintUpdateMessages } from "@/components/shared/ComplaintUpdateMessages";
 import { TimelineEvent } from "@/components/shared/TimelineEvent";
 import { AssignmentDialog } from "@/components/shared/AssignmentDialog";
 import { AssignmentHistoryPanel } from "@/components/shared/AssignmentHistoryPanel";
@@ -30,7 +31,7 @@ import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggl
 import { ArchiveApprovalPanel } from "@/components/staff/ArchiveApprovalPanel";
 import { StatusUpdateForm } from "@/components/staff/StatusUpdateForm";
 import type { ComplaintStatus } from "@/lib/constants";
-import { getAdminScope, officeFilterForScope } from "@/lib/admin-scope";
+import { getAdminScope, officeFilterForScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
 import { InformationRequest } from "@/models/InformationRequest";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
@@ -75,6 +76,7 @@ export default async function AdminComplaintDetailPage({
   if (!complaint) notFound();
 
   const c = complaint as any;
+  if (!(await isComplaintInAdminScope(scope, c))) notFound();
 
   const [
     student,
@@ -121,15 +123,6 @@ export default async function AdminComplaintDetailPage({
     resolveManualEscalationTarget(c, role),
   ]);
 
-  // vpaa/vpaf are confined to complaints assigned to their office
-  // category; osas and administrator see every complaint.
-  if (
-    (scope.kind === "college_office" || scope.kind === "university_office") &&
-    (office as any)?.type !== scope.kind
-  ) {
-    redirect("/admin/complaints");
-  }
-  if (role === "osas" && !(await isComplaintInOsasActionScope(c))) redirect("/admin/complaints");
   const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
   const resolutionEvent = [...(timeline as any[])].reverse().find((event) => event.toValue === "resolved");
   const resolver = c.resolvedByRef ?? resolutionEvent?.actorRef ?? null;
@@ -208,6 +201,8 @@ export default async function AdminComplaintDetailPage({
               {c.description}
             </p>
           </div>
+
+          <ComplaintUpdateMessages events={timeline} viewerRole="admin" />
 
           <ComplaintResolution
             summary={c.resolutionSummary}
