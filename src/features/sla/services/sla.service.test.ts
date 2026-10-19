@@ -20,7 +20,7 @@ describe("sla.service — BR-030/031", () => {
       resolutionHours: 72,
     });
 
-    expect(slaResolutionDueAt.toISOString()).toBe("2026-01-04T00:00:00.000Z");
+    expect(slaResolutionDueAt.toISOString()).toBe("2026-01-06T00:00:00.000Z");
   });
 
   it("resolution deadline is always after the response deadline for positive hour configs", () => {

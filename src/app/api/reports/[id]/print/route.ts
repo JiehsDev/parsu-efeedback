@@ -35,6 +35,7 @@ const COLUMNS: { key: keyof ReportRow; label: string }[] = [
   { key: "resolvedAt", label: "Resolved" },
   { key: "resolutionSummary", label: "Resolution details" },
   { key: "slaCompliant", label: "SLA Met" },
+  { key: "slaCalendar", label: "SLA Calendar" },
 ];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

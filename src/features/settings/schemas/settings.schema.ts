@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export const updateSettingsSchema = z.object({
   ticketNumberPrefix: z.string().trim().min(1).max(20).optional(),
+  slaHolidays: z.array(z.iso.date()).max(3660).transform((dates) => [...new Set(dates)].sort()).optional(),
   uploadMaxFileSizeMb: z.number().positive().max(100).optional(),
   uploadAllowedMimeTypes: z.array(z.string().trim().min(1)).min(1).optional(),
   authMaxFailedLoginAttempts: z.number().int().positive().max(20).optional(),

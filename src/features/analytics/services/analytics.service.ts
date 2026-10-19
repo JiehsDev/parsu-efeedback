@@ -1,4 +1,5 @@
 // src/features/analytics/services/analytics.service.ts
+import { elapsedSlaMs } from "@/lib/sla-calendar";
 import { Complaint } from "@/models/Complaint";
 import { Assignment } from "@/models/Assignment";
 import { Types } from "mongoose";
@@ -63,7 +64,7 @@ export async function getAnalyticsSummary(
 
   const [complaints, byStatus, officePerformance, closureStats] = await Promise.all([
     Complaint.find(match)
-      .select("_id submittedAt resolvedAt slaResolutionDueAt status isOverdue")
+      .select("_id submittedAt resolvedAt slaResolutionDueAt status isOverdue slaPolicy")
       .lean(),
     Complaint.aggregate([
       { $match: match },
@@ -89,7 +90,7 @@ export async function getAnalyticsSummary(
 
   const resolutionDurations = resolved
     .filter((c: any) => c.resolvedAt && c.submittedAt)
-    .map((c: any) => new Date(c.resolvedAt).getTime() - new Date(c.submittedAt).getTime())
+    .map((c: any) => elapsedSlaMs(c.submittedAt, c.resolvedAt, c.slaPolicy))
     .filter((ms) => ms >= 0);
 
   const complaintIds = complaints.map((c: any) => c._id);
@@ -103,12 +104,12 @@ export async function getAnalyticsSummary(
     { $sort: { createdAt: 1 } },
     { $group: { _id: "$complaintRef", firstResponseAt: { $first: "$createdAt" } } },
   ]);
-  const submittedById = new Map(complaints.map((c: any) => [String(c._id), c.submittedAt]));
+  const submittedById = new Map(complaints.map((c: any) => [String(c._id), c]));
   const firstResponseDurations = firstHumanAssignments
     .map((a: any) => {
-      const submittedAt = submittedById.get(String(a._id));
-      return submittedAt
-        ? new Date(a.firstResponseAt).getTime() - new Date(submittedAt as any).getTime()
+      const complaint = submittedById.get(String(a._id));
+      return complaint
+        ? elapsedSlaMs(complaint.submittedAt, a.firstResponseAt, complaint.slaPolicy)
         : -1;
     })
     .filter((ms: number) => ms >= 0);

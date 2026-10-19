@@ -16,6 +16,7 @@ const settingsSchema = new Schema(
     _id: { type: String, default: SETTINGS_SINGLETON_ID },
 
     ticketNumberPrefix: { type: String, required: true, default: "PARSU" },
+    slaHolidays: { type: [String], default: [] },
 
     uploadMaxFileSizeMb: { type: Number, required: true, default: 10 },
     uploadAllowedMimeTypes: {

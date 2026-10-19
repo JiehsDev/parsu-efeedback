@@ -4,6 +4,7 @@
 // "Recent" panel and the full complaints list so the two cannot drift into
 // looking like two different products — the columns, the SLA wording and
 // the priority rules are defined once, here.
+import type { SlaPolicy } from "@/lib/sla-calendar";
 import Link from "next/link";
 import { CopyButton } from "./CopyButton";
 import { RelativeTime } from "./RelativeTime";
@@ -39,6 +40,7 @@ export const PRIORITY_FLAG: Partial<Record<string, { label: string; className: s
 };
 
 export type ComplaintRowData = {
+  slaPolicy?: SlaPolicy | null;
   _id: unknown;
   title: string;
   ticketNumber: string;

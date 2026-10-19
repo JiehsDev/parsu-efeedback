@@ -1,6 +1,7 @@
 // src/app/admin/settings/page.tsx
 "use client";
 
+import { SlaCalendarRecalculation } from "@/components/admin/SlaCalendarRecalculation";
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 interface SettingsData {
+  slaHolidays: string[];
   ticketNumberPrefix: string;
   uploadMaxFileSizeMb: number;
   uploadAllowedMimeTypes: string[];
@@ -25,6 +27,7 @@ interface SettingsData {
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SettingsData | null>(null);
+  const [holidaysInput, setHolidaysInput] = useState("");
   const [mimeTypesInput, setMimeTypesInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -40,6 +43,7 @@ export default function AdminSettingsPage() {
       })
       .then((data) => {
         setSettings(data.settings);
+        setHolidaysInput((data.settings.slaHolidays ?? []).join("\n"));
         setMimeTypesInput(data.settings.uploadAllowedMimeTypes.join(", "));
       })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Could not load settings."))
@@ -55,6 +59,7 @@ export default function AdminSettingsPage() {
 
     const payload = {
       ticketNumberPrefix: settings.ticketNumberPrefix,
+      slaHolidays: holidaysInput.split(/[\s,]+/).map((date) => date.trim()).filter(Boolean),
       uploadMaxFileSizeMb: settings.uploadMaxFileSizeMb,
       authMaxFailedLoginAttempts: settings.authMaxFailedLoginAttempts,
       authLockoutDurationMinutes: settings.authLockoutDurationMinutes,
@@ -72,7 +77,7 @@ export default function AdminSettingsPage() {
     const data = await res.json();
 
     if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "Could not save settings.");
+      setError(data.error?.fieldErrors?.slaHolidays?.[0] ?? (typeof data.error === "string" ? data.error : "Could not save settings."));
       setIsSaving(false);
       return;
     }
@@ -132,6 +137,20 @@ export default function AdminSettingsPage() {
             <span>{success}</span>
           </div>
         )}
+
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <h2 className="text-sm font-semibold text-[var(--foreground)]">SLA calendar</h2>
+          <p id="sla-calendar-help" className="mt-2 text-xs text-[var(--muted-foreground)]">
+            Response and resolution clocks count 24 hours on weekdays in Philippine time.
+            Saturdays, Sundays and the dates below do not count. Add holidays and university closures
+            for each year; dates are not added automatically. Saved changes apply to new complaints.
+          </p>
+          <label htmlFor="sla-holidays" className="mt-4 block text-sm font-medium text-[var(--foreground)]">
+            Holidays and closures (YYYY-MM-DD, one date per line)
+          </label>
+          <textarea id="sla-holidays" value={holidaysInput} onChange={(event) => setHolidaysInput(event.target.value)}
+            rows={5} aria-describedby="sla-calendar-help" placeholder="YYYY-MM-DD" className={`${inputClass} mt-2`} />
+        </div>
 
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
           <div className="flex items-center gap-2.5">
@@ -262,6 +281,10 @@ export default function AdminSettingsPage() {
           {isSaving ? "Saving…" : "Save Settings"}
         </button>
       </form>
+      <SlaCalendarRecalculation calendarDirty={
+        JSON.stringify([...new Set(holidaysInput.split(/[\s,]+/).map((date) => date.trim()).filter(Boolean))].sort()) !==
+        JSON.stringify([...(settings.slaHolidays ?? [])].sort())
+      } />
     </div>
   );
 }

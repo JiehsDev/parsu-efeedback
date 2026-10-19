@@ -181,6 +181,10 @@ export default function AdminSlaRulesPage() {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-[var(--muted-foreground)]">
+        SLA hours count 24 hours per weekday, excluding Saturdays, Sundays and configured holidays in Philippine time.
+        Manage holidays in System Settings. Existing complaints retain their calendar until recalculated there.
+      </p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">

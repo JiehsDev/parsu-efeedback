@@ -1,9 +1,11 @@
+import { elapsedSlaMs, SLA_TIME_ZONE, type SlaPolicy } from "@/lib/sla-calendar";
 import { Timer } from "lucide-react";
 import { formatEnumLabel } from "@/lib/display-labels";
 
 type SlaDetailsProps = {
   complaint: {
     status: string;
+    slaPolicy?: SlaPolicy | null;
     submittedAt?: Date | string | null;
     resolvedAt?: Date | string | null;
     slaResponseDueAt?: Date | string | null;
@@ -18,12 +20,12 @@ type SlaDetailsProps = {
 };
 
 function dateLabel(value?: Date | string | null) {
-  return value ? new Date(value).toLocaleString() : "Not available";
+  return value ? new Date(value).toLocaleString("en-PH", { timeZone: SLA_TIME_ZONE }) : "Not available";
 }
 
-function durationLabel(start?: Date | string | null, end?: Date | string | null) {
+function durationLabel(start?: Date | string | null, end?: Date | string | null, policy?: SlaPolicy | null) {
   if (!start || !end) return "Not available";
-  const minutes = Math.max(0, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000));
+  const minutes = Math.max(0, Math.round(elapsedSlaMs(start, end, policy) / 60000));
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
@@ -56,8 +58,8 @@ export function SlaDetails({ complaint, firstResponseAt, events = [], simplified
         ["Resolution due", dateLabel(complaint.slaResolutionDueAt)],
         ["Warning threshold reached", warningReached ? "Yes" : "No"],
         ["Overdue", overdue ? "Yes" : "No"],
-        ["First response time", durationLabel(complaint.submittedAt, firstResponseAt)],
-        ["Resolution time", durationLabel(complaint.submittedAt, complaint.resolvedAt)],
+        ["First response time", durationLabel(complaint.submittedAt, firstResponseAt, complaint.slaPolicy)],
+        ["Resolution time", durationLabel(complaint.submittedAt, complaint.resolvedAt, complaint.slaPolicy)],
         ["SLA compliance", resolved ? (resolutionMet ? "Met" : "Breached") : "Pending result"],
       ];
 
@@ -70,6 +72,11 @@ export function SlaDetails({ complaint, firstResponseAt, events = [], simplified
         </div>
         <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${stateTone}`}>{state}</span>
       </div>
+      <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+        {complaint.slaPolicy?.version === 1
+          ? "24 hours per weekday. Saturdays, Sundays and configured holidays are excluded. Times are Philippine time."
+          : "Calendar hours, including weekends and holidays (original SLA). Times are Philippine time."}
+      </p>
       <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
         {rows.map(([label, value]) => (
           <div key={label}>

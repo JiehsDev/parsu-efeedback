@@ -10,6 +10,7 @@ import { Office } from "@/models/Office";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { updateSettings } from "@/features/settings/services/settings.service";
 import { env } from "@/lib/env";
+import { slaElapsedPercent } from "@/lib/sla-calendar";
 import type { ComplaintStatus, PriorityLevel } from "@/lib/constants";
 import {
   notifySlaWarning,
@@ -149,14 +150,12 @@ async function checkDeadline(
   if (complaint[warningField]) return { escalated: false, warned: false };
 
   const rule = await resolveSlaRule(complaint.categoryRef, complaint.priority);
-  if (!rule) return { escalated: false, warned: false };
+  if (!rule && !complaint.slaPolicy) return { escalated: false, warned: false };
 
-  const warningThreshold = (rule as any).warningThresholdPercent ?? 80;
+  const warningThreshold = complaint.slaPolicy?.warningThresholdPercent ?? (rule as any)?.warningThresholdPercent ?? 80;
   const clockHours =
-    clock === "response" ? (rule as any).responseHours : (rule as any).resolutionHours;
-  const totalMs = clockHours * 60 * 60 * 1000;
-  const windowStart = new Date(dueAt.getTime() - totalMs);
-  const elapsedPercent = ((now.getTime() - windowStart.getTime()) / totalMs) * 100;
+    clock === "response" ? (rule as any)?.responseHours : (rule as any)?.resolutionHours;
+  const elapsedPercent = slaElapsedPercent(now, dueAt, clock, clockHours, complaint.slaPolicy);
 
   if (elapsedPercent < warningThreshold) return { escalated: false, warned: false };
 

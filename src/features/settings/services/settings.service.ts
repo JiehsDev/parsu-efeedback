@@ -19,6 +19,7 @@ export async function getSettings() {
 export async function updateSettings(
   patch: Partial<{
     ticketNumberPrefix: string;
+    slaHolidays: string[];
     uploadMaxFileSizeMb: number;
     uploadAllowedMimeTypes: string[];
     authMaxFailedLoginAttempts: number;

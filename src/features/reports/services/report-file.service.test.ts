@@ -19,6 +19,7 @@ const rows: ReportRow[] = [
     submittedAt: "1/1/2026",
     resolvedAt: "1/3/2026",
     resolutionSummary: "Replaced the projector lamp and verified operation.",
+    slaCalendar: "24h weekdays; holidays excluded",
     slaCompliant: "Yes",
   },
   {
@@ -33,6 +34,7 @@ const rows: ReportRow[] = [
     submittedAt: "1/2/2026",
     resolvedAt: "—",
     resolutionSummary: "",
+    slaCalendar: "Calendar hours (original SLA)",
     slaCompliant: "N/A",
   },
 ];
@@ -46,7 +48,7 @@ describe("report-file.service — BR-079", () => {
     const lines = text.split("\n");
     expect(lines).toHaveLength(3); // header + 2 rows
     expect(lines[0]).toBe(
-      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,Resolution details,SLA Met",
+      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,Resolution details,SLA Met,SLA Calendar",
     );
     expect(lines[1]).toContain("PARSU-2026-000001");
     expect(lines[1]).toContain("2023-10492");
@@ -64,7 +66,7 @@ describe("report-file.service — BR-079", () => {
   it("generateCsv returns just the header for an empty row set", () => {
     const buffer = generateCsv([]);
     expect(buffer.toString("utf-8")).toBe(
-      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,Resolution details,SLA Met",
+      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,Resolution details,SLA Met,SLA Calendar",
     );
   });
 

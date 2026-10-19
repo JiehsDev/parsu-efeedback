@@ -3,6 +3,7 @@
 
 import { SLARule } from "@/models/SLARule";
 import type { PriorityLevel } from "@/lib/constants";
+import { addSlaHours, type SlaPolicy } from "@/lib/sla-calendar";
 
 interface ResolveSlaRuleParams {
   categoryId: string;
@@ -33,9 +34,18 @@ export async function resolveSlaRule(params: ResolveSlaRuleParams) {
 
 export function computeSlaDates(
   routedAt: Date,
-  rule: { responseHours: number; resolutionHours: number },
+  rule: { responseHours: number; resolutionHours: number; warningThresholdPercent?: number },
+  holidays: readonly string[] = [],
 ) {
-  const slaResponseDueAt = new Date(routedAt.getTime() + rule.responseHours * 60 * 60 * 1000);
-  const slaResolutionDueAt = new Date(routedAt.getTime() + rule.resolutionHours * 60 * 60 * 1000);
-  return { slaResponseDueAt, slaResolutionDueAt };
+  const slaResponseDueAt = addSlaHours(routedAt, rule.responseHours, holidays);
+  const slaResolutionDueAt = addSlaHours(routedAt, rule.resolutionHours, holidays);
+  const slaPolicy = {
+    version: 1,
+    holidays: [...new Set(holidays)].sort(),
+    startedAt: routedAt,
+    responseHours: rule.responseHours,
+    resolutionHours: rule.resolutionHours,
+    warningThresholdPercent: rule.warningThresholdPercent ?? 80,
+  } satisfies SlaPolicy;
+  return { slaResponseDueAt, slaResolutionDueAt, slaPolicy };
 }

@@ -52,6 +52,19 @@ const complaintSchema = new Schema(
     // time by the SLA service (Phase 10) from sla_rules
     slaResponseDueAt: { type: Date, default: null },
     slaResolutionDueAt: { type: Date, default: null },
+    slaCalendarRevision: { type: String, default: null },
+    // Snapshot: calendar edits must not silently change existing SLA results.
+    slaPolicy: {
+      type: new Schema({
+        version: { type: Number, required: true, enum: [1] },
+        holidays: { type: [String], default: [] },
+        startedAt: { type: Date, required: true },
+        responseHours: { type: Number, required: true },
+        resolutionHours: { type: Number, required: true },
+        warningThresholdPercent: { type: Number, required: true },
+      }, { _id: false }),
+      default: null,
+    },
 
     // BR-032: kept as a denormalized flag (updated by the hourly SLA cron)
     // so dashboards/indexes don't need to recompute "overdue" from dates

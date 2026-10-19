@@ -1,4 +1,5 @@
 // src/features/reports/services/report-data.service.ts
+import { SLA_TIME_ZONE } from "@/lib/sla-calendar";
 import { Complaint } from "@/models/Complaint";
 import { Types } from "mongoose";
 
@@ -30,6 +31,7 @@ export interface ReportRow {
   submittedAt: string;
   resolvedAt: string;
   resolutionSummary: string;
+  slaCalendar: string;
   slaCompliant: string;
 }
 
@@ -122,11 +124,12 @@ export async function queryReportData(filters: ReportFilters): Promise<ReportRow
       categoryName: c.category?.name ?? "—",
       studentId: c.student.employeeOrStudentId ?? "—",
       studentCollege: c.studentCollege?.name ?? "—",
-      submittedAt: new Date(c.submittedAt).toLocaleDateString(),
-      resolvedAt: c.resolvedAt ? new Date(c.resolvedAt).toLocaleDateString() : "—",
+      submittedAt: new Date(c.submittedAt).toLocaleDateString("en-PH", { timeZone: SLA_TIME_ZONE }),
+      resolvedAt: c.resolvedAt ? new Date(c.resolvedAt).toLocaleDateString("en-PH", { timeZone: SLA_TIME_ZONE }) : "—",
       resolutionSummary: c.resolutionSummary
         ? `${["resolved", "closed"].includes(c.status) ? "" : "Previous resolution: "}${c.resolutionSummary}`
         : ["resolved", "closed"].includes(c.status) ? "No resolution details recorded." : "",
+      slaCalendar: c.slaPolicy?.version === 1 ? "24h weekdays; weekends and configured holidays excluded (Philippine time)" : "Calendar hours (original SLA)",
       slaCompliant,
     };
   });

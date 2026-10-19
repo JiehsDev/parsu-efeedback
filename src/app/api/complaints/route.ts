@@ -19,6 +19,7 @@ import {
   RoutingError,
 } from "@/features/routing-engine/services/routing.service";
 import { User } from "@/models/User";
+import { getSettings } from "@/features/settings/services/settings.service";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -80,7 +81,8 @@ export async function POST(req: NextRequest) {
   // number and create the complaint — exactly once ---
   const ticketNumber = await generateTicketNumber();
   const routedAt = new Date();
-  const { slaResponseDueAt, slaResolutionDueAt } = computeSlaDates(routedAt, slaRule as any);
+  const settings = await getSettings();
+  const { slaResponseDueAt, slaResolutionDueAt, slaPolicy } = computeSlaDates(routedAt, slaRule as any, settings.slaHolidays ?? []);
 
   const complaint = await Complaint.create({
     ticketNumber,
@@ -93,6 +95,8 @@ export async function POST(req: NextRequest) {
     assignedOfficeRef: resolvedOfficeRef,
     slaResponseDueAt,
     slaResolutionDueAt,
+    slaPolicy,
+    submittedAt: routedAt,
   });
 
   await ComplaintTimeline.create({
