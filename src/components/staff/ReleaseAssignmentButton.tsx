@@ -45,7 +45,10 @@ export function ReleaseAssignmentButton({ complaintId }: { complaintId: string }
     <>
       <button
         type="button"
-        onClick={() => { setError(null); setIsOpen(true); }}
+        onClick={() => {
+          setError(null);
+          setIsOpen(true);
+        }}
         className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
       >
         <LogOut className="h-4 w-4" />

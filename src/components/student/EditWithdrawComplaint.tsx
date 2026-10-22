@@ -80,7 +80,10 @@ export function EditWithdrawComplaint({
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      showToast(typeof data.error === "string" ? data.error : "Could not withdraw complaint.", "error");
+      showToast(
+        typeof data.error === "string" ? data.error : "Could not withdraw complaint.",
+        "error",
+      );
       return;
     }
 
@@ -103,7 +106,11 @@ export function EditWithdrawComplaint({
           disabled={isSubmitting}
           className="flex items-center gap-1.5 rounded-full border border-[var(--destructive)]/40 px-3.5 py-2 text-sm font-medium text-[var(--destructive)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+          {isSubmitting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <X className="h-3.5 w-3.5" />
+          )}
           Withdraw
         </button>
         <p className="text-xs text-[var(--muted-foreground)]">

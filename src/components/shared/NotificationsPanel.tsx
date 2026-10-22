@@ -33,10 +33,15 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
     clientFetch(url)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load notifications.");
+        if (!res.ok)
+          throw new Error(
+            typeof data.error === "string" ? data.error : "Could not load notifications.",
+          );
         setNotifications(data.notifications ?? []);
       })
-      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Could not load notifications."))
+      .catch((reason: unknown) =>
+        setError(reason instanceof Error ? reason.message : "Could not load notifications."),
+      )
       .finally(() => setLoading(false));
   }, [filter]);
 
@@ -98,7 +103,11 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
         <div className="rounded-[var(--radius)] border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center">
           <AlertCircle className="mx-auto h-5 w-5 text-[var(--destructive)]" />
           <p className="mt-2 text-sm text-[var(--destructive)]">{error}</p>
-          <button type="button" onClick={refresh} className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--muted)]">
+          <button
+            type="button"
+            onClick={refresh}
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--muted)]"
+          >
             <RefreshCw className="h-3.5 w-3.5" /> Retry
           </button>
         </div>

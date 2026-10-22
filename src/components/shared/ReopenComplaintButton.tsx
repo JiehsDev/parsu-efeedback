@@ -42,15 +42,35 @@ export function ReopenComplaintButton({ complaintId }: { complaintId: string }) 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-[var(--qa-amber)]/35 bg-[var(--qa-amber-soft)] p-4">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-2xl border border-[var(--qa-amber)]/35 bg-[var(--qa-amber-soft)] p-4"
+    >
       <div className="flex items-center gap-2">
         <RotateCcw className="h-4 w-4 text-[var(--qa-amber-strong)]" />
         <p className="text-sm font-semibold text-[var(--qa-amber-strong)]">Reopen Complaint</p>
       </div>
-      <p className="mt-1 text-xs text-[var(--qa-amber-strong)]/80">Reopening returns this complaint to In Progress and is recorded in the audit trail.</p>
-      {error && <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[var(--destructive)]"><AlertCircle className="h-3.5 w-3.5" />{error}</p>}
-      <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Reason for reopening" rows={3} className="mt-3 w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)]" />
-      <button type="submit" disabled={submitting} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--qa-amber)] px-3 py-2 text-sm font-semibold text-[var(--foreground)] disabled:opacity-50">
+      <p className="mt-1 text-xs text-[var(--qa-amber-strong)]/80">
+        Reopening returns this complaint to In Progress and is recorded in the audit trail.
+      </p>
+      {error && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[var(--destructive)]">
+          <AlertCircle className="h-3.5 w-3.5" />
+          {error}
+        </p>
+      )}
+      <textarea
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        placeholder="Reason for reopening"
+        rows={3}
+        className="mt-3 w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)]"
+      />
+      <button
+        type="submit"
+        disabled={submitting}
+        className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--qa-amber)] px-3 py-2 text-sm font-semibold text-[var(--foreground)] disabled:opacity-50"
+      >
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
         {submitting ? "Reopening..." : "Reopen Complaint"}
       </button>

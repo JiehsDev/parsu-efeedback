@@ -51,7 +51,10 @@ export function ResolutionActions({ complaintId }: { complaintId: string }) {
       className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5"
       aria-labelledby="resolution-completed-heading"
     >
-      <h2 id="resolution-completed-heading" className="text-base font-semibold text-emerald-700 dark:text-emerald-300">
+      <h2
+        id="resolution-completed-heading"
+        className="text-base font-semibold text-emerald-700 dark:text-emerald-300"
+      >
         Resolution Completed
       </h2>
       <p className="mt-1 text-sm text-emerald-800/80 dark:text-emerald-200/80">
@@ -96,7 +99,10 @@ export function ClosedResolutionSummary({
         className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/35 p-5"
         aria-labelledby="complaint-closed-heading"
       >
-        <h2 id="complaint-closed-heading" className="text-base font-semibold text-[var(--foreground)]">
+        <h2
+          id="complaint-closed-heading"
+          className="text-base font-semibold text-[var(--foreground)]"
+        >
           Complaint Closed
         </h2>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
@@ -111,7 +117,10 @@ export function ClosedResolutionSummary({
       className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/35 p-5"
       aria-labelledby="complaint-closed-heading"
     >
-      <h2 id="complaint-closed-heading" className="text-base font-semibold text-[var(--foreground)]">
+      <h2
+        id="complaint-closed-heading"
+        className="text-base font-semibold text-[var(--foreground)]"
+      >
         Complaint Closed
       </h2>
       <p className="mt-1 text-sm text-[var(--muted-foreground)]">
@@ -132,7 +141,9 @@ export function ClosedResolutionSummary({
         </div>
       )}
       {studentRatingComment && (
-        <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)]">{studentRatingComment}</p>
+        <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)]">
+          {studentRatingComment}
+        </p>
       )}
     </section>
   );

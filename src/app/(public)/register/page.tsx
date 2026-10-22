@@ -6,18 +6,14 @@ import { clientFetch } from "@/lib/client-fetch";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AlertCircle, BookOpen, Eye, EyeOff, Hash, Loader2, Lock, Mail, User } from "lucide-react";
 import {
-  AlertCircle,
-  BookOpen,
-  Eye,
-  EyeOff,
-  Hash,
-  Loader2,
-  Lock,
-  Mail,
-  User,
-} from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface College {
   _id: string;
@@ -127,7 +123,7 @@ export default function RegisterPage() {
                 First name
               </label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                 <input
                   id="firstName"
                   autoComplete="given-name"
@@ -143,7 +139,7 @@ export default function RegisterPage() {
                 Last name
               </label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                 <input
                   id="lastName"
                   autoComplete="family-name"
@@ -161,7 +157,7 @@ export default function RegisterPage() {
               Student number
             </label>
             <div className="relative">
-              <Hash className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Hash className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <input
                 id="studentNumber"
                 autoComplete="off"
@@ -179,7 +175,7 @@ export default function RegisterPage() {
               Email
             </label>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <input
                 id="email"
                 type="email"
@@ -200,7 +196,7 @@ export default function RegisterPage() {
               College
             </label>
             <div className="relative">
-              <BookOpen className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <BookOpen className="pointer-events-none absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <Select
                 value={form.collegeId}
                 onValueChange={(value) => setForm((prev) => ({ ...prev, collegeId: value }))}
@@ -224,7 +220,7 @@ export default function RegisterPage() {
               Password
             </label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -239,7 +235,7 @@ export default function RegisterPage() {
                 onClick={() => setShowPassword((v) => !v)}
                 tabIndex={-1}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -254,7 +250,7 @@ export default function RegisterPage() {
               Confirm password
             </label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
               <input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
@@ -269,13 +265,9 @@ export default function RegisterPage() {
                 onClick={() => setShowConfirmPassword((v) => !v)}
                 tabIndex={-1}
                 aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
               >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>

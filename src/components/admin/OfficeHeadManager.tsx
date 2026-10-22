@@ -10,7 +10,13 @@ import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface MemberOption {
   _id: string;
@@ -102,7 +108,10 @@ export function OfficeHeadManager({
     const res = await clientFetch(`/api/admin/offices/${officeId}/head`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      showToast(typeof data.error === "string" ? data.error : "Could not remove office head.", "error");
+      showToast(
+        typeof data.error === "string" ? data.error : "Could not remove office head.",
+        "error",
+      );
       return;
     }
     showToast("Office head removed");
@@ -148,10 +157,16 @@ export function OfficeHeadManager({
       </div>
 
       {mode === "assign" && (
-        <Modal title={hasHead ? "Change Office Head" : "Assign Office Head"} onClose={() => setMode(null)}>
+        <Modal
+          title={hasHead ? "Change Office Head" : "Assign Office Head"}
+          onClose={() => setMode(null)}
+        >
           <form onSubmit={assignHead} className="space-y-4">
             {error && <ErrorMessage message={error} />}
-            <FormField label="Office head" hint="Only active users assigned to this office are eligible.">
+            <FormField
+              label="Office head"
+              hint="Only active users assigned to this office are eligible."
+            >
               <Select value={selectedHeadId} onValueChange={setSelectedHeadId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select staff member" />
@@ -159,7 +174,15 @@ export function OfficeHeadManager({
                 <SelectContent>
                   {memberOptions.map((member) => (
                     <SelectItem key={member._id} value={member._id}>
-                      {member.firstName} {member.lastName} · {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[member.role] ?? member.role}
+                      {member.firstName} {member.lastName} ·{" "}
+                      {(
+                        {
+                          office_staff: "Office Staff",
+                          vpaa: "VPAA",
+                          vpaf: "VPAF",
+                          osas: "OSAS",
+                        } as Record<string, string>
+                      )[member.role] ?? member.role}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -177,24 +200,64 @@ export function OfficeHeadManager({
           <form onSubmit={createHead} className="space-y-4">
             {error && <ErrorMessage message={error} />}
             <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-              Changing this assignment changes the organizational head only. The selected user keeps their existing software role and permissions.
+              Changing this assignment changes the organizational head only. The selected user keeps
+              their existing software role and permissions.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="First name">
-                <input required className={inputClass} value={form.firstName} onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))} />
+                <input
+                  required
+                  className={inputClass}
+                  value={form.firstName}
+                  onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+                />
               </FormField>
               <FormField label="Last name">
-                <input required className={inputClass} value={form.lastName} onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))} />
+                <input
+                  required
+                  className={inputClass}
+                  value={form.lastName}
+                  onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+                />
               </FormField>
             </div>
             <FormField label="Email">
-              <input required type="email" className={inputClass} value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+              <input
+                required
+                type="email"
+                className={inputClass}
+                value={form.email}
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+              />
             </FormField>
             <FormField label="Employee ID">
-              <input required className={inputClass} value={form.employeeOrStudentId} onChange={(e) => setForm((p) => ({ ...p, employeeOrStudentId: e.target.value }))} />
+              <input
+                required
+                className={inputClass}
+                value={form.employeeOrStudentId}
+                onChange={(e) => setForm((p) => ({ ...p, employeeOrStudentId: e.target.value }))}
+              />
             </FormField>
             <FormField label="Temporary password">
-              <div className="relative"><input required type={showPassword ? "text" : "password"} minLength={8} className={`${inputClass} pr-10`} value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} title={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((visible) => !visible)} className="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div>
+              <div className="relative">
+                <input
+                  required
+                  type={showPassword ? "text" : "password"}
+                  minLength={8}
+                  className={`${inputClass} pr-10`}
+                  value={form.password}
+                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </FormField>
             <SubmitButton loading={isSubmitting}>Create Head Account</SubmitButton>
           </form>

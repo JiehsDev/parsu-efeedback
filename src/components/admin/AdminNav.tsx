@@ -1,13 +1,13 @@
 // src/components/admin/AdminNav.tsx
 "use client";
 
-import { clearClientDataOnLogout, clientFetch } from "@/lib/client-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 
 import Link from "next/link";
 import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOutWithCacheReset } from "@/lib/client-sign-out";
 import { useEffect, useRef, useState } from "react";
 import {
   Archive,
@@ -241,7 +241,9 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
                   </Link>
                   <button
                     role="menuitem"
-                    onClick={() => { clearClientDataOnLogout(); void signOut({ callbackUrl: "/login" }); }}
+                    onClick={() => {
+                      void signOutWithCacheReset();
+                    }}
                     className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
                   >
                     <LogOut className="h-4 w-4" />

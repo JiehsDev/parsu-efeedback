@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowUpRight,
   AlertCircle,
@@ -9,41 +12,77 @@ import {
   Timer,
   Star,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { redirect } from "next/navigation";
-import { Complaint } from "@/models/Complaint";
-import { getAdminScope, complaintFilterForScope } from "@/lib/admin-scope";
-import { staffComplaintFilter, isOversightRole, refId } from "@/lib/osas-operations";
-import {
-  getAnalyticsSummary,
-  getMonthlyTrends,
-  getCategoryBreakdown,
-  getPriorityBreakdown,
-  getDomainBreakdown,
-} from "@/features/analytics/services/analytics.service";
 import { QaTrendChart } from "@/components/analytics/QaTrendChart";
 import { CategoryBarChart } from "@/components/analytics/CategoryBarChart";
 import { PriorityPieChart } from "@/components/analytics/PriorityPieChart";
 import { StatusBadge } from "./StatusBadge";
+import { clientFetch, CLIENT_DATA_REFRESH_EVENT } from "@/lib/client-fetch";
+import type { DashboardPayload } from "@/features/dashboard/services/dashboard-data.service";
 
-export async function ComplaintDashboard({ base }: { base: "admin" | "staff" }) {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  await connectToDatabase();
-  const oversight = isOversightRole(session.user.role);
-  const filter =
-    base === "staff"
-      ? await staffComplaintFilter(session)
-      : await complaintFilterForScope(getAdminScope(session.user.role));
-  const open = {
-    ...filter,
-    isArchived: false,
-    status: { $nin: ["closed", "resolved", "withdrawn"] as const },
-  };
-  const now = new Date();
-  const nextDay = new Date(now.getTime() + 86400000);
-  const [
+export function ComplaintDashboard({ base }: { base: "admin" | "staff" }) {
+  const [data, setData] = useState<DashboardPayload | null>(null);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const reload = useCallback(() => setRetry((value) => value + 1), []);
+  useEffect(() => {
+    let active = true;
+    clientFetch("/api/dashboard")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not load the dashboard. Please try again.");
+        const payload = (await response.json()) as DashboardPayload;
+        if (active) {
+          setData(payload);
+          setError("");
+        }
+      })
+      .catch((reason) => {
+        if (active)
+          setError(reason instanceof Error ? reason.message : "Could not load the dashboard.");
+      });
+    window.addEventListener(CLIENT_DATA_REFRESH_EVENT, reload);
+    return () => {
+      active = false;
+      window.removeEventListener(CLIENT_DATA_REFRESH_EVENT, reload);
+    };
+  }, [retry, reload]);
+  if (!data)
+    return (
+      <div
+        className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"
+        aria-busy={!error}
+      >
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]" role="status">
+          {error || "Loading your dashboard..."}
+        </p>
+        {error && (
+          <button
+            type="button"
+            onClick={reload}
+            className="mt-3 text-sm font-semibold text-[var(--primary)]"
+          >
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  return (
+    <>
+      {error && (
+        <p role="alert" className="mb-3 text-sm text-[var(--destructive)]">
+          {error}{" "}
+          <button type="button" onClick={reload} className="font-semibold underline">
+            Retry
+          </button>
+        </p>
+      )}
+      <DashboardView data={data} base={base} />
+    </>
+  );
+}
+
+function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" | "staff" }) {
+  const {
     summary,
     trends,
     openCount,
@@ -54,37 +93,10 @@ export async function ComplaintDashboard({ base }: { base: "admin" | "staff" }) 
     categories,
     priorities,
     domains,
-  ] = await Promise.all([
-    getAnalyticsSummary(filter),
-    getMonthlyTrends(filter),
-    Complaint.countDocuments(open),
-    Complaint.countDocuments({
-      ...open,
-      $or: [
-        { isOverdue: true },
-        { assignedStaffRef: null, slaResponseDueAt: { $ne: null, $lte: now } },
-        { assignedStaffRef: { $ne: null }, slaResolutionDueAt: { $ne: null, $lte: now } },
-      ],
-    }),
-    Complaint.countDocuments({ ...open, assignedStaffRef: null }),
-    Complaint.countDocuments({
-      ...open,
-      $or: [
-        { assignedStaffRef: null, slaResponseDueAt: { $gt: now, $lte: nextDay } },
-        { assignedStaffRef: { $ne: null }, slaResolutionDueAt: { $gt: now, $lte: nextDay } },
-      ],
-    }),
-    Complaint.find(open)
-      .sort({ isOverdue: -1, slaResolutionDueAt: 1, submittedAt: 1 })
-      .limit(6)
-      .select(
-        "ticketNumber title status priority isOverdue assignedStaffRef slaResponseDueAt slaResolutionDueAt",
-      )
-      .lean(),
-    getCategoryBreakdown({ ...filter, isArchived: false }),
-    getPriorityBreakdown({ ...filter, isArchived: false }),
-    getDomainBreakdown(filter),
-  ]);
+    oversight,
+    role,
+  } = data;
+  const now = new Date();
   const panel = "min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4";
   const metrics = [
     { label: "Overdue", value: overdue, icon: AlertCircle, urgent: overdue > 0 },
@@ -125,8 +137,8 @@ export async function ComplaintDashboard({ base }: { base: "admin" | "staff" }) 
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
             {oversight
-              ? `${session.user.role.toUpperCase()} oversight`
-              : session.user.role === "administrator"
+              ? `${role.toUpperCase()} oversight`
+              : role === "administrator"
                 ? "System overview"
                 : "OSAS dashboard"}
           </h1>
@@ -262,11 +274,11 @@ export async function ComplaintDashboard({ base }: { base: "admin" | "staff" }) 
                   const deadline = complaint.assignedStaffRef
                     ? complaint.slaResolutionDueAt
                     : complaint.slaResponseDueAt;
-                  const late = complaint.isOverdue || (deadline && deadline <= now);
+                  const late = complaint.isOverdue || (deadline && new Date(deadline) <= now);
                   return (
-                    <li key={refId(complaint._id)}>
+                    <li key={complaint._id}>
                       <Link
-                        href={`/${base}/complaints/${refId(complaint._id)}`}
+                        href={`/${base}/complaints/${complaint._id}`}
                         className="group flex items-center justify-between gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-[var(--accent)]/50 focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
                       >
                         <span className="min-w-0">
@@ -283,7 +295,9 @@ export async function ComplaintDashboard({ base }: { base: "admin" | "staff" }) 
                             className={`mt-0.5 block text-[10px] ${late ? "text-[var(--qa-rose-strong)]" : "text-[var(--muted-foreground)]"}`}
                           >
                             {late ? "Overdue" : "Due"}
-                            {deadline ? ` ${dateFormat.format(deadline)}` : " date not set"}
+                            {deadline
+                              ? ` ${dateFormat.format(new Date(deadline))}`
+                              : " date not set"}
                           </span>
                         </span>
                         <span className="shrink-0">

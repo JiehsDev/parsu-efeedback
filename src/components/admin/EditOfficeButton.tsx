@@ -9,7 +9,13 @@ import { AlertCircle, Loader2, Pencil } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EditableOffice {
   _id: string;
@@ -153,7 +159,10 @@ export function EditOfficeButton({
               </Select>
             </FormField>
 
-            <FormField label="Parent office" hint="Optional — e.g. a department office under a college">
+            <FormField
+              label="Parent office"
+              hint="Optional — e.g. a department office under a college"
+            >
               <Select
                 value={form.parentOffice}
                 onValueChange={(value) => setForm((p) => ({ ...p, parentOffice: value }))}
@@ -194,7 +203,15 @@ export function EditOfficeButton({
                     <SelectItem value="">Not assigned</SelectItem>
                     {memberOptions.map((m) => (
                       <SelectItem key={m._id} value={m._id}>
-                        {m.firstName} {m.lastName} · {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[m.role] ?? m.role}
+                        {m.firstName} {m.lastName} ·{" "}
+                        {(
+                          {
+                            office_staff: "Office Staff",
+                            vpaa: "VPAA",
+                            vpaf: "VPAF",
+                            osas: "OSAS",
+                          } as Record<string, string>
+                        )[m.role] ?? m.role}
                       </SelectItem>
                     ))}
                   </SelectContent>

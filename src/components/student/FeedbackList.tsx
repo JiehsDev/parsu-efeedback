@@ -90,7 +90,11 @@ export function FeedbackList({ feedback }: { feedback: FeedbackItem[] }) {
       <h2 className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]">
         Feedback you&rsquo;ve sent
       </h2>
-      {error && <p className="border-b border-[var(--border)] px-4 py-2 text-sm text-[var(--destructive)]">{error}</p>}
+      {error && (
+        <p className="border-b border-[var(--border)] px-4 py-2 text-sm text-[var(--destructive)]">
+          {error}
+        </p>
+      )}
       <ul className="divide-y divide-[var(--border)]">
         {feedback.map((item) => {
           const isEditing = editingId === item._id;

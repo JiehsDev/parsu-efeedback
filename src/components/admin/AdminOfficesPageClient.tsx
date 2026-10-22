@@ -60,10 +60,13 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
     clientFetch("/api/admin/offices")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load offices.");
+        if (!res.ok)
+          throw new Error(typeof data.error === "string" ? data.error : "Could not load offices.");
         setOffices(data.offices ?? []);
       })
-      .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load offices."))
+      .catch((reason: unknown) =>
+        setLoadError(reason instanceof Error ? reason.message : "Could not load offices."),
+      )
       .finally(() => setIsLoading(false));
   }
 
@@ -154,7 +157,13 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
       ) : loadError ? (
         <div className="rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
           <p>{loadError}</p>
-          <button type="button" onClick={refresh} className="mt-3 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">Retry</button>
+          <button
+            type="button"
+            onClick={refresh}
+            className="mt-3 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]"
+          >
+            Retry
+          </button>
         </div>
       ) : (
         <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">

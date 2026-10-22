@@ -149,7 +149,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                 <div className="space-y-1.5">
                   <label className="text-xs text-[var(--muted-foreground)]">First name</label>
                   <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                    <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                     <input
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -160,7 +160,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                 <div className="space-y-1.5">
                   <label className="text-xs text-[var(--muted-foreground)]">Last name</label>
                   <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                    <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                     <input
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
@@ -179,7 +179,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
 
               <div className="mt-3 space-y-3">
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                  <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                   <input
                     type={showCurrentPassword ? "text" : "password"}
                     autoComplete="current-password"
@@ -193,7 +193,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                     onClick={() => setShowCurrentPassword((v) => !v)}
                     tabIndex={-1}
                     aria-label={showCurrentPassword ? "Hide password" : "Show password"}
-                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                    className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                   >
                     {showCurrentPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -203,7 +203,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                   </button>
                 </div>
                 <div className="relative">
-                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                  <KeyRound className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                   <input
                     type={showNewPassword ? "text" : "password"}
                     autoComplete="new-password"
@@ -217,13 +217,9 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                     onClick={() => setShowNewPassword((v) => !v)}
                     tabIndex={-1}
                     aria-label={showNewPassword ? "Hide password" : "Show password"}
-                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                    className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                   >
-                    {showNewPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -253,9 +249,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                   <Hash className="h-3.5 w-3.5" />
                   {roleLabel} ID
                 </dt>
-                <dd className="mt-1.5 text-[var(--foreground)]">
-                  {profile.employeeOrStudentId}
-                </dd>
+                <dd className="mt-1.5 text-[var(--foreground)]">{profile.employeeOrStudentId}</dd>
               </div>
               <div>
                 <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">

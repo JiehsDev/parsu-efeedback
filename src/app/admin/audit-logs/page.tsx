@@ -5,7 +5,14 @@ import { clientFetch } from "@/lib/client-fetch";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ChevronLeft, ChevronRight, RefreshCw, ScrollText, Search } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  ScrollText,
+  Search,
+} from "lucide-react";
 import { RelativeTime } from "@/components/shared/RelativeTime";
 import { actionLabel } from "@/lib/display-labels";
 import {
@@ -53,14 +60,19 @@ export default function AdminAuditLogsPage() {
     clientFetch(`/api/admin/audit-logs?${params}`)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load audit logs.");
+        if (!res.ok)
+          throw new Error(
+            typeof data.error === "string" ? data.error : "Could not load audit logs.",
+          );
         return data;
       })
       .then((data) => {
         setLogs(data.logs ?? []);
         setTotal(data.total ?? 0);
       })
-      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Could not load audit logs."))
+      .catch((reason: unknown) =>
+        setError(reason instanceof Error ? reason.message : "Could not load audit logs."),
+      )
       .finally(() => setIsLoading(false));
   }, [page, entityType, actionFilter, actorFilter, dateFrom, dateTo, retryKey]);
 
@@ -149,7 +161,11 @@ export default function AdminAuditLogsPage() {
         <div className="rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
           <AlertCircle className="mx-auto h-5 w-5" />
           <p className="mt-2">{error}</p>
-          <button type="button" onClick={() => setRetryKey((current) => current + 1)} className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">
+          <button
+            type="button"
+            onClick={() => setRetryKey((current) => current + 1)}
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]"
+          >
             <RefreshCw className="h-3.5 w-3.5" /> Retry
           </button>
         </div>

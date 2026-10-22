@@ -2,13 +2,30 @@
 
 import { useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
-import { clientDataCache, CLIENT_DATA_EVENT, type ClientDataChange } from "@/lib/client-fetch";
+import {
+  clientDataCache,
+  CLIENT_DATA_EVENT,
+  CLIENT_DATA_REFRESH_EVENT,
+  type ClientDataChange,
+} from "@/lib/client-fetch";
 
-export function ClientDataBoundary({ scope, children }: { scope: string; children: React.ReactNode }) {
+export function ClientDataBoundary({
+  scope,
+  children,
+}: {
+  scope: string;
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   useLayoutEffect(() => {
     clientDataCache.setScope(scope);
-    const channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("parsu-data-changes");
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== "undefined")
+        channel = new BroadcastChannel("parsu-data-changes");
+    } catch {
+      // Browser privacy settings may block cross-tab messaging; local caching still works.
+    }
     let timer: ReturnType<typeof setTimeout> | undefined;
     function refresh(change: ClientDataChange) {
       clientDataCache.clear();
@@ -16,6 +33,7 @@ export function ClientDataBoundary({ scope, children }: { scope: string; childre
         window.location.replace("/login");
         return;
       }
+      window.dispatchEvent(new Event(CLIENT_DATA_REFRESH_EVENT));
       clearTimeout(timer);
       timer = setTimeout(() => router.refresh(), 0);
     }
@@ -35,7 +53,7 @@ export function ClientDataBoundary({ scope, children }: { scope: string; childre
       window.removeEventListener(CLIENT_DATA_EVENT, local);
       channel?.close();
       clearTimeout(timer);
-      clientDataCache.clear();
+      clientDataCache.setScope("");
     };
   }, [scope, router]);
   return children;

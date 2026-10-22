@@ -40,7 +40,8 @@ export default function AdminSettingsPage() {
     clientFetch("/api/admin/settings")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load settings.");
+        if (!res.ok)
+          throw new Error(typeof data.error === "string" ? data.error : "Could not load settings.");
         return data;
       })
       .then((data) => {
@@ -48,7 +49,9 @@ export default function AdminSettingsPage() {
         setHolidaysInput((data.settings.slaHolidays ?? []).join("\n"));
         setMimeTypesInput(data.settings.uploadAllowedMimeTypes.join(", "));
       })
-      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Could not load settings."))
+      .catch((reason: unknown) =>
+        setError(reason instanceof Error ? reason.message : "Could not load settings."),
+      )
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -61,7 +64,10 @@ export default function AdminSettingsPage() {
 
     const payload = {
       ticketNumberPrefix: settings.ticketNumberPrefix,
-      slaHolidays: holidaysInput.split(/[\s,]+/).map((date) => date.trim()).filter(Boolean),
+      slaHolidays: holidaysInput
+        .split(/[\s,]+/)
+        .map((date) => date.trim())
+        .filter(Boolean),
       uploadMaxFileSizeMb: settings.uploadMaxFileSizeMb,
       authMaxFailedLoginAttempts: settings.authMaxFailedLoginAttempts,
       authLockoutDurationMinutes: settings.authLockoutDurationMinutes,
@@ -79,7 +85,10 @@ export default function AdminSettingsPage() {
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error?.fieldErrors?.slaHolidays?.[0] ?? (typeof data.error === "string" ? data.error : "Could not save settings."));
+      setError(
+        data.error?.fieldErrors?.slaHolidays?.[0] ??
+          (typeof data.error === "string" ? data.error : "Could not save settings."),
+      );
       setIsSaving(false);
       return;
     }
@@ -105,7 +114,13 @@ export default function AdminSettingsPage() {
     return (
       <div className="rounded-2xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
         <p>{error ?? "Could not load settings."}</p>
-        <button type="button" onClick={() => window.location.reload()} className="mt-3 inline-flex items-center rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">Retry</button>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-3 inline-flex items-center rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -143,15 +158,25 @@ export default function AdminSettingsPage() {
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
           <h2 className="text-sm font-semibold text-[var(--foreground)]">SLA calendar</h2>
           <p id="sla-calendar-help" className="mt-2 text-xs text-[var(--muted-foreground)]">
-            Response and resolution clocks count 24 hours on weekdays in Philippine time.
-            Saturdays, Sundays and the dates below do not count. Add holidays and university closures
-            for each year; dates are not added automatically. Saved changes apply to new complaints.
+            Response and resolution clocks count 24 hours on weekdays in Philippine time. Saturdays,
+            Sundays and the dates below do not count. Add holidays and university closures for each
+            year; dates are not added automatically. Saved changes apply to new complaints.
           </p>
-          <label htmlFor="sla-holidays" className="mt-4 block text-sm font-medium text-[var(--foreground)]">
+          <label
+            htmlFor="sla-holidays"
+            className="mt-4 block text-sm font-medium text-[var(--foreground)]"
+          >
             Holidays and closures (YYYY-MM-DD, one date per line)
           </label>
-          <textarea id="sla-holidays" value={holidaysInput} onChange={(event) => setHolidaysInput(event.target.value)}
-            rows={5} aria-describedby="sla-calendar-help" placeholder="YYYY-MM-DD" className={`${inputClass} mt-2`} />
+          <textarea
+            id="sla-holidays"
+            value={holidaysInput}
+            onChange={(event) => setHolidaysInput(event.target.value)}
+            rows={5}
+            aria-describedby="sla-calendar-help"
+            placeholder="YYYY-MM-DD"
+            className={`${inputClass} mt-2`}
+          />
         </div>
 
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
@@ -264,7 +289,8 @@ export default function AdminSettingsPage() {
                 className={`${inputClass} cursor-not-allowed opacity-70`}
               />
               <p id="session-age-help" className="text-xs text-[var(--muted-foreground)]">
-                Controlled by AUTH_SESSION_MAX_AGE_MINUTES at server startup. This value is reference-only here.
+                Controlled by AUTH_SESSION_MAX_AGE_MINUTES at server startup. This value is
+                reference-only here.
               </p>
             </div>
           </div>
@@ -275,18 +301,24 @@ export default function AdminSettingsPage() {
           disabled={isSaving}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {isSaving ? "Saving…" : "Save Settings"}
         </button>
       </form>
-      <SlaCalendarRecalculation calendarDirty={
-        JSON.stringify([...new Set(holidaysInput.split(/[\s,]+/).map((date) => date.trim()).filter(Boolean))].sort()) !==
-        JSON.stringify([...(settings.slaHolidays ?? [])].sort())
-      } />
+      <SlaCalendarRecalculation
+        calendarDirty={
+          JSON.stringify(
+            [
+              ...new Set(
+                holidaysInput
+                  .split(/[\s,]+/)
+                  .map((date) => date.trim())
+                  .filter(Boolean),
+              ),
+            ].sort(),
+          ) !== JSON.stringify([...(settings.slaHolidays ?? [])].sort())
+        }
+      />
     </div>
   );
 }

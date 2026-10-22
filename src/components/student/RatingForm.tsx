@@ -100,7 +100,7 @@ export function RatingForm({ complaintId }: { complaintId: string }) {
         onChange={(e) => setComment(e.target.value)}
         placeholder="Optional comment"
         rows={3}
-        className="mt-4 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+        className="mt-4 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
       />
 
       <button

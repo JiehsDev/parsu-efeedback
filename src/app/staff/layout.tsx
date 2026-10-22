@@ -15,16 +15,22 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   await connectToDatabase();
   const isOfficeHead = await isOsasHead(session);
 
-  const cacheScope = [session.user.id, session.user.role, session.user.officeRef ?? "", session.user.collegeRef ?? "", session.user.tokenVersion].join(":");
+  const cacheScope = [
+    session.user.id,
+    session.user.role,
+    session.user.officeRef ?? "",
+    session.user.collegeRef ?? "",
+    session.user.tokenVersion,
+  ].join(":");
 
   return (
-    <ClientDataBoundary scope={cacheScope}>
-    <div className="flex h-screen bg-[var(--background)]">
-      <StaffNav userName={session?.user?.name ?? "Staff"} isOfficeHead={isOfficeHead} />
-      <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-8 pb-12 sm:px-6 sm:py-10 sm:pb-14 lg:px-10">
-        {children}
-      </main>
-    </div>
+    <ClientDataBoundary key={cacheScope} scope={cacheScope}>
+      <div className="flex h-screen bg-[var(--background)]">
+        <StaffNav userName={session?.user?.name ?? "Staff"} isOfficeHead={isOfficeHead} />
+        <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-8 pb-12 sm:px-6 sm:py-10 sm:pb-14 lg:px-10">
+          {children}
+        </main>
+      </div>
     </ClientDataBoundary>
   );
 }

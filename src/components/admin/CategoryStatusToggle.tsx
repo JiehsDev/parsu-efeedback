@@ -44,7 +44,10 @@ export function CategoryStatusToggle({
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      showToast(typeof data.error === "string" ? data.error : "Could not update category.", "error");
+      showToast(
+        typeof data.error === "string" ? data.error : "Could not update category.",
+        "error",
+      );
       return;
     }
     showToast(isActive ? "Category deactivated" : "Category activated");
