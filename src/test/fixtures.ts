@@ -81,7 +81,8 @@ export async function createTestSlaRule(categoryId: string | null, overrides: Pa
 
 // Fully wires a category so it can pass activation (routing rule + SLA rule)
 export async function createActivatableCategory() {
-  const office = await createTestOffice();
+  const office =
+    (await Office.findOne({ code: "OSAS" })) ?? (await createTestOffice({ code: "OSAS" }));
   const category = await createTestCategory({ defaultOfficeRef: office._id, isActive: false });
   await createTestRoutingRule(String(category._id), String(office._id));
   await createTestSlaRule(String(category._id));

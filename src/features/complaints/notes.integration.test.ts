@@ -25,6 +25,7 @@ describe("Internal notes — BR-063/064/065/066", () => {
       priority: "medium",
       status: "assigned",
       assignedOfficeRef: office._id,
+      assignedStaffRef: staff._id,
     });
 
     const outsider = await createTestUser({ role: "office_staff" });
@@ -86,7 +87,10 @@ describe("Internal notes — BR-063/064/065/066", () => {
     const { complaint, student, staff, outsider } = await setup();
 
     expect(
-      await canAccessInternalComplaintNotes({ user: { role: "student", id: String(student._id) } }, complaint),
+      await canAccessInternalComplaintNotes(
+        { user: { role: "student", id: String(student._id) } },
+        complaint,
+      ),
     ).toBe(false);
     expect(
       await canAccessInternalComplaintNotes(

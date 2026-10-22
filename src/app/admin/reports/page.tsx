@@ -16,7 +16,7 @@ export default function AdminReportsPage() {
           </p>
         </div>
       </div>
-      <ReportsPanel showOfficeFilter />
+      <ReportsPanel showOfficeFilter={false} />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 // src/app/(public)/register/page.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -46,7 +48,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/colleges")
+    clientFetch("/api/colleges")
       .then((res) => res.json())
       .then((data) => setColleges(data.colleges ?? []))
       .catch(() => setColleges([]));
@@ -78,7 +80,7 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await clientFetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

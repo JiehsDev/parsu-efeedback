@@ -4,9 +4,9 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: "#6b7280",
+  low: "var(--qa-slate)",
   medium: "var(--secondary)",
-  high: "#d97706",
+  high: "var(--qa-amber-strong)",
   critical: "var(--destructive)",
 };
 
@@ -40,7 +40,14 @@ export function PriorityPieChart({
       <div role="img" aria-label={label} className={`${heightClassName} w-full`}>
         <ResponsiveContainer width="100%" height="100%" aria-hidden="true">
           <PieChart>
-            <Pie data={data} dataKey="volume" nameKey="priority" cx="50%" cy="50%" outerRadius="70%">
+            <Pie
+              data={data}
+              dataKey="volume"
+              nameKey="priority"
+              cx="50%"
+              cy="50%"
+              outerRadius="70%"
+            >
               {data.map((entry) => (
                 <Cell key={entry.priority} fill={PRIORITY_COLORS[entry.priority] ?? "#6b7280"} />
               ))}
@@ -56,9 +63,7 @@ export function PriorityPieChart({
             {/* Inline slice labels get clipped/overlap at this chart size and
                 are unreachable on touch devices anyway — the legend carries
                 the count instead, so the number is visible without a hover. */}
-            <Legend
-              formatter={(value: string) => `${value} (${volumeByPriority[value] ?? 0})`}
-            />
+            <Legend formatter={(value: string) => `${value} (${volumeByPriority[value] ?? 0})`} />
           </PieChart>
         </ResponsiveContainer>
       </div>

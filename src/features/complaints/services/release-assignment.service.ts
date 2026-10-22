@@ -1,3 +1,4 @@
+import { isOsasComplaint } from "@/lib/osas-operations";
 import { Complaint, type ComplaintDocument } from "@/models/Complaint";
 import { Office } from "@/models/Office";
 import { Assignment } from "@/models/Assignment";
@@ -9,8 +10,7 @@ import type { UserRole } from "@/lib/constants";
 const BLOCKED_STATUSES = new Set(["resolved", "closed", "withdrawn"]);
 
 export type ReleaseAssignmentResult =
-  | { complaint: ComplaintDocument }
-  | { error: string; status: number };
+  { complaint: ComplaintDocument } | { error: string; status: number };
 
 export async function releaseAssignment(params: {
   complaintId: string;
@@ -20,21 +20,31 @@ export async function releaseAssignment(params: {
   ipAddress?: string | null;
   userAgent?: string | null;
 }): Promise<ReleaseAssignmentResult> {
-  if (params.actorRole !== "office_staff") {
-    return { error: "Only the assigned office staff member can release this complaint.", status: 403 };
+  if (!["office_staff", "osas"].includes(params.actorRole)) {
+    return {
+      error: "Only the assigned office staff member can release this complaint.",
+      status: 403,
+    };
   }
   if (!params.reason?.trim()) return { error: "A release reason is required.", status: 400 };
 
   const complaint = await Complaint.findById(params.complaintId);
   if (!complaint) return { error: "Complaint not found", status: 404 };
-  if (complaint.isArchived) return { error: "Archived complaints cannot be released.", status: 400 };
+  if (!(await isOsasComplaint(complaint)))
+    return { error: "Only OSAS assignments can be released.", status: 403 };
+  if (complaint.isArchived)
+    return { error: "Archived complaints cannot be released.", status: 400 };
   if (BLOCKED_STATUSES.has(complaint.status)) {
     return { error: "Resolved, closed, and withdrawn complaints cannot be released.", status: 400 };
   }
   if (!complaint.assignedStaffRef || String(complaint.assignedStaffRef) !== params.actorId) {
-    return { error: "Only the currently assigned staff member can release this complaint.", status: 403 };
+    return {
+      error: "Only the currently assigned staff member can release this complaint.",
+      status: 403,
+    };
   }
-  if (!complaint.assignedOfficeRef) return { error: "Complaint has no assigned office.", status: 400 };
+  if (!complaint.assignedOfficeRef)
+    return { error: "Complaint has no assigned office.", status: 400 };
 
   const office = await Office.findById(complaint.assignedOfficeRef).select("name").lean();
   if (!office) return { error: "Complaint office not found.", status: 400 };

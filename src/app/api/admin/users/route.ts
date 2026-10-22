@@ -12,7 +12,7 @@ import { userFilterForScope } from "@/lib/admin-scope";
 const SCOPED_ROLE_OFFICE_CODES = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" } as const;
 
 async function validateRoleOffice(role: string, officeRef: string | null | undefined) {
-  if (!["vpaa", "vpaf", "osas"].includes(role)) return null;
+  if (role !== "osas") return null;
   if (!officeRef) return "A scoped administrator must belong to its corresponding office";
   const office = await Office.findById(officeRef).select("code").lean();
   const expected = SCOPED_ROLE_OFFICE_CODES[role as keyof typeof SCOPED_ROLE_OFFICE_CODES];
@@ -54,11 +54,16 @@ export async function GET(req: NextRequest) {
     User.countDocuments(filter),
   ]);
 
-  const headOffices = await Office.find({ headUserRef: { $in: users.map((user: any) => user._id) } })
+  const headOffices = await Office.find({
+    headUserRef: { $in: users.map((user: any) => user._id) },
+  })
     .select("_id name headUserRef")
     .lean();
   const headByUser = new Map(
-    headOffices.map((office: any) => [String(office.headUserRef), { _id: String(office._id), name: office.name }]),
+    headOffices.map((office: any) => [
+      String(office.headUserRef),
+      { _id: String(office._id), name: office.name },
+    ]),
   );
   const usersWithHeadStatus = users.map((user: any) => ({
     ...user,
@@ -88,10 +93,7 @@ export async function POST(req: NextRequest) {
   // create administrator/vpaa/vpaf/osas accounts.
   if (scope.kind === "student") {
     if (rest.role !== "student") {
-      return NextResponse.json(
-        { error: "You can only create student accounts" },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: "You can only create student accounts" }, { status: 403 });
     }
   } else if (scope.kind === "college_office" || scope.kind === "university_office") {
     if (rest.role !== "office_staff") {
@@ -100,7 +102,9 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       );
     }
-    const targetOffice = rest.officeRef ? await Office.findById(rest.officeRef).select("type").lean() : null;
+    const targetOffice = rest.officeRef
+      ? await Office.findById(rest.officeRef).select("type").lean()
+      : null;
     if ((targetOffice as any)?.type !== scope.kind) {
       return NextResponse.json(
         { error: "You can only assign staff to an office in your own office category" },
@@ -136,5 +140,6 @@ export async function POST(req: NextRequest) {
   });
 
   const { passwordHash: _omit, ...safeUser } = user.toObject();
+  void _omit;
   return NextResponse.json({ user: safeUser }, { status: 201 });
 }

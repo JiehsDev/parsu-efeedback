@@ -21,6 +21,9 @@ const generatedReportSchema = new Schema(
 
     // BR-081: filters this report was generated with
     filters: {
+      domain: { type: String, default: null },
+      priority: { type: String, default: null },
+      slaState: { type: String, default: null },
       officeRef: { type: Schema.Types.ObjectId, ref: "Office", default: null },
       collegeRef: { type: Schema.Types.ObjectId, ref: "Office", default: null },
       categoryRef: { type: Schema.Types.ObjectId, ref: "Category", default: null },

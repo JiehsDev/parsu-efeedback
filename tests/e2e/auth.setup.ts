@@ -17,7 +17,11 @@ const PASSWORD = "ParSU_test2026";
 
 const ROLES: Array<{ role: UserRole; email: string; storageFile: string }> = [
   { role: "student", email: "student@parsu.edu.ph", storageFile: "tests/e2e/.auth/student.json" },
-  { role: "office_staff", email: "staff@parsu.edu.ph", storageFile: "tests/e2e/.auth/staff.json" },
+  {
+    role: "office_staff",
+    email: "osas.staff@parsu.edu.ph",
+    storageFile: "tests/e2e/.auth/staff.json",
+  },
   {
     role: "administrator",
     email: "admin@parsu.edu.ph",

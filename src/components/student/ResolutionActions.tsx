@@ -1,6 +1,8 @@
 // src/components/student/ResolutionActions.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Sparkles, Star } from "lucide-react";
@@ -25,7 +27,7 @@ export function ResolutionActions({ complaintId }: { complaintId: string }) {
     if (!ok) return;
 
     setIsClosing(true);
-    const res = await fetch(`/api/complaints/${complaintId}/close-without-rating`, {
+    const res = await clientFetch(`/api/complaints/${complaintId}/close-without-rating`, {
       method: "POST",
     });
     setIsClosing(false);

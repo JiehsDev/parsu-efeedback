@@ -1,3 +1,4 @@
+import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/complaints/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -83,7 +84,11 @@ export async function POST(req: NextRequest) {
   const ticketNumber = await generateTicketNumber();
   const routedAt = new Date();
   const settings = await getSettings();
-  const { slaResponseDueAt, slaResolutionDueAt, slaPolicy } = computeSlaDates(routedAt, slaRule as any, settings.slaHolidays ?? []);
+  const { slaResponseDueAt, slaResolutionDueAt, slaPolicy } = computeSlaDates(
+    routedAt,
+    slaRule as any,
+    settings.slaHolidays ?? [],
+  );
 
   const complaint = await Complaint.create({
     ticketNumber,
@@ -159,12 +164,12 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status");
 
   const filter: Record<string, unknown> = { isArchived: false };
-  const { role, id, officeRef } = session.user;
+  const { role, id } = session.user;
 
   if (role === "student") {
     filter.studentRef = id;
   } else if (role === "office_staff") {
-    filter.assignedOfficeRef = officeRef;
+    Object.assign(filter, await staffComplaintFilter(session));
   } else if (["administrator", "vpaa", "vpaf", "osas"].includes(role)) {
     Object.assign(filter, await complaintFilterForScope(getAdminScope(role)));
   } else {

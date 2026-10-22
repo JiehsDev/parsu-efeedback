@@ -1,6 +1,8 @@
 // src/components/admin/EditCategoryButton.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Pencil } from "lucide-react";
@@ -12,6 +14,7 @@ interface EditableCategory {
   _id: string;
   name: string;
   description: string;
+  domain?: string;
 }
 
 export function EditCategoryButton({ category }: { category: EditableCategory }) {
@@ -23,6 +26,7 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
   const [form, setForm] = useState({
     name: category.name,
     description: category.description,
+    domain: category.domain ?? "other",
   });
 
   async function handleSubmit(event: React.FormEvent) {
@@ -30,7 +34,7 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
     setError(null);
     setIsSubmitting(true);
 
-    const res = await fetch(`/api/admin/categories/${category._id}`, {
+    const res = await clientFetch(`/api/admin/categories/${category._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -77,6 +81,26 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
               />
             </FormField>
 
+            <FormField label="Service domain">
+              <select
+                className={inputClass}
+                value={form.domain}
+                onChange={(e) => setForm((p) => ({ ...p, domain: e.target.value }))}
+              >
+                {[
+                  "academic",
+                  "administrative",
+                  "finance",
+                  "facilities",
+                  "student_services",
+                  "ict",
+                  "health",
+                  "other",
+                ].map((domain) => (
+                  <option key={domain}>{domain}</option>
+                ))}
+              </select>
+            </FormField>
             <FormField label="Description">
               <textarea
                 rows={2}

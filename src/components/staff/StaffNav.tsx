@@ -1,8 +1,11 @@
 // src/components/staff/StaffNav.tsx
 "use client";
 
+import { clearClientDataOnLogout, clientFetch } from "@/lib/client-fetch";
+
 import Link from "next/link";
-import Image from "next/image";
+import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -36,7 +39,7 @@ export function StaffNav({
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/notifications?unreadOnly=true")
+    clientFetch("/api/notifications?unreadOnly=true")
       .then((res) => res.json())
       .then((data) => setUnreadCount(data.unreadCount ?? 0))
       .catch(() => setUnreadCount(0));
@@ -56,17 +59,9 @@ export function StaffNav({
   const initials = getInitials(userName);
 
   return (
-    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-white/15 bg-[var(--primary)] lg:w-56">
+    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-white/15 bg-[var(--navigation)] lg:w-56">
       <Link href="/staff/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
-          <Image
-            src="/new_logo.jpg"
-            alt=""
-            width={24}
-            height={24}
-            className="h-full w-full object-contain"
-          />
-        </span>
+        <BrandLogo />
         <span className="hidden text-[13px] font-bold tracking-tight text-white lg:inline">
           ParSU Staff
         </span>
@@ -83,7 +78,7 @@ export function StaffNav({
               className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
                 active
                   ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
-                  : "font-medium text-white/75 hover:bg-white/10 hover:text-white"
+                  : "font-medium text-white hover:bg-black/10 hover:text-white"
               }`}
             >
               <item.icon className="h-[17px] w-[17px] shrink-0" />
@@ -93,16 +88,20 @@ export function StaffNav({
         })}
       </nav>
 
+      <div className="shrink-0 px-2.5 py-2">
+        <ThemeSwitcher sidebar onPrimary />
+      </div>
+
       <div className="shrink-0 border-t border-white/15 p-2.5">
         <div className="flex items-center gap-2">
           <Link
             href="/staff/notifications"
             title="Notifications"
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-black/10 hover:text-white"
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--destructive)] px-1 text-[10px] font-semibold text-white">
+              <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--destructive)] px-1 text-[10px] font-semibold text-[var(--destructive-foreground)]">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -113,17 +112,17 @@ export function StaffNav({
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-white/10"
+              className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-black/10"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15 text-[11px] font-bold text-white">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/10 text-[11px] font-bold text-white">
                 {initials}
               </span>
               <span className="hidden min-w-0 flex-1 text-left lg:block">
                 <span className="block truncate text-[12.5px] font-semibold text-white">
                   {userName}
                 </span>
-                <span className="block truncate text-[10.5px] text-white/65">
-                  {isOfficeHead ? "Office Head · Office Staff" : "Office Staff"}
+                <span className="block truncate text-[10.5px] text-white">
+                  {isOfficeHead ? "Office Head Â· Office Staff" : "Office Staff"}
                 </span>
               </span>
             </button>
@@ -138,7 +137,7 @@ export function StaffNav({
                     {userName}
                   </p>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    {isOfficeHead ? "Office Head · Office Staff" : "Office Staff"}
+                    {isOfficeHead ? "Office Head Â· Office Staff" : "Office Staff"}
                   </p>
                 </div>
                 <div className="p-1">
@@ -153,7 +152,7 @@ export function StaffNav({
                   </Link>
                   <button
                     role="menuitem"
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={() => { clearClientDataOnLogout(); void signOut({ callbackUrl: "/login" }); }}
                     className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
                   >
                     <LogOut className="h-4 w-4" />

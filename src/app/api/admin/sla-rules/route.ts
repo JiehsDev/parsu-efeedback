@@ -7,7 +7,7 @@ import { Category } from "@/models/Category";
 import { createSlaRuleSchema } from "@/features/sla/schemas/sla-rule.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const guard = await requireAdmin();
   if (guard.error) return guard.error;
 
@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
 
   const body = await req.json();
+  body.escalateToOfficeRef = null; // Supervisor review stays internal to OSAS.
   const parsed = createSlaRuleSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

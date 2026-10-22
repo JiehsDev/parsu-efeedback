@@ -1,6 +1,8 @@
 // src/components/shared/NotesSection.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { AlertCircle, Lock, Loader2, NotebookPen, Send } from "lucide-react";
 import { useToast } from "@/components/shared/Toast";
@@ -33,7 +35,7 @@ export function NotesSection({
     setError(null);
     setIsSubmitting(true);
 
-    const res = await fetch(`/api/complaints/${complaintId}/notes`, {
+    const res = await clientFetch(`/api/complaints/${complaintId}/notes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body }),

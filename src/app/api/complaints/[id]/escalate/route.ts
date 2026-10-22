@@ -1,14 +1,12 @@
+import { canProcessComplaint } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Assignment } from "@/models/Assignment";
-import { Office } from "@/models/Office";
 import { manualEscalationSchema } from "@/features/complaints/schemas/complaint.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
-import { isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
 import { notifyManualEscalation } from "@/features/notifications/services/notification.service";
 import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
 
@@ -17,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const role = session.user.role;
-  if (!(["administrator", "office_staff", "vpaa", "vpaf", "osas"] as string[]).includes(role)) {
+  if (!(["administrator", "office_staff", "osas"] as string[]).includes(role)) {
     return NextResponse.json({ error: "Students cannot escalate complaints." }, { status: 403 });
   }
 
@@ -34,44 +32,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
-  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
-  if (["withdrawn", "resolved", "closed"].includes(complaint.status)) {
-    return NextResponse.json({ error: "Resolved, closed, and withdrawn complaints cannot be escalated." }, { status: 400 });
-  }
-
-  const officeId = String(complaint.assignedOfficeRef ?? "");
-  if (role === "office_staff") {
-    if (
-      officeId !== String(session.user.officeRef ?? "") ||
-      String(complaint.assignedStaffRef ?? "") !== session.user.id
-    ) {
-      return NextResponse.json(
-        { error: "You can only escalate complaints assigned to you." },
-        { status: 403 },
-      );
-    }
-  } else if (role === "vpaa" || role === "vpaf") {
-    const scope = getAdminScope(role);
-    if (!(await isComplaintInAdminScope(scope, complaint))) {
-      return NextResponse.json(
-        { error: "Complaint is outside your escalation scope." },
-        { status: 403 },
-      );
-    }
-    const office = await Office.findById(complaint.assignedOfficeRef).select("type").lean();
-    if ((office as any)?.type !== scope.kind) {
-      return NextResponse.json(
-        { error: "Complaint is outside your escalation scope." },
-        { status: 403 },
-      );
-    }
-  } else if (role === "osas" && !(await isComplaintInOsasActionScope(complaint))) {
+  if (complaint.isArchived)
     return NextResponse.json(
-      { error: "Complaint is outside OSAS escalation scope." },
+      { error: "Archived complaints are read-only until restored." },
       { status: 403 },
+    );
+  if (["withdrawn", "resolved", "closed"].includes(complaint.status)) {
+    return NextResponse.json(
+      { error: "Resolved, closed, and withdrawn complaints cannot be escalated." },
+      { status: 400 },
     );
   }
 
+  if (!(await canProcessComplaint(session, complaint)))
+    return NextResponse.json(
+      { error: "Only the assigned OSAS handler can request supervisor review." },
+      { status: 403 },
+    );
   const target = await resolveManualEscalationTarget(complaint, role);
   if (!target) {
     return NextResponse.json(
@@ -87,7 +64,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   };
   complaint.assignedOfficeRef = (target.office as any)._id;
   complaint.assignedStaffRef = (target.staff as any)._id;
-  complaint.status = "escalated";
+  complaint.supervisorReviewRequired = true;
+  if (["submitted", "assigned", "escalated"].includes(complaint.status))
+    complaint.status = "in_progress";
   await complaint.save();
 
   await Assignment.create({
@@ -104,7 +83,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     eventType: "escalated",
     actorRef: session.user.id,
     fromValue: before.status,
-    toValue: "escalated",
+    toValue: complaint.status,
     message: `Manual escalation: ${parsed.data.reason}`,
   });
   await writeAuditLog({
@@ -114,7 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     entityId: complaint._id,
     beforeState: before,
     afterState: {
-      status: "escalated",
+      status: complaint.status,
       assignedOfficeRef: target.office._id,
       assignedStaffRef: target.staff._id,
       reason: parsed.data.reason,
@@ -130,6 +109,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     complaintId: String(complaint._id),
     reason: parsed.data.reason,
     fromStatus: before.status,
+    toStatus: complaint.status,
   });
 
   return NextResponse.json({ complaint, target: { office: target.office, staff: target.staff } });

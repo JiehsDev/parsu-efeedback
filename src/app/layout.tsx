@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/shared/Toast";
 import { ConfirmProvider } from "@/components/shared/ConfirmDialog";
+import { THEME_INITIALIZER } from "@/lib/themes";
 import "./globals.css";
 
 const appSans = Plus_Jakarta_Sans({
@@ -35,6 +36,9 @@ export default function RootLayout({
       className={`${appSans.variable} ${appMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script id="color-theme" dangerouslySetInnerHTML={{ __html: THEME_INITIALIZER }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <ToastProvider>
           <ConfirmProvider>{children}</ConfirmProvider>

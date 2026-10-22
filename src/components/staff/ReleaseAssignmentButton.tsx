@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, LogOut } from "lucide-react";
@@ -22,7 +24,7 @@ export function ReleaseAssignmentButton({ complaintId }: { complaintId: string }
     }
     setError(null);
     setIsSubmitting(true);
-    const res = await fetch(`/api/complaints/${complaintId}/release`, {
+    const res = await clientFetch(`/api/complaints/${complaintId}/release`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason: trimmedReason }),

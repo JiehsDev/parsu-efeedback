@@ -55,20 +55,24 @@ const complaintSchema = new Schema(
     slaCalendarRevision: { type: String, default: null },
     // Snapshot: calendar edits must not silently change existing SLA results.
     slaPolicy: {
-      type: new Schema({
-        version: { type: Number, required: true, enum: [1] },
-        holidays: { type: [String], default: [] },
-        startedAt: { type: Date, required: true },
-        responseHours: { type: Number, required: true },
-        resolutionHours: { type: Number, required: true },
-        warningThresholdPercent: { type: Number, required: true },
-      }, { _id: false }),
+      type: new Schema(
+        {
+          version: { type: Number, required: true, enum: [1] },
+          holidays: { type: [String], default: [] },
+          startedAt: { type: Date, required: true },
+          responseHours: { type: Number, required: true },
+          resolutionHours: { type: Number, required: true },
+          warningThresholdPercent: { type: Number, required: true },
+        },
+        { _id: false },
+      ),
       default: null,
     },
 
     // BR-032: kept as a denormalized flag (updated by the hourly SLA cron)
     // so dashboards/indexes don't need to recompute "overdue" from dates
     // on every query
+    supervisorReviewRequired: { type: Boolean, default: false },
     isOverdue: { type: Boolean, required: true, default: false },
 
     // Idempotency guards for the hourly SLA cron (Phase 10, docs/architecture.md
@@ -109,7 +113,11 @@ const complaintSchema = new Schema(
     archivedAt: { type: Date, default: null },
     archivedByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
     archiveReason: { type: String, default: "" },
-    archiveSource: { type: String, enum: ["staff_request_approved", "office_head_direct", "administrator_direct", null], default: null },
+    archiveSource: {
+      type: String,
+      enum: ["staff_request_approved", "office_head_direct", "administrator_direct", null],
+      default: null,
+    },
     restoredAt: { type: Date, default: null },
     restoredByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
     restoreReason: { type: String, default: "" },

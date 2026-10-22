@@ -1,3 +1,4 @@
+import { getOperationalOffice } from "@/lib/osas-operations";
 // src/app/api/admin/routing-rules/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -15,6 +16,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
 
   const body = await req.json();
+  const osas = await getOperationalOffice();
+  if (!osas) return NextResponse.json({ error: "OSAS is unavailable" }, { status: 409 });
+  body.targetOfficeRef = String(osas._id);
+  body.conditions = {};
   const parsed = updateRoutingRuleSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -37,7 +42,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
-  const after = await RoutingRule.findByIdAndUpdate(id, parsed.data, { returnDocument: "after" }).lean();
+  const after = await RoutingRule.findByIdAndUpdate(id, parsed.data, {
+    returnDocument: "after",
+  }).lean();
 
   if (parsed.data.targetOfficeRef) {
     const effectiveCategoryRef = parsed.data.categoryRef ?? (before as any).categoryRef;
@@ -71,7 +78,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const before = await RoutingRule.findById(id).lean();
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const after = await RoutingRule.findByIdAndUpdate(id, { isActive: false }, { returnDocument: "after" }).lean();
+  const after = await RoutingRule.findByIdAndUpdate(
+    id,
+    { isActive: false },
+    { returnDocument: "after" },
+  ).lean();
 
   await writeAuditLog({
     actorId: guard.session.user.id,

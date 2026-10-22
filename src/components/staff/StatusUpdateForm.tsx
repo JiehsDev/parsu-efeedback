@@ -1,6 +1,8 @@
 // src/components/staff/StatusUpdateForm.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, MessageSquare, RefreshCw } from "lucide-react";
@@ -49,7 +51,7 @@ export function StatusUpdateForm({
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`/api/complaints/${complaintId}`, {
+      const res = await clientFetch(`/api/complaints/${complaintId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

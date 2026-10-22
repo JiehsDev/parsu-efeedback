@@ -1,3 +1,4 @@
+import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/notifications/[id]/read/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -23,11 +24,16 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
   if (String(notification.userRef) !== session.user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (notification.relatedComplaintRef && isScopedAdminRole(session.user.role) &&
+  if (
+    notification.relatedComplaintRef &&
+    (isScopedAdminRole(session.user.role) || session.user.role === "office_staff") &&
     !(await Complaint.exists({
       _id: notification.relatedComplaintRef,
-      ...(await complaintFilterForScope(getAdminScope(session.user.role))),
-    }))) {
+      ...(await (session.user.role === "office_staff"
+        ? staffComplaintFilter(session)
+        : complaintFilterForScope(getAdminScope(session.user.role)))),
+    }))
+  ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

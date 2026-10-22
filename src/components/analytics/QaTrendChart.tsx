@@ -98,7 +98,13 @@ export function QaTrendChart({ data }: { data: TrendPoint[] }) {
 
       <div className="relative min-h-0 flex-1">
         <div role="img" aria-label={label} className="absolute inset-0">
-          <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            width="100%"
+            height="100%"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
             {[0, 0.33, 0.66, 1].map((t) => (
               <line
                 key={t}
@@ -128,7 +134,15 @@ export function QaTrendChart({ data }: { data: TrendPoint[] }) {
               strokeLinecap="round"
             />
             {markers.map((p, i) => (
-              <circle key={i} cx={p.x} cy={p.y} r={3} fill="var(--card)" stroke="var(--primary)" strokeWidth={2} />
+              <circle
+                key={i}
+                cx={p.x}
+                cy={p.y}
+                r={3}
+                fill="var(--card)"
+                stroke="var(--primary)"
+                strokeWidth={2}
+              />
             ))}
           </svg>
         </div>
@@ -149,7 +163,7 @@ export function QaTrendChart({ data }: { data: TrendPoint[] }) {
                 <div className="h-full w-full rounded-full transition-colors duration-150 group-hover:bg-[var(--primary)]/15 group-hover:ring-2 group-hover:ring-[var(--primary)]/30" />
                 <div
                   role="tooltip"
-                  className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 rounded-md bg-[var(--foreground)] px-2.5 py-1.5 text-[10px] whitespace-nowrap text-[var(--card)] opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+                  className={`pointer-events-none absolute bottom-full z-10 mb-1.5 rounded-md bg-[var(--foreground)] px-2.5 py-1.5 text-[10px] whitespace-nowrap text-[var(--card)] opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 ${i === 0 ? "left-0" : i === data.length - 1 ? "right-0" : "left-1/2 -translate-x-1/2"}`}
                 >
                   <p className="qa-mono font-semibold">{d.month}</p>
                   <p>

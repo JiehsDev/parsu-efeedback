@@ -1,3 +1,5 @@
+import { canAccessComplaint } from "@/lib/complaint-access";
+import { isOversightRole } from "@/lib/osas-operations";
 // src/app/api/uploads/presign/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -9,7 +11,6 @@ import { env } from "@/lib/env";
 import { Complaint } from "@/models/Complaint";
 import { presignUploadSchema } from "@/features/attachments/schemas/attachment.schema";
 import { getSettings } from "@/features/settings/services/settings.service";
-import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 
 export async function POST(req: NextRequest) {
   if (!isR2Configured() || !r2Client) {
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (isOversightRole(session.user.role))
+    return NextResponse.json({ error: "Oversight access is read-only." }, { status: 403 });
   await connectToDatabase();
   const settings = await getSettings();
 
@@ -58,18 +61,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
   }
 
-  const { role, id: userId, officeRef } = session.user;
-  let canAccess = false;
-  if (role === "administrator") {
-    canAccess = true;
-  } else if (role === "student") {
-    canAccess = String((complaint as any).studentRef) === userId;
-  } else if (role === "office_staff") {
-    canAccess = String((complaint as any).assignedOfficeRef) === officeRef;
-  } else if (role === "vpaa" || role === "vpaf" || role === "osas") {
-    // QA-style access, scoped to each sub-admin's own category.
-    canAccess = await isComplaintInAdminScope(getAdminScope(role), complaint as any);
-  }
+  if (["closed", "withdrawn"].includes(complaint.status))
+    return NextResponse.json(
+      { error: "Closed and withdrawn complaints are read-only." },
+      { status: 403 },
+    );
+  if (complaint.isArchived)
+    return NextResponse.json({ error: "Archived complaints are read-only." }, { status: 403 });
+  const canAccess = await canAccessComplaint(session, complaint);
   if (!canAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

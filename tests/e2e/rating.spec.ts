@@ -1,3 +1,4 @@
+import { assignByOsasHead } from "./helpers";
 // tests/e2e/rating.spec.ts — BR-067, BR-068, BR-069
 import { adminTest, expect } from "./fixtures";
 import { submitComplaint, generatedStudentEmail, loginAs } from "./helpers";
@@ -19,13 +20,15 @@ adminTest.describe("Rating", () => {
 
       // BR-067: not resolved yet — no resolution-choice UI.
       await studentPage.goto(`/student/complaints/${id}`);
-      await expect(studentPage.getByRole("heading", { name: "Resolution Completed" })).toHaveCount(0);
+      await expect(studentPage.getByRole("heading", { name: "Resolution Completed" })).toHaveCount(
+        0,
+      );
 
       // Advance to resolved.
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
+      await assignByOsasHead(staffPage, id);
       await staffPage.goto(`/staff/complaints/${id}`);
-      await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
       await expect(staffPage.getByRole("combobox")).toBeVisible({ timeout: 30_000 });
       await staffPage.getByRole("combobox").click();
       await staffPage.getByRole("option", { name: "Resolved", exact: true }).click();
@@ -37,7 +40,9 @@ adminTest.describe("Rating", () => {
       // owning student, offering both Rate Resolution and Close Without
       // Rating (rating is optional, not mandatory).
       await studentPage.goto(`/student/complaints/${id}`);
-      await expect(studentPage.getByRole("heading", { name: "Resolution Completed" })).toBeVisible();
+      await expect(
+        studentPage.getByRole("heading", { name: "Resolution Completed" }),
+      ).toBeVisible();
       await expect(studentPage.getByRole("button", { name: "Close Without Rating" })).toBeVisible();
 
       await studentPage.getByRole("button", { name: "Rate Resolution" }).click();
@@ -96,8 +101,8 @@ adminTest.describe("Rating", () => {
 
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
+      await assignByOsasHead(staffPage, id);
       await staffPage.goto(`/staff/complaints/${id}`);
-      await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
       await expect(staffPage.getByRole("combobox")).toBeVisible({ timeout: 30_000 });
       await staffPage.getByRole("combobox").click();
       await staffPage.getByRole("option", { name: "Resolved", exact: true }).click();
@@ -110,13 +115,17 @@ adminTest.describe("Rating", () => {
 
       await studentPage.goto(`/student/complaints/${id}`);
       await studentPage.getByRole("button", { name: "Close Without Rating" }).click();
-      await expect(studentPage.getByText("Close this complaint without submitting a rating?")).toBeVisible();
+      await expect(
+        studentPage.getByText("Close this complaint without submitting a rating?"),
+      ).toBeVisible();
       await studentPage.getByRole("button", { name: "Close Complaint" }).click();
       await expect(studentPage.getByText("Complaint closed.")).toBeVisible();
 
       await studentPage.reload();
       await expect(studentPage.getByRole("heading", { name: "Complaint Closed" })).toBeVisible();
-      await expect(studentPage.getByText("You closed this complaint without submitting a rating.")).toBeVisible();
+      await expect(
+        studentPage.getByText("You closed this complaint without submitting a rating."),
+      ).toBeVisible();
       await expect(studentPage.getByText("Your rating")).toHaveCount(0);
 
       const rateAfterCloseRes = await studentPage.request.post(`/api/complaints/${id}/rate`, {

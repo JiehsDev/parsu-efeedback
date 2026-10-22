@@ -1,6 +1,8 @@
 // src/app/admin/sla-rules/page.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2, Pencil, Plus, Search, Timer } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
@@ -63,7 +65,7 @@ export default function AdminSlaRulesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
 
   function refresh() {
-    fetch("/api/admin/sla-rules")
+    clientFetch("/api/admin/sla-rules")
       .then((res) => res.json())
       .then((data) => setRules(data.rules ?? []))
       .finally(() => setIsLoading(false));
@@ -71,10 +73,10 @@ export default function AdminSlaRulesPage() {
 
   useEffect(() => {
     refresh();
-    fetch("/api/admin/categories")
+    clientFetch("/api/admin/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
-    fetch("/api/admin/offices")
+    clientFetch("/api/admin/offices")
       .then((res) => res.json())
       .then((data) => setOffices(data.offices ?? []));
   }, []);
@@ -126,12 +128,12 @@ export default function AdminSlaRulesPage() {
       categoryRef: form.categoryRef || null,
       responseHours: Number(form.responseHours),
       resolutionHours: Number(form.resolutionHours),
-      escalateToOfficeRef: form.escalateToOfficeRef || null,
+      escalateToOfficeRef: null,
     };
 
     const isEdit = editingRule && editingRule !== "new";
     const url = isEdit ? `/api/admin/sla-rules/${editingRule._id}` : "/api/admin/sla-rules";
-    const res = await fetch(url, {
+    const res = await clientFetch(url, {
       method: isEdit ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -163,7 +165,7 @@ export default function AdminSlaRulesPage() {
     });
     if (!ok) return;
 
-    const res = await fetch(`/api/admin/sla-rules/${rule._id}`, {
+    const res = await clientFetch(`/api/admin/sla-rules/${rule._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: false }),
@@ -182,8 +184,9 @@ export default function AdminSlaRulesPage() {
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--muted-foreground)]">
-        SLA hours count 24 hours per weekday, excluding Saturdays, Sundays and configured holidays in Philippine time.
-        Manage holidays in System Settings. Existing complaints retain their calendar until recalculated there.
+        SLA hours count 24 hours per weekday, excluding Saturdays, Sundays and configured holidays
+        in Philippine time. Manage holidays in System Settings. Existing complaints retain their
+        calendar until recalculated there.
       </p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -245,7 +248,8 @@ export default function AdminSlaRulesPage() {
                   </span>
                   <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
                     Response {r.responseHours}h · Resolution {r.resolutionHours}h
-                    {r.escalateToOfficeRef && ` · Escalates to ${officeName(r.escalateToOfficeRef)}`}
+                    {r.escalateToOfficeRef &&
+                      ` · Escalates to ${officeName(r.escalateToOfficeRef)}`}
                   </span>
                 </span>
                 <div className="flex items-center gap-2 sm:shrink-0">
@@ -281,7 +285,10 @@ export default function AdminSlaRulesPage() {
       )}
 
       {editingRule !== null && (
-        <Modal title={isEditMode ? "Edit SLA Rule" : "Add SLA Rule"} onClose={() => setEditingRule(null)}>
+        <Modal
+          title={isEditMode ? "Edit SLA Rule" : "Add SLA Rule"}
+          onClose={() => setEditingRule(null)}
+        >
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
@@ -369,27 +376,9 @@ export default function AdminSlaRulesPage() {
               </FormField>
             </div>
 
-            <FormField
-              label="Escalate to office"
-              hint="If the resolution deadline is breached, the complaint is reassigned here automatically"
-            >
-              <Select
-                value={form.escalateToOfficeRef}
-                onValueChange={(value) => setForm((p) => ({ ...p, escalateToOfficeRef: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No escalation — stays at its assigned office" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No escalation — stays at its assigned office</SelectItem>
-                  {offices.map((o) => (
-                    <SelectItem key={o._id} value={o._id}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              SLA escalation requests OSAS Head review. The handling office remains OSAS.
+            </p>
 
             <button
               type="submit"

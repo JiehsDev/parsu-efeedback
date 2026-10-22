@@ -1,6 +1,8 @@
 // src/app/admin/categories/page.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ChevronRight, Plus, Search, Tag } from "lucide-react";
@@ -24,7 +26,7 @@ export default function AdminCategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   function refresh() {
-    fetch("/api/admin/categories")
+    clientFetch("/api/admin/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []))
       .finally(() => setIsLoading(false));
@@ -43,7 +45,7 @@ export default function AdminCategoriesPage() {
       if (!ok) return;
     }
 
-    const res = await fetch(`/api/admin/categories/${category._id}`, {
+    const res = await clientFetch(`/api/admin/categories/${category._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !category.isActive }),
@@ -71,9 +73,7 @@ export default function AdminCategoriesPage() {
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
             <Tag className="h-5 w-5" />
           </span>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
-            Categories
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Categories</h1>
         </div>
         <Link
           href="/admin/categories/new"
@@ -87,8 +87,8 @@ export default function AdminCategoriesPage() {
       <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          New categories are created inactive. "Add Category" walks through the routing rule and
-          SLA rule it needs before it can go live.
+          New categories use OSAS as their handling office. "Add Category" configures classification
+          and the default SLA.
         </span>
       </div>
 
@@ -114,48 +114,48 @@ export default function AdminCategoriesPage() {
           </p>
         </div>
       ) : (
-      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
-        <ul className="divide-y divide-[var(--border)]">
-          {visibleCategories.map((c) => (
-            <li
-              key={c._id}
-              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
-            >
-              <Link
-                href={`/admin/categories/${c._id}`}
-                className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
+        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+          <ul className="divide-y divide-[var(--border)]">
+            {visibleCategories.map((c) => (
+              <li
+                key={c._id}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
               >
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-[var(--foreground)]">
-                    {c.name}
-                  </span>
-                  <span className="mt-0.5 block text-xs capitalize text-[var(--muted-foreground)]">
-                    {c.defaultPriority} priority
-                  </span>
-                </span>
-                <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
-              </Link>
-              <div className="flex items-center gap-2 sm:shrink-0">
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    c.isActive
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                  }`}
+                <Link
+                  href={`/admin/categories/${c._id}`}
+                  className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
                 >
-                  {c.isActive ? "Active" : "Inactive"}
-                </span>
-                <button
-                  onClick={() => toggleActive(c)}
-                  className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
-                >
-                  {c.isActive ? "Deactivate" : "Activate"}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-[var(--foreground)]">
+                      {c.name}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-[var(--muted-foreground)] capitalize">
+                      {c.defaultPriority} priority
+                    </span>
+                  </span>
+                  <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+                </Link>
+                <div className="flex items-center gap-2 sm:shrink-0">
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      c.isActive
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    {c.isActive ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    onClick={() => toggleActive(c)}
+                    className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                  >
+                    {c.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <p className="text-sm text-[var(--muted-foreground)]">

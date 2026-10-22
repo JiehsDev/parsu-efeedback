@@ -16,7 +16,7 @@ export async function GET() {
   await connectToDatabase();
 
   const categories = await Category.find({ isActive: true })
-    .select("name description defaultPriority")
+    .select("name description defaultPriority domain")
     .sort({ name: 1 })
     .lean();
 

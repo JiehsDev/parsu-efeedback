@@ -1,3 +1,4 @@
+import { getOperationalOffice } from "@/lib/osas-operations";
 // src/app/api/admin/routing-rules/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -7,7 +8,7 @@ import { Category } from "@/models/Category";
 import { createRoutingRuleSchema } from "@/features/routing-engine/schemas/routing-rule.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const guard = await requireAdmin();
   if (guard.error) return guard.error;
 
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
 
   const body = await req.json();
+  const osas = await getOperationalOffice();
+  if (!osas) return NextResponse.json({ error: "OSAS is unavailable" }, { status: 409 });
+  body.targetOfficeRef = String(osas._id);
+  body.conditions = {};
   const parsed = createRoutingRuleSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

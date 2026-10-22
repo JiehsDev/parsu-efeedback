@@ -8,6 +8,20 @@ import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 const categorySchema = new Schema(
   {
     name: { type: String, required: true, unique: true, trim: true },
+    domain: {
+      type: String,
+      enum: [
+        "academic",
+        "administrative",
+        "finance",
+        "facilities",
+        "student_services",
+        "ict",
+        "health",
+        "other",
+      ],
+      default: "other",
+    },
     description: { type: String, default: "" },
 
     // Mirrors of the category's routing rule / SLA rule, kept in sync by

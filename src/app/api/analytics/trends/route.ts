@@ -1,3 +1,4 @@
+import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/analytics/trends/route.ts
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -8,7 +9,7 @@ import {
   getCollegeComparison,
   getCategoryBreakdown,
   getPriorityBreakdown,
-  getOfficeBreakdown,
+  getDomainBreakdown,
 } from "@/features/analytics/services/analytics.service";
 import { complaintFilterForScope, getAdminScope } from "@/lib/admin-scope";
 
@@ -31,19 +32,21 @@ export async function GET() {
 
   let scopeMatch: Record<string, unknown> = {};
   if (role === "office_staff") {
-    scopeMatch = { assignedOfficeRef: session.user.officeRef };
+    scopeMatch = await staffComplaintFilter(session);
   } else {
     scopeMatch = await complaintFilterForScope(getAdminScope(role));
   }
-  const collegeComparison = role === "office_staff" ? [] : await getCollegeComparison(6, scopeMatch);
+  const collegeComparison =
+    role === "office_staff" ? [] : await getCollegeComparison(6, scopeMatch);
 
-  const [summary, trends, categoryBreakdown, priorityBreakdown, officeBreakdown] = await Promise.all([
-    getAnalyticsSummary(scopeMatch),
-    getMonthlyTrends(scopeMatch),
-    getCategoryBreakdown(scopeMatch),
-    getPriorityBreakdown(scopeMatch),
-    getOfficeBreakdown(scopeMatch),
-  ]);
+  const [summary, trends, categoryBreakdown, priorityBreakdown, domainBreakdown] =
+    await Promise.all([
+      getAnalyticsSummary(scopeMatch),
+      getMonthlyTrends(scopeMatch),
+      getCategoryBreakdown(scopeMatch),
+      getPriorityBreakdown(scopeMatch),
+      getDomainBreakdown(scopeMatch),
+    ]);
 
   return NextResponse.json({
     summary,
@@ -51,6 +54,6 @@ export async function GET() {
     collegeComparison,
     categoryBreakdown,
     priorityBreakdown,
-    officeBreakdown,
+    domainBreakdown,
   });
 }

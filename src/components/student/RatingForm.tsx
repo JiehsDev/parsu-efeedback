@@ -1,6 +1,8 @@
 // src/components/student/RatingForm.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Sparkles, Star } from "lucide-react";
@@ -24,7 +26,7 @@ export function RatingForm({ complaintId }: { complaintId: string }) {
     setError(null);
     setIsSubmitting(true);
 
-    const res = await fetch(`/api/complaints/${complaintId}/rate`, {
+    const res = await clientFetch(`/api/complaints/${complaintId}/rate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ studentRating: rating, studentRatingComment: comment }),

@@ -106,8 +106,34 @@ export async function submitComplaint(
 
   // Open it to recover the Mongo id from the URL (the list/redirect only
   // carries the ticket number).
-  await page.getByRole("link", { name: new RegExp(ticketNumber) }).first().click();
+  await page
+    .getByRole("link", { name: new RegExp(ticketNumber) })
+    .first()
+    .click();
   await page.waitForURL(/\/student\/complaints\/[a-f0-9]{24}/);
   const id = page.url().split("/").pop()!.split("?")[0]!;
   return { id, ticketNumber };
+}
+
+/** Assign through OSAS Head; ordinary staff never self-pick. */
+export async function assignByOsasHead(page: Page, id: string) {
+  const session = await (await page.request.get("/api/auth/session")).json();
+  const browser = page.context().browser();
+  if (!browser) throw new Error("Browser context is required");
+  const head = await browser.newContext({
+    storageState: "tests/e2e/.auth/osas.json",
+    baseURL: new URL(
+      page.url() === "about:blank"
+        ? (process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000")
+        : page.url(),
+    ).origin,
+  });
+  try {
+    const response = await head.request.post(`/api/complaints/${id}/assign`, {
+      data: { action: "assign", assignedStaffRef: session.user.id },
+    });
+    if (!response.ok()) throw new Error(`OSAS assignment failed: ${await response.text()}`);
+  } finally {
+    await head.close();
+  }
 }

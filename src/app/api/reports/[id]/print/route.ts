@@ -1,3 +1,4 @@
+import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/reports/[id]/print/route.ts
 //
 // A print-friendly HTML rendering of a generated report's data, opened in a
@@ -13,7 +14,6 @@ import { auth } from "@/lib/auth";
 import { GeneratedReport } from "@/models/GeneratedReport";
 import { queryReportData, type ReportRow } from "@/features/reports/services/report-data.service";
 import { complaintFilterForScope, getAdminScope } from "@/lib/admin-scope";
-import { Types } from "mongoose";
 
 function escapeHtml(value: string): string {
   return value
@@ -31,6 +31,9 @@ const COLUMNS: { key: keyof ReportRow; label: string }[] = [
   { key: "priority", label: "Priority" },
   { key: "officeName", label: "Office" },
   { key: "categoryName", label: "Category" },
+  { key: "domain", label: "Service domain" },
+  { key: "responseHours", label: "Response hours" },
+  { key: "resolutionHours", label: "Resolution hours" },
   { key: "studentId", label: "Student ID" },
   { key: "studentCollege", label: "College" },
   { key: "submittedAt", label: "Submitted" },
@@ -60,9 +63,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const accessFilter = session.user.role === "office_staff"
-    ? { assignedOfficeRef: session.user.officeRef ? new Types.ObjectId(session.user.officeRef) : null }
-    : await complaintFilterForScope(getAdminScope(session.user.role));
+  const accessFilter =
+    session.user.role === "office_staff"
+      ? await staffComplaintFilter(session)
+      : await complaintFilterForScope(getAdminScope(session.user.role));
   const rows = await queryReportData((report as any).filters ?? {}, accessFilter);
   const title = `${String((report as any).reportType).replace(/-/g, " ")} report`;
   const generatedAt = new Date((report as any).createdAt).toLocaleString();

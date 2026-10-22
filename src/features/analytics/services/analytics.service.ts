@@ -74,7 +74,9 @@ export async function getAnalyticsSummary(
     getSlaComplianceByOffice(scopeMatch),
     Complaint.aggregate([
       { $match: { ...match, closureType: { $ne: null } } },
-      { $group: { _id: "$closureType", volume: { $sum: 1 }, avgRating: { $avg: "$studentRating" } } },
+      {
+        $group: { _id: "$closureType", volume: { $sum: 1 }, avgRating: { $avg: "$studentRating" } },
+      },
     ]),
   ]);
 
@@ -127,12 +129,18 @@ export async function getAnalyticsSummary(
     resolvedComplaints: resolved.length,
     unresolvedComplaints,
     averageFirstResponseHours: firstResponseDurations.length
-      ? roundHours(firstResponseDurations.reduce((sum, ms) => sum + ms, 0) / firstResponseDurations.length)
+      ? roundHours(
+          firstResponseDurations.reduce((sum, ms) => sum + ms, 0) / firstResponseDurations.length,
+        )
       : null,
     averageResolutionHours: resolutionDurations.length
-      ? roundHours(resolutionDurations.reduce((sum, ms) => sum + ms, 0) / resolutionDurations.length)
+      ? roundHours(
+          resolutionDurations.reduce((sum, ms) => sum + ms, 0) / resolutionDurations.length,
+        )
       : null,
-    slaComplianceRate: resolved.length ? Math.round((compliantResolved / resolved.length) * 100) : 0,
+    slaComplianceRate: resolved.length
+      ? Math.round((compliantResolved / resolved.length) * 100)
+      : 0,
     byStatus: byStatus.map((row: any) => ({ status: row._id, volume: row.volume })),
     officePerformance,
     ratedClosures: ratedRow?.volume ?? 0,
@@ -396,7 +404,10 @@ export async function getSlaTrendSeries(params: {
   }));
 }
 
-export async function getCollegeComparison(monthsBack = 6, scopeMatch: Record<string, unknown> = {}) {
+export async function getCollegeComparison(
+  monthsBack = 6,
+  scopeMatch: Record<string, unknown> = {},
+) {
   const since = new Date();
   since.setMonth(since.getMonth() - monthsBack);
 
@@ -436,4 +447,26 @@ export async function getCollegeComparison(monthsBack = 6, scopeMatch: Record<st
     volume: r.volume,
     avgRating: r.avgRating ? Math.round(r.avgRating * 10) / 10 : null,
   }));
+}
+
+export async function getDomainBreakdown(scopeMatch: Record<string, unknown>) {
+  const rows = await Complaint.aggregate([
+    { $match: { isArchived: false, ...scopeMatch } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "categoryRef",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    {
+      $group: {
+        _id: { $ifNull: [{ $arrayElemAt: ["$category.domain", 0] }, "other"] },
+        volume: { $sum: 1 },
+      },
+    },
+    { $sort: { volume: -1 } },
+  ]);
+  return rows.map((row) => ({ domain: String(row._id), volume: Number(row.volume) }));
 }

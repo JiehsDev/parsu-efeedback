@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -51,7 +53,7 @@ export function OfficeHeadManager({
     if (!selectedHeadId) return;
     setError(null);
     setIsSubmitting(true);
-    const res = await fetch(`/api/admin/offices/${officeId}/head`, {
+    const res = await clientFetch(`/api/admin/offices/${officeId}/head`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ headUserRef: selectedHeadId }),
@@ -71,7 +73,7 @@ export function OfficeHeadManager({
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
-    const res = await fetch(`/api/admin/offices/${officeId}/head`, {
+    const res = await clientFetch(`/api/admin/offices/${officeId}/head`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -97,7 +99,7 @@ export function OfficeHeadManager({
     });
     if (!ok) return;
 
-    const res = await fetch(`/api/admin/offices/${officeId}/head`, { method: "DELETE" });
+    const res = await clientFetch(`/api/admin/offices/${officeId}/head`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       showToast(typeof data.error === "string" ? data.error : "Could not remove office head.", "error");

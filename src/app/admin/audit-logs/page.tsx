@@ -1,6 +1,8 @@
 // src/app/admin/audit-logs/page.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ChevronLeft, ChevronRight, RefreshCw, ScrollText, Search } from "lucide-react";
@@ -48,7 +50,7 @@ export default function AdminAuditLogsPage() {
     if (dateFrom) params.set("dateFrom", dateFrom);
     if (dateTo) params.set("dateTo", dateTo);
 
-    fetch(`/api/admin/audit-logs?${params}`)
+    clientFetch(`/api/admin/audit-logs?${params}`)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load audit logs.");

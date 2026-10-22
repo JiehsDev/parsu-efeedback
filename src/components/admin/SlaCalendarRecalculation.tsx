@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { SLA_TIME_ZONE } from "@/lib/sla-calendar";
 
@@ -28,7 +30,7 @@ export function SlaCalendarRecalculation({ calendarDirty = false }: { calendarDi
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch(
+      const response = await clientFetch(
         "/api/admin/sla-calendar/recalculate",
         apply
           ? {

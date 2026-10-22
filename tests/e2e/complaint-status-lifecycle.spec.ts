@@ -1,3 +1,4 @@
+import { assignByOsasHead } from "./helpers";
 // tests/e2e/complaint-status-lifecycle.spec.ts
 // BR-040, BR-041, BR-042, BR-043, BR-044, BR-045, BR-053
 //
@@ -32,8 +33,8 @@ adminTest.describe("Complaint status lifecycle", () => {
       // --- 2. Staff self-assigns and advances it through legal transitions ---
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
+      await assignByOsasHead(staffPage, id);
       await staffPage.goto(`/staff/complaints/${id}`);
-      await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
       // The status-update form only renders once this staff member is the
       // assigned staff — its appearance itself confirms the self-assign
       // succeeded and advanced the complaint out of "submitted".
@@ -69,7 +70,8 @@ adminTest.describe("Complaint status lifecycle", () => {
       await staffPage.getByPlaceholder("Optional note about this change").fill("e2e-to-resolved");
       const [patch2] = await Promise.all([
         staffPage.waitForResponse(
-          (res) => res.url().includes(`/api/complaints/${id}`) && res.request().method() === "PATCH",
+          (res) =>
+            res.url().includes(`/api/complaints/${id}`) && res.request().method() === "PATCH",
         ),
         staffPage.getByRole("button", { name: "Update Status" }).click(),
       ]);
@@ -93,7 +95,9 @@ adminTest.describe("Complaint status lifecycle", () => {
       await studentPage.getByRole("button", { name: "Submit Rating" }).click();
       await expect(studentPage.getByRole("heading", { name: "Complaint Closed" })).toBeVisible();
       await expect(studentPage.getByRole("button", { name: "Update Status" })).toHaveCount(0);
-      await expect(studentPage.getByRole("button", { name: "Pick Up This Complaint" })).toHaveCount(0);
+      await expect(studentPage.getByRole("button", { name: "Pick Up This Complaint" })).toHaveCount(
+        0,
+      );
       await expect(studentPage.getByRole("button", { name: /submit rating/i })).toHaveCount(0);
       await expect(studentPage.getByRole("button", { name: /delete/i })).toHaveCount(0);
       await studentContext.close();

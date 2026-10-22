@@ -6,7 +6,10 @@ import { Complaint } from "@/models/Complaint";
 import { ComplaintNote } from "@/models/ComplaintNote";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { addNoteSchema } from "@/features/complaints/schemas/complaint.schema";
-import { canAccessInternalComplaintNotes } from "@/lib/complaint-access";
+import {
+  canAccessInternalComplaintNotes,
+  canWriteInternalComplaintNotes,
+} from "@/lib/complaint-access";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -29,8 +32,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
-  if (!(await canAccessInternalComplaintNotes(session, complaint))) {
+  if (complaint.isArchived)
+    return NextResponse.json(
+      { error: "Archived complaints are read-only until restored." },
+      { status: 403 },
+    );
+  if (!(await canWriteInternalComplaintNotes(session, complaint))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

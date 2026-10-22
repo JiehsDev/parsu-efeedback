@@ -17,7 +17,7 @@ export const createUserSchema = z
   .superRefine((data, ctx) => {
     // Office staff and scoped administrators are attached to one authoritative
     // office. Their software role remains distinct from the head designation.
-    if (["office_staff", "vpaa", "vpaf", "osas"].includes(data.role) && !data.officeRef) {
+    if (["office_staff", "osas"].includes(data.role) && !data.officeRef) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "officeRef is required for this role",

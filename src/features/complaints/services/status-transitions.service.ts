@@ -7,13 +7,13 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   // unpicked-up — who may trigger this (student, owner, only from
   // "submitted") is enforced in the route handler, not here; this only
   // says the state-machine edge itself is legal.
-  submitted: ["assigned", "in_progress", "withdrawn"],
+  submitted: ["in_progress", "withdrawn"],
   // Escalation is a distinct audited workflow. It must not be reachable
   // through the generic status-update endpoint.
   assigned: ["in_progress"],
   in_progress: ["pending_information", "resolved"],
   pending_information: ["in_progress"],
-  escalated: ["in_progress", "assigned"],
+  escalated: ["in_progress"],
   // Resolved remains open until the student acknowledges it with a rating.
   // The rating endpoint owns the resolved -> closed transition.
   resolved: [],

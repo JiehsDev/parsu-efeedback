@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, FileQuestion, Loader2, Send } from "lucide-react";
@@ -46,7 +48,7 @@ export function InformationRequestPanel({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/complaints/${complaintId}/information-request`, {
+      const res = await clientFetch(`/api/complaints/${complaintId}/information-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestMessage, context }),
@@ -89,7 +91,8 @@ export function InformationRequestPanel({
         </div>
         <p className="mt-3 text-sm text-[var(--qa-amber-strong)]">{active.requestMessage}</p>
         <p className="mt-2 text-xs text-[var(--qa-amber-strong)]/75">
-          Requested {new Date(active.requestedAt).toLocaleString()} by {active.requestedByRef?.firstName ?? "staff"} {active.requestedByRef?.lastName ?? ""}
+          Requested {new Date(active.requestedAt).toLocaleString()} by{" "}
+          {active.requestedByRef?.firstName ?? "staff"} {active.requestedByRef?.lastName ?? ""}
         </p>
       </div>
     );
@@ -114,7 +117,8 @@ export function InformationRequestPanel({
             Request Additional Information
           </div>
           <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-            Ask the student to provide clarification, documents, or other information needed to continue processing this complaint.
+            Ask the student to provide clarification, documents, or other information needed to
+            continue processing this complaint.
           </p>
           {error && (
             <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
@@ -130,7 +134,9 @@ export function InformationRequestPanel({
             placeholder="Tell the student exactly what information is needed."
             className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
-          <p className="-mt-1 text-xs text-[var(--muted-foreground)]">Clearly explain what the student needs to provide so the complaint can continue.</p>
+          <p className="-mt-1 text-xs text-[var(--muted-foreground)]">
+            Clearly explain what the student needs to provide so the complaint can continue.
+          </p>
           <textarea
             value={context}
             onChange={(event) => setContext(event.target.value)}
@@ -149,7 +155,7 @@ export function InformationRequestPanel({
             <button
               type="submit"
               disabled={submitting || !requestMessage.trim()}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-50"
             >
               {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -176,15 +182,22 @@ export function InformationRequestPanel({
                   className="rounded-2xl bg-[var(--muted)]/45 px-3 py-2.5 text-xs"
                 >
                   <p className="font-medium text-[var(--foreground)]">
-                    <span className="font-semibold text-[var(--qa-success-strong)]">Information Received</span>
-                    <span className="ml-2">{new Date(request.respondedAt ?? request.requestedAt).toLocaleString()}</span>
+                    <span className="font-semibold text-[var(--qa-success-strong)]">
+                      Information Received
+                    </span>
+                    <span className="ml-2">
+                      {new Date(request.respondedAt ?? request.requestedAt).toLocaleString()}
+                    </span>
                   </p>
                   <p className="mt-1 text-[var(--muted-foreground)]">
                     Response: {request.responseMessage || "Attachment submitted"}
                   </p>
                   {(request.responseAttachmentRefs?.length ?? 0) > 0 && (
                     <p className="mt-1 text-[var(--muted-foreground)]">
-                      Attachments: {request.responseAttachmentRefs?.map((attachment) => attachment.fileName).join(", ")}
+                      Attachments:{" "}
+                      {request.responseAttachmentRefs
+                        ?.map((attachment) => attachment.fileName)
+                        .join(", ")}
                     </p>
                   )}
                 </div>

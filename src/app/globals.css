@@ -1,21 +1,12 @@
 @import "tailwindcss";
 
-/*
- * ParSU e-Feedback — "Refined Light" theme
- * Fixed light theme (not tied to prefers-color-scheme) per the project spec:
- * enterprise, modern, minimal, academic, high contrast. Originally built
- * for the QA portal and promoted app-wide — every portal reads these same
- * shadcn-shaped variable names via bg-[var(--x)] bracket syntax, so the
- * whole app re-skins through normal CSS cascade with no per-file changes.
- *
- * Values here map 1:1 to shadcn/ui's expected CSS variable names, so
- * `npx shadcn add <component>` (run somewhere with internet access to
- * ui.shadcn.com — blocked in this sandbox) will drop components in that
- * already match this palette with zero extra theming work.
- */
+/* Shared light and dark palettes. The default blue matches #06345c in ParSU's website
+   preset stylesheet. Text and controls use darker shades for readable contrast. */
 
 :root {
-  --background: #faf9f6;
+  color-scheme: light;
+  --navigation: var(--primary);
+  --background: #f7f9fc;
   --foreground: #1c2130;
 
   --card: #ffffff;
@@ -24,28 +15,28 @@
   --popover: #ffffff;
   --popover-foreground: #1c2130;
 
-  --primary: #5b4fe0;
+  --primary: #06345c;
   --primary-foreground: #ffffff;
 
-  --secondary: #1f8a8f;
+  --secondary: #14666b;
   --secondary-foreground: #ffffff;
 
-  --muted: #f2f0ea;
+  --muted: #edf1f7;
   --muted-foreground: #5c6478;
 
-  --accent: #ecebfa;
-  --accent-foreground: #5b4fe0;
+  --accent: #e8eff8;
+  --accent-foreground: #06345c;
 
-  --destructive: #d64545;
+  --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
 
   --border: #e7e4dc;
-  --input: #e2dfd6;
-  --ring: #5b4fe0;
+  --input: #7c8594;
+  --ring: #06345c;
 
   --radius: 0.75rem;
 
-  /* Extra chart/status accents with no shadcn slot — first added for the
+  /* Extra chart/status accents with no shadcn slot â€” first added for the
      QA portal's analytics, kept global since any portal's charts can use
      them for consistent color coding (success/warning/etc). */
   --qa-success: #1c9a6c;
@@ -55,7 +46,7 @@
   --qa-rose: #c24b5c;
   --qa-slate: #6b7280;
 
-  /* Accessible text-on-soft-fill pairs for the fixed LIGHT theme. The
+  /* Accessible text-on-soft-fill pairs for the light palettes. The
      original --qa-* values above are chart-fill colors; used as TEXT they
      land between 3:1 and 4:1 on white, so status pills that reached for
      Tailwind's *-400 shades (a dark-theme habit) were failing WCAG AA.
@@ -66,6 +57,123 @@
   --qa-rose-strong: #96253a;
   --qa-teal-soft: #e2f2f2;
   --qa-teal-strong: #14666b;
+}
+
+:root[data-theme="pink"] {
+  --background: #fff7fb;
+  --primary: #be185d;
+  --secondary: #9d174d;
+  --muted: #fce7f3;
+  --accent: #fce7f3;
+  --accent-foreground: #be185d;
+  --ring: #be185d;
+}
+
+:root[data-theme="lime"] {
+  --background: #f7fbea;
+  --primary: #3f6212;
+  --secondary: #4d7c0f;
+  --muted: #eef6dd;
+  --accent: #ecfccb;
+  --accent-foreground: #3f6212;
+  --ring: #3f6212;
+}
+
+:root[data-theme="purple"] {
+  --background: #faf9f6;
+  --primary: #5b4fe0;
+  --secondary: #14666b;
+  --muted: #f2f0ea;
+  --accent: #ecebfa;
+  --accent-foreground: #5b4fe0;
+  --ring: #5b4fe0;
+}
+
+/* Dark surfaces and semantic colors are shared; each theme supplies its own hue. */
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  --background: #0b1220;
+  --foreground: #f1f5f9;
+  --card: #111e31;
+  --card-foreground: #f1f5f9;
+  --popover: #111e31;
+  --popover-foreground: #f1f5f9;
+  --primary: #93c5fd;
+  --primary-foreground: #071d34;
+  --navigation: #0c2540;
+  --secondary: #5eead4;
+  --secondary-foreground: #062e2c;
+  --muted: #1b2b43;
+  --muted-foreground: #b8c4d6;
+  --accent: #193653;
+  --accent-foreground: #93c5fd;
+  --destructive: #fca5a5;
+  --destructive-foreground: #450a0a;
+  --border: #38475e;
+  --input: #a4b0c2;
+  --ring: #93c5fd;
+  --qa-success: #34d399;
+  --qa-success-soft: #123326;
+  --qa-success-strong: #86efac;
+  --qa-amber: #fbbf24;
+  --qa-amber-soft: #3b2b0d;
+  --qa-amber-strong: #fde68a;
+  --qa-rose: #fb7185;
+  --qa-rose-soft: #431724;
+  --qa-rose-strong: #fda4af;
+  --qa-slate: #cbd5e1;
+  --qa-teal-soft: #10383c;
+  --qa-teal-strong: #99f6e4;
+}
+
+:root[data-mode="dark"][data-theme="pink"] {
+  --background: #190e16;
+  --card: #281522;
+  --popover: #281522;
+  --primary: #f9a8d4;
+  --primary-foreground: #3f0b24;
+  --navigation: #3b1026;
+  --secondary: #f9a8d4;
+  --secondary-foreground: #500724;
+  --muted: #382033;
+  --accent: #4b1632;
+  --accent-foreground: #f9a8d4;
+  --ring: #f9a8d4;
+}
+
+:root[data-mode="dark"][data-theme="lime"] {
+  --background: #10160b;
+  --card: #1c2614;
+  --popover: #1c2614;
+  --primary: #bef264;
+  --primary-foreground: #1a2e05;
+  --navigation: #20330b;
+  --secondary: #bef264;
+  --secondary-foreground: #1a2e05;
+  --muted: #28361e;
+  --accent: #304919;
+  --accent-foreground: #bef264;
+  --ring: #bef264;
+}
+
+:root[data-mode="dark"][data-theme="purple"] {
+  --background: #130f20;
+  --card: #21192f;
+  --popover: #21192f;
+  --primary: #c4b5fd;
+  --primary-foreground: #20123a;
+  --navigation: #21163e;
+  --muted: #2f2540;
+  --accent: #3c285c;
+  --accent-foreground: #c4b5fd;
+  --ring: #c4b5fd;
+}
+
+/* Input boundaries must remain visible on every light palette. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+textarea,
+select {
+  border-color: var(--input);
 }
 
 .qa-mono {
@@ -154,7 +262,7 @@ select[aria-invalid="true"]:focus {
 }
 
 /* iOS Safari auto-zooms the page on focus for any form control rendering
-   below 16px — every input/textarea/select in this app is styled at 14px
+   below 16px â€” every input/textarea/select in this app is styled at 14px
    (text-sm). Force 16px on native controls below the desktop breakpoint so
    focusing a field doesn't yank the viewport into a zoomed-in state; the
    surrounding label/placeholder text keeps its normal 14px sizing since

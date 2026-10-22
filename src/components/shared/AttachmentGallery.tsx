@@ -1,6 +1,8 @@
 // src/components/shared/AttachmentGallery.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useState } from "react";
 import { Download, FileText, Loader2, Paperclip, X } from "lucide-react";
 
@@ -18,7 +20,7 @@ export function AttachmentGallery({ complaintId }: { complaintId: string }) {
   const [preview, setPreview] = useState<AttachmentRecord | null>(null);
 
   useEffect(() => {
-    fetch(`/api/complaints/${complaintId}/attachments`)
+    clientFetch(`/api/complaints/${complaintId}/attachments`)
       .then((res) => res.json())
       .then((data) => setAttachments(data.attachments ?? []))
       .finally(() => setLoading(false));

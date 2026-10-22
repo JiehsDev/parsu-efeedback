@@ -1,13 +1,21 @@
 // src/components/admin/EditSlaRuleButton.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Pencil, Plus } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DEFAULT_SLA_HOURS, type PriorityLevel } from "@/lib/constants";
 
 const PRIORITIES = ["low", "medium", "high", "critical"];
@@ -21,7 +29,6 @@ export function EditSlaRuleButton({
   categoryId,
   currentPriority,
   rule,
-  offices,
 }: {
   categoryId: string;
   currentPriority: string;
@@ -39,7 +46,6 @@ export function EditSlaRuleButton({
   const [priority, setPriority] = useState(currentPriority);
   const [responseHours, setResponseHours] = useState(rule?.responseHours ?? 24);
   const [resolutionHours, setResolutionHours] = useState(rule?.resolutionHours ?? 72);
-  const [escalateToOfficeRef, setEscalateToOfficeRef] = useState(rule?.escalateToOfficeRef ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -53,7 +59,7 @@ export function EditSlaRuleButton({
     // src/app/api/admin/sla-rules/route.ts), since a category's priority
     // only ever matters as "which SLA clock applies."
     const url = rule ? `/api/admin/sla-rules/${rule._id}` : "/api/admin/sla-rules";
-    const res = await fetch(url, {
+    const res = await clientFetch(url, {
       method: rule ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -61,7 +67,7 @@ export function EditSlaRuleButton({
         priority,
         responseHours: Number(responseHours),
         resolutionHours: Number(resolutionHours),
-        escalateToOfficeRef: escalateToOfficeRef || null,
+        escalateToOfficeRef: null,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -155,24 +161,9 @@ export function EditSlaRuleButton({
               </FormField>
             </div>
 
-            <FormField
-              label="Escalate to office"
-              hint="If the resolution deadline is breached, the complaint is reassigned here automatically"
-            >
-              <Select value={escalateToOfficeRef} onValueChange={setEscalateToOfficeRef}>
-                <SelectTrigger>
-                  <SelectValue placeholder="No escalation — stays at its assigned office" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No escalation — stays at its assigned office</SelectItem>
-                  {offices.map((o) => (
-                    <SelectItem key={o._id} value={o._id}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              SLA escalation requests OSAS Head review. The handling office remains OSAS.
+            </p>
 
             <button
               type="submit"

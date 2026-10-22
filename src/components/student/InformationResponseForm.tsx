@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, FileUp, Loader2, Send, X } from "lucide-react";
@@ -9,16 +11,14 @@ import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-
 async function uploadFile(file: File, complaintId: string) {
   const body = new FormData();
   body.append("file", file);
-  const upload = await fetch(`/api/complaints/${complaintId}/attachments/upload`, {
+  const upload = await clientFetch(`/api/complaints/${complaintId}/attachments/upload`, {
     method: "POST",
     body,
   });
   const uploadData = await upload.json().catch(() => ({}));
   if (!upload.ok)
     throw new Error(
-      typeof uploadData.error === "string"
-        ? uploadData.error
-        : `Could not upload ${file.name}`,
+      typeof uploadData.error === "string" ? uploadData.error : `Could not upload ${file.name}`,
     );
   const attachmentId = uploadData.attachment?._id;
   if (typeof attachmentId !== "string" || !attachmentId) {
@@ -62,7 +62,7 @@ export function InformationResponseForm({
     try {
       const attachmentIds: string[] = [];
       for (const file of files) attachmentIds.push(await uploadFile(file, complaintId));
-      const res = await fetch(`/api/complaints/${complaintId}/information-response`, {
+      const res = await clientFetch(`/api/complaints/${complaintId}/information-response`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ responseMessage: message, attachmentIds }),
@@ -167,7 +167,7 @@ export function InformationResponseForm({
         <button
           type="submit"
           disabled={submitting || !message.trim()}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-50"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           Submit Information

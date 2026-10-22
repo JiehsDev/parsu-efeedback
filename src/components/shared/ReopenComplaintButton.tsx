@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
@@ -21,7 +23,7 @@ export function ReopenComplaintButton({ complaintId }: { complaintId: string }) 
     setError(null);
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/complaints/${complaintId}/reopen`, {
+      const response = await clientFetch(`/api/complaints/${complaintId}/reopen`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),

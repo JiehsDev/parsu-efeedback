@@ -69,7 +69,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 onClick={() => settle(true)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90 ${
                   state.danger
-                    ? "bg-[var(--destructive)] text-white"
+                    ? "bg-[var(--destructive)] text-[var(--destructive-foreground)]"
                     : "bg-[var(--primary)] text-[var(--primary-foreground)]"
                 }`}
               >

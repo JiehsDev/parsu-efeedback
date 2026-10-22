@@ -1,3 +1,4 @@
+import { ClientDataBoundary } from "@/components/shared/ClientDataBoundary";
 // src/app/admin/layout.tsx
 import { auth } from "@/lib/auth";
 import { AdminNav } from "@/components/admin/AdminNav";
@@ -10,7 +11,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/dashboard");
   }
 
+  const cacheScope = [session.user.id, session.user.role, session.user.officeRef ?? "", session.user.collegeRef ?? "", session.user.tokenVersion].join(":");
+
   return (
+    <ClientDataBoundary scope={cacheScope}>
     <div className="flex h-screen bg-[var(--background)]">
       <AdminNav
         userName={session?.user?.name ?? "Admin"}
@@ -20,5 +24,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {children}
       </main>
     </div>
+    </ClientDataBoundary>
   );
 }

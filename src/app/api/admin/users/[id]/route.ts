@@ -12,7 +12,7 @@ import type { AdminScope } from "@/lib/admin-scope";
 const SCOPED_ROLE_OFFICE_CODES = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" } as const;
 
 async function validateRoleOffice(role: string, officeRef: unknown) {
-  if (!["vpaa", "vpaf", "osas"].includes(role)) return null;
+  if (role !== "osas") return null;
   if (!officeRef) return "A scoped administrator must belong to its corresponding office";
   const office = await Office.findById(officeRef).select("code").lean();
   const expected = SCOPED_ROLE_OFFICE_CODES[role as keyof typeof SCOPED_ROLE_OFFICE_CODES];
@@ -115,9 +115,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const effectiveRole = parsed.data.role ?? (before as any).role;
-  const effectiveOfficeRef = parsed.data.officeRef !== undefined
-    ? parsed.data.officeRef
-    : (before as any).officeRef;
+  const effectiveOfficeRef =
+    parsed.data.officeRef !== undefined ? parsed.data.officeRef : (before as any).officeRef;
   const roleOfficeError = await validateRoleOffice(effectiveRole, effectiveOfficeRef);
   if (roleOfficeError) return NextResponse.json({ error: roleOfficeError }, { status: 400 });
 

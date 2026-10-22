@@ -3,7 +3,7 @@ import { User } from "@/models/User";
 import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
-export const HEAD_ELIGIBLE_ROLES = new Set(["office_staff", "vpaa", "vpaf", "osas"]);
+export const HEAD_ELIGIBLE_ROLES = new Set(["office_staff", "osas"]);
 
 export function isEligibleOfficeHeadRole(role: string): boolean {
   return HEAD_ELIGIBLE_ROLES.has(role);
@@ -17,8 +17,10 @@ export async function validateOfficeHeadCandidate(officeId: string, userId: stri
 
   if (!office) return { error: "Office not found", status: 404 as const };
   if (!user) return { error: "User not found", status: 404 as const };
-  if (!(user as any).isActive) return { error: "Office head must be an active user", status: 400 as const };
-  if ((user as any).role === "student") return { error: "Students cannot be office heads", status: 400 as const };
+  if (!(user as any).isActive)
+    return { error: "Office head must be an active user", status: 400 as const };
+  if ((user as any).role === "student")
+    return { error: "Students cannot be office heads", status: 400 as const };
   if (!HEAD_ELIGIBLE_ROLES.has((user as any).role)) {
     return { error: "This role cannot be assigned as an office head", status: 400 as const };
   }
@@ -29,7 +31,9 @@ export async function validateOfficeHeadCandidate(officeId: string, userId: stri
   const otherOffice = await Office.findOne({
     _id: { $ne: officeId },
     headUserRef: userId,
-  }).select("name").lean();
+  })
+    .select("name")
+    .lean();
   if (otherOffice) {
     return {
       error: `This user is already head of ${(otherOffice as any).name}`,
@@ -118,7 +122,8 @@ export async function createHeadAccountAndAssign(params: {
   const existing = await User.findOne({
     $or: [{ email: params.email }, { employeeOrStudentId: params.employeeOrStudentId }],
   }).lean();
-  if (existing) return { error: "A user with this email or ID already exists", status: 409 as const };
+  if (existing)
+    return { error: "A user with this email or ID already exists", status: 409 as const };
 
   const passwordHash = await hashPassword(params.password);
   const user = await User.create({

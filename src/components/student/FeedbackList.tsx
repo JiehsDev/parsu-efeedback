@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Pencil, Trash2, X } from "lucide-react";
@@ -45,7 +47,7 @@ export function FeedbackList({ feedback }: { feedback: FeedbackItem[] }) {
   async function save(id: string) {
     setBusyId(id);
     setError(null);
-    const res = await fetch(`/api/feedback/${id}`, {
+    const res = await clientFetch(`/api/feedback/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(draft),
@@ -71,7 +73,7 @@ export function FeedbackList({ feedback }: { feedback: FeedbackItem[] }) {
 
     setBusyId(id);
     setError(null);
-    const res = await fetch(`/api/feedback/${id}`, { method: "DELETE" });
+    const res = await clientFetch(`/api/feedback/${id}`, { method: "DELETE" });
     setBusyId(null);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

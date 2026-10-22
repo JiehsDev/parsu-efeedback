@@ -1,3 +1,5 @@
+import { canAccessComplaint } from "@/lib/complaint-access";
+import { isOversightRole } from "@/lib/osas-operations";
 // src/features/notifications/services/notification.service.ts
 import { connectToDatabase } from "@/lib/db";
 import { Notification } from "@/models/Notification";
@@ -18,11 +20,26 @@ import {
 } from "./email.service";
 
 async function getRecipient(userId: string, complaintId?: string | null) {
-  const user = await User.findById(userId).select("email firstName lastName role").lean();
+  const user = await User.findById(userId).select("email firstName lastName role officeRef").lean();
   if (!user) return null;
+  if (complaintId && isOversightRole(user.role)) return null;
+  if (complaintId && user.role === "office_staff") {
+    const complaint = await Complaint.findById(complaintId).lean();
+    if (
+      !complaint ||
+      !(await canAccessComplaint(
+        { user: { id: String(user._id), role: user.role, officeRef: user.officeRef } },
+        complaint,
+      ))
+    )
+      return null;
+  }
   if (complaintId && isScopedAdminRole(user.role)) {
-    const complaint = await Complaint.findById(complaintId).select("_id assignedOfficeRef categoryRef").lean();
-    if (!complaint || !(await isComplaintInAdminScope(getAdminScope(user.role), complaint))) return null;
+    const complaint = await Complaint.findById(complaintId)
+      .select("_id assignedOfficeRef categoryRef")
+      .lean();
+    if (!complaint || !(await isComplaintInAdminScope(getAdminScope(user.role), complaint)))
+      return null;
   }
   return {
     email: (user as any).email,
@@ -41,7 +58,11 @@ interface CreateNotificationParams {
 
 async function createNotification(params: CreateNotificationParams): Promise<void> {
   await connectToDatabase();
-  if (params.relatedComplaintRef && !(await getRecipient(params.userRef, params.relatedComplaintRef))) return;
+  if (
+    params.relatedComplaintRef &&
+    !(await getRecipient(params.userRef, params.relatedComplaintRef))
+  )
+    return;
   await Notification.create({
     userRef: params.userRef,
     type: params.type,
@@ -364,6 +385,7 @@ export async function notifyManualEscalation(params: {
   complaintId: string;
   reason: string;
   fromStatus: string;
+  toStatus?: string;
 }) {
   await createNotification({
     userRef: params.staffId,
@@ -387,7 +409,7 @@ export async function notifyManualEscalation(params: {
     userRef: params.studentId,
     type: "status_updated",
     title: "Complaint escalated",
-    body: `Complaint ${params.ticketNumber} was escalated for higher-level review.`,
+    body: `Complaint ${params.ticketNumber} was referred to the OSAS Head for supervisory review.`,
     relatedComplaintRef: params.complaintId,
   });
   const student = await getRecipient(params.studentId, params.complaintId);
@@ -398,7 +420,7 @@ export async function notifyManualEscalation(params: {
       ticketNumber: params.ticketNumber,
       complaintId: params.complaintId,
       fromStatus: params.fromStatus,
-      toStatus: "escalated",
+      toStatus: params.toStatus ?? "in_progress",
     });
   }
 }
@@ -493,16 +515,54 @@ export async function notifyInformationSubmitted(params: {
   );
 }
 
-export async function notifyArchiveRequested(params: { userId: string; ticketNumber: string; complaintId: string; requestId: string; reason: string; complaintTitle?: string; requesterName?: string }) {
+export async function notifyArchiveRequested(params: {
+  userId: string;
+  ticketNumber: string;
+  complaintId: string;
+  requestId: string;
+  reason: string;
+  complaintTitle?: string;
+  requesterName?: string;
+}) {
   const requester = params.requesterName ? ` from ${params.requesterName}` : "";
   const title = params.complaintTitle ? ` (${params.complaintTitle})` : "";
-  await createNotification({ userRef: params.userId, type: "archive_request", title: "Archive request needs review", body: `Archive request${requester} for ${params.ticketNumber}${title}: ${params.reason}`, relatedComplaintRef: params.complaintId });
+  await createNotification({
+    userRef: params.userId,
+    type: "archive_request",
+    title: "Archive request needs review",
+    body: `Archive request${requester} for ${params.ticketNumber}${title}: ${params.reason}`,
+    relatedComplaintRef: params.complaintId,
+  });
 }
 
-export async function notifyArchiveDecision(params: { userId: string; approved: boolean; ticketNumber: string; complaintId: string; reason?: string }) {
-  await createNotification({ userRef: params.userId, type: "archive_decision", title: params.approved ? "Archive request approved" : "Archive request rejected", body: params.approved ? `Archive request for ${params.ticketNumber} was approved.` : `Archive request for ${params.ticketNumber} was rejected${params.reason ? `: ${params.reason}` : "."}`, relatedComplaintRef: params.complaintId });
+export async function notifyArchiveDecision(params: {
+  userId: string;
+  approved: boolean;
+  ticketNumber: string;
+  complaintId: string;
+  reason?: string;
+}) {
+  await createNotification({
+    userRef: params.userId,
+    type: "archive_decision",
+    title: params.approved ? "Archive request approved" : "Archive request rejected",
+    body: params.approved
+      ? `Archive request for ${params.ticketNumber} was approved.`
+      : `Archive request for ${params.ticketNumber} was rejected${params.reason ? `: ${params.reason}` : "."}`,
+    relatedComplaintRef: params.complaintId,
+  });
 }
 
-export async function notifyComplaintRestored(params: { studentId: string; ticketNumber: string; complaintId: string }) {
-  await createNotification({ userRef: params.studentId, type: "complaint_restored", title: "Complaint restored", body: `Complaint ${params.ticketNumber} has been restored for continued handling.`, relatedComplaintRef: params.complaintId });
+export async function notifyComplaintRestored(params: {
+  studentId: string;
+  ticketNumber: string;
+  complaintId: string;
+}) {
+  await createNotification({
+    userRef: params.studentId,
+    type: "complaint_restored",
+    title: "Complaint restored",
+    body: `Complaint ${params.ticketNumber} has been restored for continued handling.`,
+    relatedComplaintRef: params.complaintId,
+  });
 }

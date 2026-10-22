@@ -1,3 +1,5 @@
+import { canProcessComplaint } from "@/lib/osas-operations";
+import { canAccessComplaint } from "@/lib/complaint-access";
 // src/app/api/complaints/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Types } from "mongoose";
@@ -16,23 +18,6 @@ import {
   notifyStatusUpdated,
   notifyComplaintResolved,
 } from "@/features/notifications/services/notification.service";
-import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
-import { isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
-
-async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
-  const { role, id, officeRef } = session.user;
-  if (role === "administrator") return true;
-  if (role === "student") return String(complaint.studentRef) === id;
-  if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
-  // QA-style read access, scoped to each sub-admin's own category — the
-  // PATCH handler below separately blocks these roles from ever reaching
-  // the mutation path.
-  if (role === "osas") return isComplaintInOsasActionScope(complaint);
-  if (role === "vpaa" || role === "vpaf") {
-    return isComplaintInAdminScope(getAdminScope(role), complaint);
-  }
-  return false;
-}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -53,19 +38,20 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .populate("actorRef", "firstName lastName role employeeOrStudentId")
     .lean();
 
-  const safeTimeline = session.user.role === "student"
-    ? timeline
-    : timeline.map((event: any) => {
-        if (event.actorRef?.role !== "student") return event;
-        return {
-          ...event,
-          actorRef: {
-            _id: event.actorRef._id,
-            role: "student",
-            employeeOrStudentId: event.actorRef.employeeOrStudentId ?? null,
-          },
-        };
-      });
+  const safeTimeline =
+    session.user.role === "student"
+      ? timeline
+      : timeline.map((event: any) => {
+          if (event.actorRef?.role !== "student") return event;
+          return {
+            ...event,
+            actorRef: {
+              _id: event.actorRef._id,
+              role: "student",
+              employeeOrStudentId: event.actorRef.employeeOrStudentId ?? null,
+            },
+          };
+        });
 
   return NextResponse.json({ complaint, timeline: safeTimeline });
 }
@@ -79,7 +65,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
+  if (complaint.isArchived)
+    return NextResponse.json(
+      { error: "Archived complaints are read-only until restored." },
+      { status: 403 },
+    );
 
   const body = await req.json();
 
@@ -157,10 +147,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ complaint });
   }
 
-  // Only staff/admin may mutate status. vpaa/vpaf/osas are read-only here too (they get scoped
-  // read access below, scoped to their own category) — day-to-day status
-  // changes stay staff's job; vpaa/vpaf's own mutation power is limited to
-  // reassignment/escalation via /api/complaints/[id]/assign.
+  if (!(await canProcessComplaint(session, complaint)))
+    return NextResponse.json(
+      { error: "Only the assigned OSAS handler may update this complaint." },
+      { status: 403 },
+    );
+
   const parsed = updateComplaintStatusSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -197,7 +189,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (toStatus === "closed") {
     return NextResponse.json(
-      { error: "Complaints are closed automatically after the student submits a resolution rating." },
+      {
+        error: "Complaints are closed automatically after the student submits a resolution rating.",
+      },
       { status: 400 },
     );
   }
@@ -240,7 +234,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await ComplaintTimeline.create({
     complaintRef: complaint._id,
-    eventType: fromStatus === "closed" && toStatus === "in_progress" ? "reopened" : "status_changed",
+    eventType:
+      fromStatus === "closed" && toStatus === "in_progress" ? "reopened" : "status_changed",
     actorRef: session.user.id,
     fromValue: fromStatus,
     toValue: toStatus,

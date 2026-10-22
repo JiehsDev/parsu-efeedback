@@ -1,6 +1,8 @@
 // src/components/reports/ReportsPanel.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -72,6 +74,9 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
   const [form, setForm] = useState({
     format: "csv" as "csv" | "excel" | "pdf",
     categoryRef: "",
+    domain: "",
+    priority: "",
+    slaState: "",
     officeRef: "",
     status: "",
     dateFrom: "",
@@ -82,33 +87,40 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
   function refreshReports() {
     setLoadError(null);
     setIsLoadingReports(true);
-    fetch("/api/reports/export")
+    clientFetch("/api/reports/export")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load reports.");
+        if (!res.ok)
+          throw new Error(typeof data.error === "string" ? data.error : "Could not load reports.");
         setReports(data.reports ?? []);
       })
-      .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load reports."))
+      .catch((reason: unknown) =>
+        setLoadError(reason instanceof Error ? reason.message : "Could not load reports."),
+      )
       .finally(() => setIsLoadingReports(false));
   }
 
   useEffect(() => {
     refreshReports();
-    fetch("/api/categories")
+    clientFetch("/api/categories")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error("Could not load categories.");
         setCategories(data.categories ?? []);
       })
-      .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load categories."));
+      .catch((reason: unknown) =>
+        setLoadError(reason instanceof Error ? reason.message : "Could not load categories."),
+      );
     if (showOfficeFilter) {
-      fetch("/api/offices")
+      clientFetch("/api/offices")
         .then(async (res) => {
           const data = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error("Could not load offices.");
           setOffices(data.offices ?? []);
         })
-        .catch((reason: unknown) => setLoadError(reason instanceof Error ? reason.message : "Could not load offices."));
+        .catch((reason: unknown) =>
+          setLoadError(reason instanceof Error ? reason.message : "Could not load offices."),
+        );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -123,6 +135,9 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
       format: form.format,
       filters: {
         categoryRef: form.categoryRef || null,
+        domain: form.domain || null,
+        priority: form.priority || null,
+        slaState: form.slaState || null,
         officeRef: form.officeRef || null,
         status: form.status || null,
         dateFrom: form.dateFrom || null,
@@ -131,7 +146,7 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
       },
     };
 
-    const res = await fetch("/api/reports/export", {
+    const res = await clientFetch("/api/reports/export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -159,7 +174,7 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
     if (!ok) return;
 
     setDeletingId(report._id);
-    const res = await fetch(`/api/reports/${report._id}`, { method: "DELETE" });
+    const res = await clientFetch(`/api/reports/${report._id}`, { method: "DELETE" });
     setDeletingId(null);
 
     if (!res.ok) {
@@ -177,6 +192,49 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
         onSubmit={handleGenerate}
         className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8"
       >
+        <div className="grid gap-3 sm:grid-cols-3">
+          {(
+            [
+              {
+                key: "domain",
+                label: "Service domain",
+                options: [
+                  "academic",
+                  "administrative",
+                  "finance",
+                  "facilities",
+                  "student_services",
+                  "ict",
+                  "health",
+                  "other",
+                ],
+              },
+              {
+                key: "priority",
+                label: "Priority",
+                options: ["low", "medium", "high", "critical"],
+              },
+              { key: "slaState", label: "SLA state", options: ["overdue", "due_soon", "on_track"] },
+            ] as const
+          ).map((field) => (
+            <label key={field.key} className="text-sm">
+              {field.label}
+              <select
+                className={selectClass}
+                value={form[field.key]}
+                onChange={(e) => setForm((p) => ({ ...p, [field.key]: e.target.value }))}
+              >
+                <option value="">All</option>
+                {field.options.map((option) => (
+                  <option key={option} value={option}>
+                    {option.replaceAll("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
             <Sparkles className="h-[18px] w-[18px]" />
@@ -326,7 +384,11 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
         ) : loadError ? (
           <div className="mt-4 rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
             <p>{loadError}</p>
-            <button type="button" onClick={refreshReports} className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]">
+            <button
+              type="button"
+              onClick={refreshReports}
+              className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)]"
+            >
               <RefreshCw className="h-3.5 w-3.5" /> Retry
             </button>
           </div>

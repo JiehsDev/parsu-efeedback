@@ -1,6 +1,8 @@
 // src/components/admin/CategoryStatusToggle.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -33,7 +35,7 @@ export function CategoryStatusToggle({
     }
 
     setIsSubmitting(true);
-    const res = await fetch(`/api/admin/categories/${categoryId}`, {
+    const res = await clientFetch(`/api/admin/categories/${categoryId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !isActive }),

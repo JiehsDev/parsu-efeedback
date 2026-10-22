@@ -1,6 +1,8 @@
 // src/app/student/complaints/new/page.tsx — full updated file
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -80,7 +82,7 @@ export default function NewComplaintPage() {
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/categories")
+    clientFetch("/api/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []))
       .catch(() => setCategories([]));
@@ -99,7 +101,7 @@ export default function NewComplaintPage() {
 
   async function uploadOneFile(file: File, complaintId: string) {
     // 1. Ask for a presigned R2 upload URL (BR-058/059/060/061)
-    const presignRes = await fetch("/api/uploads/presign", {
+    const presignRes = await clientFetch("/api/uploads/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -116,7 +118,7 @@ export default function NewComplaintPage() {
     }
 
     // 2. Upload the actual bytes directly to R2 using the presigned URL
-    const uploadRes = await fetch(presignData.uploadUrl, {
+    const uploadRes = await clientFetch(presignData.uploadUrl, {
       method: "PUT",
       headers: { "Content-Type": file.type },
       body: file,
@@ -127,7 +129,7 @@ export default function NewComplaintPage() {
     }
 
     // 3. Record the attachment metadata against the complaint
-    const attachRes = await fetch(`/api/complaints/${complaintId}/attachments`, {
+    const attachRes = await clientFetch(`/api/complaints/${complaintId}/attachments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -185,7 +187,7 @@ export default function NewComplaintPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/complaints", {
+      const res = await clientFetch("/api/complaints", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

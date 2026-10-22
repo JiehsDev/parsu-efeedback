@@ -19,6 +19,9 @@ export const exportReportSchema = z.object({
     .object({
       officeRef: z.string().nullable().optional(),
       collegeRef: z.string().nullable().optional(),
+      domain: z.string().nullable().optional(),
+      priority: z.enum(["low", "medium", "high", "critical"]).nullable().optional(),
+      slaState: z.enum(["overdue", "due_soon", "on_track"]).nullable().optional(),
       categoryRef: z.string().nullable().optional(),
       dateFrom: z.string().nullable().optional(),
       dateTo: z.string().nullable().optional(),

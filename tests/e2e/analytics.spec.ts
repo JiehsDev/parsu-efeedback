@@ -23,13 +23,13 @@ adminTest("administrator sees the focused dashboard metrics", async ({ page }) =
   await expect(page.getByText("Open Complaints").last()).toBeVisible();
   await expect(page.getByText("Overdue", { exact: true }).last()).toBeVisible();
   await expect(page.getByText("Unassigned", { exact: true }).last()).toBeVisible();
-  await expect(page.getByText("SLA compliance", { exact: true }).last()).toBeVisible();
+  await expect(page.getByText("SLA Compliance", { exact: true }).last()).toBeVisible();
   await expect(page.getByRole("region", { name: "Resolution metrics" })).toHaveCount(0);
 });
 
 staffTest("office staff sees office-scoped response metrics on the dashboard", async ({ page }) => {
   await page.goto("/staff/dashboard");
-  await expect(page.getByText("Avg. first response")).toBeVisible();
-  await expect(page.getByText("Avg. resolution")).toBeVisible();
-  await expect(page.getByText("SLA compliance")).toBeVisible();
+  await expect(page.getByText("First response")).toBeVisible();
+  await expect(page.getByText("Resolution time")).toBeVisible();
+  await expect(page.getByText("SLA Compliance")).toBeVisible();
 });

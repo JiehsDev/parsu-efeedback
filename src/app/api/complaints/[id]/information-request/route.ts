@@ -1,3 +1,4 @@
+import { canProcessComplaint as canRequestInformation } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
@@ -6,25 +7,7 @@ import { InformationRequest } from "@/models/InformationRequest";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { informationRequestSchema } from "@/features/complaints/schemas/complaint.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import { isComplaintInAdminScope, getAdminScope } from "@/lib/admin-scope";
 import { notifyInformationRequested } from "@/features/notifications/services/notification.service";
-import { isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
-
-async function canRequestInformation(session: any, complaint: any) {
-  const { role, id, officeRef } = session.user;
-  if (role === "administrator") return true;
-  if (role === "office_staff") {
-    return (
-      String(complaint.assignedOfficeRef) === officeRef &&
-      String(complaint.assignedStaffRef ?? "") === id
-    );
-  }
-  if (role === "osas") return isComplaintInOsasActionScope(complaint);
-  if (role === "vpaa" || role === "vpaf") {
-    return isComplaintInAdminScope(getAdminScope(role), complaint);
-  }
-  return false;
-}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -33,12 +16,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
-  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
+  if (complaint.isArchived)
+    return NextResponse.json(
+      { error: "Archived complaints are read-only until restored." },
+      { status: 403 },
+    );
   if (!(await canRequestInformation(session, complaint)))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (complaint.status === "resolved" || complaint.status === "closed") {
     return NextResponse.json(
-      { error: "Resolved and closed complaints are read-only. Reopen the complaint before requesting information." },
+      {
+        error:
+          "Resolved and closed complaints are read-only. Reopen the complaint before requesting information.",
+      },
       { status: 400 },
     );
   }

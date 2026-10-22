@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/env", () => ({ env: { CRON_SECRET: "test-secret" } }));
 vi.mock("@/lib/db", () => ({ connectToDatabase: vi.fn() }));
+vi.mock("@/lib/osas-operations", () => ({ getOperationalOffice: async () => ({ _id: "osas" }) }));
 vi.mock("@/models/Complaint", () => ({
   Complaint: { find: mocks.find, findOneAndUpdate: mocks.update },
 }));

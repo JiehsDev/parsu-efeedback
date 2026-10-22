@@ -1,394 +1,119 @@
-// src/app/api/complaints/[id]/assign/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { User } from "@/models/User";
-import { Office } from "@/models/Office";
-import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Assignment } from "@/models/Assignment";
+import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { assignComplaintSchema } from "@/features/complaints/schemas/assign.schema";
-import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
+import { getOperationalOffice, isOsasHead, refId, isOversightRole } from "@/lib/osas-operations";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import {
-  notifyComplaintAssigned,
-  notifyComplaintRoutedToOffice,
-  notifyStatusUpdated,
-} from "@/features/notifications/services/notification.service";
-import {
-  getOsasAllowedDestinationOffices,
-  getOsasEscalationOffice,
-  isComplaintInOsasActionScope,
-} from "@/lib/osas-complaint-scope";
-
-const OFFICE_HEAD_ROLES = new Set(["office_staff", "vpaa", "vpaf", "osas"]);
-
-function isAllowedAssignmentRole(role: unknown, escalation: boolean) {
-  return role === "office_staff" || (escalation && typeof role === "string" && OFFICE_HEAD_ROLES.has(role));
-}
+import { notifyComplaintAssigned } from "@/features/notifications/services/notification.service";
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { role, id: userId, officeRef: sessionOfficeRef } = session.user;
-
-  // Explicit allow-list (not a deny-list) so a new role added to
-  // USER_ROLES without an assign-scope branch here fails closed rather
-  // than falling through to the unguarded "apply changes" section below —
-  // osas in particular has no complaint-assignment authority at all.
-  if (!["office_staff", "vpaa", "vpaf", "osas", "administrator"].includes(role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (
+    isOversightRole(session.user.role) ||
+    !["osas", "office_staff", "administrator"].includes(session.user.role)
+  )
+    return NextResponse.json(
+      { error: "Oversight users cannot assign complaints." },
+      { status: 403 },
+    );
   await connectToDatabase();
+  if (session.user.role !== "administrator" && !(await isOsasHead(session)))
+    return NextResponse.json(
+      { error: "Only the OSAS Head may assign complaints or Handle Personally." },
+      { status: 403 },
+    );
+  const parsed = assignComplaintSchema.safeParse(await req.json().catch(() => ({})));
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message, fieldErrors: parsed.error.flatten().fieldErrors },
+      { status: 400 },
+    );
+  if (parsed.data.action === "escalate")
+    return NextResponse.json({ error: "Use internal OSAS supervisor review." }, { status: 400 });
+  const office = await getOperationalOffice();
   const { id } = await params;
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    body = {};
-  }
-  const parsed = assignComplaintSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({
-      error: parsed.error.issues[0]?.message ?? "Invalid assignment.",
-      fieldErrors: parsed.error.flatten().fieldErrors,
-    }, { status: 400 });
-  }
-
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (["vpaa", "vpaf", "osas"].includes(role) &&
-    !(await isComplaintInAdminScope(getAdminScope(role), complaint))) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
-
-  // BR-101: a withdrawn complaint is inert — the student pulled it before
-  // anyone acted on it, so it must never become assignable/pickable again.
-  if (complaint.status === "withdrawn") {
+  if (!office || refId(complaint.assignedOfficeRef) !== refId(office._id))
+    return NextResponse.json({ error: "Only OSAS complaints can be assigned." }, { status: 403 });
+  if (complaint.isArchived || ["resolved", "closed", "withdrawn"].includes(complaint.status))
+    return NextResponse.json({ error: "This complaint is read-only." }, { status: 403 });
+  if (parsed.data.assignedOfficeRef && parsed.data.assignedOfficeRef !== refId(office._id))
     return NextResponse.json(
-      { error: "This complaint was withdrawn by the student and cannot be assigned." },
+      { error: "Office transfers are disabled. OSAS is the only handling office." },
       { status: 400 },
     );
-  }
-  if (complaint.status === "resolved" || complaint.status === "closed") {
-    return NextResponse.json(
-      { error: "Resolved and closed complaints are read-only. Reopen the complaint before reassigning it." },
-      { status: 400 },
-    );
-  }
-
-  const { assignedOfficeRef, assignedStaffRef, action } = parsed.data;
-  const isEscalationAction = action === "escalate";
-
-  // Office reassignment now goes exclusively through the dedicated
-  // Office-Head-only, lateral-eligibility-checked endpoint
-  // (POST /api/complaints/[id]/reassign-office) — this route no longer
-  // changes assignedOfficeRef for anyone (role-based reassignment here had
-  // no Office.headUserRef check at all, which the final rule requires).
-  // Escalation (action:"escalate") is untouched — a separate mechanism
-  // with its own server-computed target.
+  const staff = await User.findById(parsed.data.assignedStaffRef).lean();
+  const isHeadTarget = Boolean(staff && refId(staff._id) === refId(office.headUserRef));
   if (
-    !isEscalationAction &&
-    assignedOfficeRef !== undefined &&
-    assignedOfficeRef !== String(complaint.assignedOfficeRef ?? "")
-  ) {
+    !staff ||
+    !staff.isActive ||
+    refId(staff.officeRef) !== refId(office._id) ||
+    !(staff.role === "office_staff" || (staff.role === "osas" && isHeadTarget))
+  )
     return NextResponse.json(
-      {
-        error:
-          "Office reassignment now goes through the dedicated Reassign Office action, available to the office head.",
-      },
+      { error: "Select an active OSAS staff member or the OSAS Head." },
       { status: 400 },
     );
-  }
-
-  // --- Scope checks per role ---
-
-  if (role === "office_staff") {
-    // Limited: can only act on complaints already in their own office,
-    // and cannot move a complaint OUT of their office (that's a
-    // VPAA/VPAF/admin escalation decision, not a staff one).
-    if (String(complaint.assignedOfficeRef) !== sessionOfficeRef) {
-      return NextResponse.json(
-        { error: "You can only manage complaints assigned to your office" },
-        { status: 403 },
-      );
-    }
-    if (assignedOfficeRef && assignedOfficeRef !== sessionOfficeRef) {
-      return NextResponse.json(
-        { error: "Staff cannot reassign complaints to a different office" },
-        { status: 403 },
-      );
-    }
-    if (action !== "escalate") {
-      const office = await Office.findById(complaint.assignedOfficeRef).select("headUserRef").lean();
-      const isHead = String((office as any)?.headUserRef ?? "") === userId;
-      if (!isHead && action !== undefined) {
-        return NextResponse.json({ error: "Ordinary staff may only use the pickup action." }, { status: 403 });
-      }
-      if (!isHead && String(assignedStaffRef ?? "") !== userId) {
-        return NextResponse.json({ error: "Only the office head can assign a complaint to another staff member. You can pick up complaints for yourself." }, { status: 403 });
-      }
-    }
-    // Any staff target must belong to the same office
-    if (assignedStaffRef) {
-      const targetStaff = await User.findById(assignedStaffRef).lean();
-      if (
-        !targetStaff ||
-        !isAllowedAssignmentRole((targetStaff as any)?.role, isEscalationAction) ||
-        String((targetStaff as any).officeRef) !== sessionOfficeRef
-      ) {
-        return NextResponse.json(
-          { error: "Target staff must belong to your office" },
-          { status: 400 },
-        );
-      }
-    }
-  }
-
-  if (role === "vpaa" || role === "vpaf") {
-    // Broad, like admin, but confined to one office category: vpaa may only
-    // touch complaints currently sitting in a college_office, vpaf only in
-    // a university_office. College/dean handling is represented through
-    // college offices and their head users, not a separate software role.
-    const requiredType = role === "vpaa" ? "college_office" : "university_office";
-
-    const currentOffice = await Office.findById(complaint.assignedOfficeRef).lean();
-    if (!currentOffice || (currentOffice as any).type !== requiredType) {
-      return NextResponse.json(
-        { error: "You can only manage complaints within your office category" },
-        { status: 403 },
-      );
-    }
-    // May reassign — validate target office exists, is active, and stays
-    // within the same office category.
-    if (assignedOfficeRef) {
-      const targetOffice = await Office.findById(assignedOfficeRef).lean();
-      if (
-        !targetOffice ||
-        !(targetOffice as any).isActive ||
-        (targetOffice as any).type !== requiredType
-      ) {
-        return NextResponse.json(
-          { error: "Target office is invalid, inactive, or outside your office category" },
-          { status: 400 },
-        );
-      }
-    }
-    // May assign staff — validate target staff belongs to the (new or
-    // existing) target office.
-    if (assignedStaffRef) {
-      const effectiveOfficeRef = assignedOfficeRef ?? String(complaint.assignedOfficeRef);
-      const targetStaff = await User.findById(assignedStaffRef).lean();
-      if (
-        !targetStaff ||
-        !isAllowedAssignmentRole((targetStaff as any)?.role, isEscalationAction) ||
-        String((targetStaff as any).officeRef) !== effectiveOfficeRef
-      ) {
-        return NextResponse.json(
-          { error: "Target staff must belong to the target office" },
-          { status: 400 },
-        );
-      }
-    }
-  }
-
-  if (role === "osas") {
-    if (!(await isComplaintInOsasActionScope(complaint))) {
-      return NextResponse.json(
-        { error: "OSAS can only reassign complaints within student-affairs scope" },
-        { status: 403 },
-      );
-    }
-
-    const allowedDestinations = await getOsasAllowedDestinationOffices(complaint);
-    const allowedDestinationIds = new Set(
-      allowedDestinations.map((office: any) => String(office._id)),
+  const changing = Boolean(
+    complaint.assignedStaffRef && refId(complaint.assignedStaffRef) !== refId(staff._id),
+  );
+  if (changing && !parsed.data.message?.trim())
+    return NextResponse.json(
+      { error: "A reason is required to change assignee." },
+      { status: 400 },
     );
-    const effectiveOfficeRef = assignedOfficeRef ?? String(complaint.assignedOfficeRef ?? "");
-    if (!effectiveOfficeRef || !allowedDestinationIds.has(effectiveOfficeRef)) {
-      return NextResponse.json(
-        { error: "Destination office is outside OSAS reassignment scope" },
-        { status: 400 },
-      );
-    }
-
-    const targetOffice = await Office.findById(effectiveOfficeRef).lean();
-    if (!targetOffice || !(targetOffice as any).isActive) {
-      return NextResponse.json({ error: "Target office is invalid or inactive" }, { status: 400 });
-    }
-
-    if (isEscalationAction) {
-      const escalationOffice = await getOsasEscalationOffice(complaint);
-      if (!escalationOffice || String((escalationOffice as any)._id) !== effectiveOfficeRef) {
-        return NextResponse.json(
-          { error: "OSAS escalation must use the configured VPAA/escalation destination" },
-          { status: 400 },
-        );
-      }
-    }
-
-    if (assignedStaffRef) {
-      const targetStaff = await User.findById(assignedStaffRef).lean();
-      if (
-        !targetStaff ||
-        !isAllowedAssignmentRole((targetStaff as any)?.role, isEscalationAction) ||
-        String((targetStaff as any).officeRef) !== effectiveOfficeRef
-      ) {
-        return NextResponse.json(
-          { error: "Target staff must belong to the target office" },
-          { status: 400 },
-        );
-      }
-    }
-  }
-
-  if (role === "administrator") {
-    // Full access — still validate referenced documents exist
-    if (assignedOfficeRef) {
-      const targetOffice = await Office.findById(assignedOfficeRef).lean();
-      if (!targetOffice || !(targetOffice as any).isActive) {
-        return NextResponse.json(
-          { error: "Target office is invalid or inactive" },
-          { status: 400 },
-        );
-      }
-    }
-    if (assignedStaffRef) {
-      const targetStaff = await User.findById(assignedStaffRef).lean();
-      if (!targetStaff || !isAllowedAssignmentRole((targetStaff as any).role, isEscalationAction)) {
-        return NextResponse.json({ error: "Target staff is invalid" }, { status: 400 });
-      }
-    }
-  }
-
-  // --- Apply changes ---
-
-  if (!isEscalationAction) {
-    const target = await User.findById(assignedStaffRef).lean();
-    const officeId = assignedOfficeRef ?? String(complaint.assignedOfficeRef ?? "");
-    if (!target || !target.isActive || target.role !== "office_staff" || String(target.officeRef ?? "") !== officeId) {
-      return NextResponse.json({ error: "Select an active staff member from the complaint's office." }, { status: 400 });
-    }
-  }
-
   const before = {
-    assignedOfficeRef: complaint.assignedOfficeRef,
-    assignedStaffRef: complaint.assignedStaffRef,
     status: complaint.status,
+    assignedStaffRef: complaint.assignedStaffRef,
+    assignedOfficeRef: complaint.assignedOfficeRef,
   };
-
-  const officeChanged =
-    assignedOfficeRef !== undefined &&
-    assignedOfficeRef !== String(complaint.assignedOfficeRef ?? "");
-
-  if (assignedOfficeRef !== undefined) {
-    complaint.assignedOfficeRef = assignedOfficeRef as any;
-  }
-  if (assignedStaffRef !== undefined) {
-    complaint.assignedStaffRef = assignedStaffRef as any;
-  }
-
-  if (isEscalationAction) {
-    complaint.status = "escalated";
-  }
-
-  // Self-pickup starts processing; explicit delegation assigns the chosen
-  // staff member without claiming they have already started work.
-  const wasPickedUp =
-    !isEscalationAction &&
-    action === undefined &&
-    role === "office_staff" &&
-    String(complaint.assignedStaffRef) === userId &&
-    Boolean(complaint.assignedStaffRef) &&
-    (complaint.status === "submitted" || complaint.status === "assigned");
-  if (wasPickedUp) {
-    complaint.status = "in_progress";
-  } else if (!isEscalationAction) {
-    complaint.status = "assigned";
-  }
-
+  complaint.assignedStaffRef = staff._id;
+  complaint.supervisorReviewRequired = false;
+  if (complaint.status !== "pending_information") complaint.status = "in_progress";
   await complaint.save();
-
-  await ComplaintTimeline.create({
-    complaintRef: complaint._id,
-    eventType: isEscalationAction ? "escalated" : officeChanged ? "reassigned" : "assigned",
-    actorRef: userId,
-    fromValue: before.status,
-    toValue: complaint.status,
-    message: wasPickedUp
-      ? "Complaint picked up. Processing started."
-      : parsed.data.message ?? "",
-  });
-
-  // BR-047/BR-051: every assign/reassign gets its own immutable record
-  // rather than mutating a prior one — this is a human action, so unlike
-  // the system-routed initial record, assignedByRef is always set.
   await Assignment.create({
     complaintRef: complaint._id,
-    assignedByRef: userId,
-    assignedToRef: complaint.assignedStaffRef ?? null,
-    sourceOfficeRef: before.assignedOfficeRef ?? null,
-    destinationOfficeRef: String(complaint.assignedOfficeRef),
-    reason: parsed.data.message?.trim() ?? "",
-    actionType: isEscalationAction
-      ? "manual_escalation"
-      : action === "reassign"
-        ? "reassign"
-        : "assign",
+    assignedByRef: session.user.id,
+    assignedToRef: staff._id,
+    sourceOfficeRef: office._id,
+    destinationOfficeRef: office._id,
+    actionType: changing ? "reassign" : "assign",
+    reason: parsed.data.message ?? "",
   });
-
+  await ComplaintTimeline.create({
+    complaintRef: complaint._id,
+    actorRef: session.user.id,
+    eventType: changing ? "reassigned" : "assigned",
+    fromValue: before.status,
+    toValue: complaint.status,
+    message:
+      parsed.data.message ||
+      (refId(staff._id) === session.user.id
+        ? "OSAS Head is handling this complaint personally."
+        : "Assigned to OSAS staff. Processing started."),
+  });
   await writeAuditLog({
-    actorId: userId,
-    action:
-      role === "osas" && isEscalationAction
-        ? "OSAS_COMPLAINT_ESCALATED"
-      : role === "osas"
-          ? "OSAS_COMPLAINT_REASSIGNED"
-      : wasPickedUp
-        ? "COMPLAINT_PICKED_UP"
-        : officeChanged
-            ? "complaint.reassign"
-            : "complaint.assign",
+    actorId: session.user.id,
+    action: changing ? "complaint.reassign" : "complaint.assign",
     entityType: "Complaint",
     entityId: complaint._id,
     beforeState: before,
     afterState: {
-      assignedOfficeRef: complaint.assignedOfficeRef,
-      assignedStaffRef: complaint.assignedStaffRef,
       status: complaint.status,
-      reason: parsed.data.message ?? "",
-      escalatedAt: isEscalationAction ? new Date() : undefined,
+      assignedStaffRef: staff._id,
+      assignedOfficeRef: office._id,
     },
-    ipAddress: req.headers.get("x-forwarded-for"),
-    userAgent: req.headers.get("user-agent"),
   });
   await notifyComplaintAssigned({
-    studentId: String(complaint.studentRef),
-    staffId: complaint.assignedStaffRef ? String(complaint.assignedStaffRef) : null,
+    studentId: refId(complaint.studentRef),
+    staffId: refId(staff._id),
     ticketNumber: complaint.ticketNumber,
-    complaintId: complaint._id.toString(),
+    complaintId: refId(complaint._id),
   });
-  if ((officeChanged || action === "reassign") && complaint.assignedOfficeRef) {
-    await notifyComplaintRoutedToOffice({
-      officeId: String(complaint.assignedOfficeRef),
-      ticketNumber: complaint.ticketNumber,
-      complaintId: complaint._id.toString(),
-    });
-  }
-  if (isEscalationAction) {
-    await notifyStatusUpdated({
-      studentId: String(complaint.studentRef),
-      ticketNumber: complaint.ticketNumber,
-      complaintId: complaint._id.toString(),
-      fromStatus: before.status,
-      toStatus: "escalated",
-    });
-  }
-
   return NextResponse.json({ complaint });
 }

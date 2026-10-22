@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Shuffle, UserCheck } from "lucide-react";
@@ -97,7 +99,7 @@ export function AssignmentDialog({
   useEffect(() => {
     if (!isOpen || !selectedOfficeId || action === "escalate") return;
     setLoadingStaff(true);
-    fetch(`/api/offices/${selectedOfficeId}/staff`)
+    clientFetch(`/api/offices/${selectedOfficeId}/staff`)
       .then((res) => (res.ok ? res.json() : { staff: [] }))
       .then((data) => setStaff(data.staff ?? []))
       .catch(() => setStaff([]))
@@ -165,7 +167,7 @@ export function AssignmentDialog({
       payload.assignedOfficeRef = selectedOfficeId;
     payload.assignedStaffRef = selectedStaffId || null;
 
-    const res = await fetch(
+    const res = await clientFetch(
       action === "escalate"
         ? `/api/complaints/${complaintId}/escalate`
         : `/api/complaints/${complaintId}/assign`,

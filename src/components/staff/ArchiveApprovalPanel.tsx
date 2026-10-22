@@ -1,5 +1,7 @@
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,7 +15,7 @@ export function ArchiveApprovalPanel({ request }: { request: any }) {
   async function decide(action: "approve" | "reject") {
     if (action === "reject" && !rejectionReason.trim()) { showToast("Add a rejection note first.", "error"); return; }
     setBusy(true);
-    const response = await fetch(`/api/archive-requests/${request._id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, rejectionReason }) });
+    const response = await clientFetch(`/api/archive-requests/${request._id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, rejectionReason }) });
     const data = await response.json().catch(() => ({}));
     setBusy(false);
     if (!response.ok) { showToast(typeof data.error === "string" ? data.error : "Could not decide archive request.", "error"); return; }

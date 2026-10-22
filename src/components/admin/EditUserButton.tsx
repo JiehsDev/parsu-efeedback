@@ -1,13 +1,21 @@
 // src/components/admin/EditUserButton.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Pencil } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
 import { FormField, inputClass } from "@/components/admin/FormField";
 import { useToast } from "@/components/shared/Toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ALL_ROLES = ["student", "office_staff", "administrator", "vpaa", "vpaf", "osas"];
 
@@ -64,14 +72,16 @@ export function EditUserButton({
     password: "",
   });
 
-  const needsOffice = ["office_staff", "vpaa", "vpaf", "osas"].includes(form.role);
+  const needsOffice = ["office_staff", "osas"].includes(form.role);
   const needsCollege = form.role === "student";
   const roleOptions = roleOptionsForScope(scopeKind);
   const officeOptionsForRole =
     scopeKind === "college_office" || scopeKind === "university_office"
       ? offices.filter((o) => o.type === scopeKind)
       : offices;
-  const scopedOfficeCode = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" }[form.role as "vpaa" | "vpaf" | "osas"];
+  const scopedOfficeCode = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" }[
+    form.role as "vpaa" | "vpaf" | "osas"
+  ];
   const officeOptionsForSelectedRole = scopedOfficeCode
     ? officeOptionsForRole.filter((office) => office.code === scopedOfficeCode)
     : officeOptionsForRole;
@@ -94,7 +104,7 @@ export function EditUserButton({
     };
     if (form.password) payload.password = form.password;
 
-    const res = await fetch(`/api/admin/users/${user._id}`, {
+    const res = await clientFetch(`/api/admin/users/${user._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -163,19 +173,31 @@ export function EditUserButton({
             </FormField>
 
             <FormField label="Role">
-              <Select value={form.role} onValueChange={(value) => setForm((p) => ({
-                ...p,
-                role: value,
-                officeRef: value === "student" || value === "administrator" ? "" : p.officeRef,
-                collegeRef: value === "student" ? p.collegeRef : "",
-              }))}>
+              <Select
+                value={form.role}
+                onValueChange={(value) =>
+                  setForm((p) => ({
+                    ...p,
+                    role: value,
+                    officeRef: value === "student" || value === "administrator" ? "" : p.officeRef,
+                    collegeRef: value === "student" ? p.collegeRef : "",
+                  }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {roleOptions.map((r) => (
                     <SelectItem key={r} value={r}>
-                      {{ office_staff: "Office Staff", administrator: "Administrator", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS", student: "Student" }[r] ?? r}
+                      {{
+                        office_staff: "Office Staff",
+                        administrator: "Administrator",
+                        vpaa: "VPAA",
+                        vpaf: "VPAF",
+                        osas: "OSAS",
+                        student: "Student",
+                      }[r] ?? r}
                     </SelectItem>
                   ))}
                 </SelectContent>

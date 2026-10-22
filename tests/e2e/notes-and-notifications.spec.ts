@@ -1,3 +1,4 @@
+import { assignByOsasHead } from "./helpers";
 // tests/e2e/notes-and-notifications.spec.ts — BR-063, BR-064, BR-071, BR-073
 import { adminTest, expect } from "./fixtures";
 import { submitComplaint } from "./helpers";
@@ -19,12 +20,11 @@ adminTest.describe("Notes visibility and notifications", () => {
 
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
+      await assignByOsasHead(staffPage, id);
       await staffPage.goto(`/staff/complaints/${id}`);
 
       const secretNote = `e2e-secret-note-${Date.now()}`;
-      await staffPage
-        .getByPlaceholder("Add an internal note…")
-        .fill(secretNote);
+      await staffPage.getByPlaceholder("Add an internal note…").fill(secretNote);
       await staffPage.getByRole("button", { name: "Add Note" }).click();
       await expect(staffPage.getByText(secretNote)).toBeVisible();
       await staffContext.close();
@@ -60,8 +60,8 @@ adminTest.describe("Notes visibility and notifications", () => {
 
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
+      await assignByOsasHead(staffPage, id);
       await staffPage.goto(`/staff/complaints/${id}`);
-      await staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click();
       await expect(staffPage.getByRole("combobox")).toBeVisible({ timeout: 30_000 });
       await staffPage.getByRole("combobox").click();
       await staffPage.getByRole("option", { name: "Resolved", exact: true }).click();

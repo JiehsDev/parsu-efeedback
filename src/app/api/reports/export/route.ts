@@ -1,3 +1,4 @@
+import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/reports/export/route.ts — POST handler, fixed
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -12,7 +13,7 @@ import {
 } from "@/features/reports/services/report-file.service";
 import { uploadReportFile } from "@/features/reports/services/report-upload.service";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import { complaintFilterForScope, getAdminScope, officeIdsForScope } from "@/lib/admin-scope";
+import { complaintFilterForScope, getAdminScope } from "@/lib/admin-scope";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -40,17 +41,6 @@ export async function POST(req: NextRequest) {
   if (role === "office_staff") {
     scopedFilters.officeRef = officeRef;
     scopedFilters.collegeRef = null;
-  } else {
-    const scope = getAdminScope(role);
-    if (scope.kind === "college_office" || scope.kind === "university_office") {
-      const officeIds = (await officeIdsForScope(scope)) ?? [];
-      // Keep the client's chosen office only if it's actually within this
-      // role's office category; otherwise fall back to the whole category.
-      scopedFilters.officeRef = filters.officeRef && officeIds.includes(filters.officeRef)
-        ? filters.officeRef
-        : null;
-      scopedFilters.officeRefIn = officeIds;
-    }
   }
 
   // Everything — including report creation — now wrapped, so any failure
@@ -65,9 +55,10 @@ export async function POST(req: NextRequest) {
       status: "generating",
     });
 
-    const accessFilter = role === "office_staff"
-      ? {} // The office constraint is forced above.
-      : await complaintFilterForScope(getAdminScope(role));
+    const accessFilter =
+      role === "office_staff"
+        ? await staffComplaintFilter(session)
+        : await complaintFilterForScope(getAdminScope(role));
     const rows = await queryReportData(scopedFilters, accessFilter);
 
     let buffer: Buffer;

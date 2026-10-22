@@ -4,11 +4,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { connectTestDb, disconnectTestDb, clearTestDb } from "@/test/setup-db";
 import { Complaint } from "@/models/Complaint";
-import {
-  createTestUser,
-  createTestOffice,
-  createTestCategory,
-} from "@/test/fixtures";
+import { Category } from "@/models/Category";
+import { createTestUser, createTestOffice, createTestCategory } from "@/test/fixtures";
 import { queryReportData } from "./report-data.service";
 
 beforeAll(connectTestDb);
@@ -62,6 +59,18 @@ async function seedTwoOfficesTwoStatuses() {
 }
 
 describe("queryReportData — BR-080/081", () => {
+  it("filters explicit category domains, priority and SLA state", async () => {
+    const { submitted } = await seedTwoOfficesTwoStatuses();
+    await Category.updateOne({ _id: submitted.categoryRef }, { $set: { domain: "ict" } });
+    submitted.slaResponseDueAt = new Date(Date.now() + 3600000);
+    await submitted.save();
+    expect(await queryReportData({ domain: "health" })).toHaveLength(0);
+    const rows = await queryReportData({ domain: "ict", priority: "medium", slaState: "due_soon" });
+    expect(rows.map((row) => row.ticketNumber)).toEqual([submitted.ticketNumber]);
+    expect(rows[0]!.domain).toBe("ict");
+    expect(await queryReportData({ domain: "ict", priority: "critical" })).toHaveLength(0);
+  });
+
   it("includes resolution details, legacy fallback and previous-resolution labels", async () => {
     const { resolvedOnTime, submitted } = await seedTwoOfficesTwoStatuses();
     resolvedOnTime.resolutionSummary = "Replaced projector lamp.\nVerified operation.";
@@ -70,9 +79,15 @@ describe("queryReportData — BR-080/081", () => {
     submitted.resolutionSummary = "Previous repair.";
     await submitted.save();
     const rows = await queryReportData({});
-    expect(rows.find((row) => row.ticketNumber === "TEST-B-1")?.resolutionSummary).toBe(resolvedOnTime.resolutionSummary);
-    expect(rows.find((row) => row.ticketNumber === "TEST-B-2")?.resolutionSummary).toBe("No resolution details recorded.");
-    expect(rows.find((row) => row.ticketNumber === "TEST-A-1")?.resolutionSummary).toBe("Previous resolution: Previous repair.");
+    expect(rows.find((row) => row.ticketNumber === "TEST-B-1")?.resolutionSummary).toBe(
+      resolvedOnTime.resolutionSummary,
+    );
+    expect(rows.find((row) => row.ticketNumber === "TEST-B-2")?.resolutionSummary).toBe(
+      "No resolution details recorded.",
+    );
+    expect(rows.find((row) => row.ticketNumber === "TEST-A-1")?.resolutionSummary).toBe(
+      "Previous resolution: Previous repair.",
+    );
   });
 
   it("BR-080: with no filters, returns rows for every non-archived complaint", async () => {

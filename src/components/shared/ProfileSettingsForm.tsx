@@ -1,6 +1,8 @@
 // src/components/shared/ProfileSettingsForm.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -47,7 +49,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/me")
+    clientFetch("/api/me")
       .then((res) => res.json())
       .then((data) => {
         setProfile(data.user);
@@ -68,7 +70,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
       payload.newPassword = newPassword;
     }
 
-    const res = await fetch("/api/me", {
+    const res = await clientFetch("/api/me", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

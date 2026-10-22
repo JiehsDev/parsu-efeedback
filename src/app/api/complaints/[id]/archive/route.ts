@@ -1,3 +1,4 @@
+import { canSuperviseComplaint } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
@@ -15,20 +16,48 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
-  if (isScopedAdminRole(session.user.role) &&
-    !(await isComplaintInAdminScope(getAdminScope(session.user.role), complaint))) {
+  if (session.user.role !== "administrator" && !(await canSuperviseComplaint(session, complaint)))
+    return NextResponse.json(
+      { error: "Only the OSAS Head may supervise archives." },
+      { status: 403 },
+    );
+  if (
+    isScopedAdminRole(session.user.role) &&
+    !(await isComplaintInAdminScope(getAdminScope(session.user.role), complaint))
+  ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const isAdmin = session.user.role === "administrator";
   const head = await isOfficeHead(session.user.id, complaint.assignedOfficeRef);
-  if (!isAdmin && !head) return NextResponse.json({ error: "Only the responsible office head or administrator can archive complaints directly." }, { status: 403 });
+  if (!isAdmin && !head)
+    return NextResponse.json(
+      {
+        error: "Only the responsible office head or administrator can archive complaints directly.",
+      },
+      { status: 403 },
+    );
   if (!parsed.data.isArchived) {
-    if (!isAdmin && !head) return NextResponse.json({ error: "Only the responsible office head or administrator can restore complaints." }, { status: 403 });
-    const result = await restoreComplaint({ complaintId: id, actorId: session.user.id, reason: parsed.data.reason });
-    if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
+    if (!isAdmin && !head)
+      return NextResponse.json(
+        { error: "Only the responsible office head or administrator can restore complaints." },
+        { status: 403 },
+      );
+    const result = await restoreComplaint({
+      complaintId: id,
+      actorId: session.user.id,
+      reason: parsed.data.reason,
+    });
+    if ("error" in result)
+      return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ complaint: result.complaint });
   }
-  const result = await archiveComplaint({ complaintId: id, actorId: session.user.id, reason: parsed.data.reason, source: isAdmin ? "administrator_direct" : "office_head_direct" });
-  if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
+  const result = await archiveComplaint({
+    complaintId: id,
+    actorId: session.user.id,
+    reason: parsed.data.reason,
+    source: isAdmin ? "administrator_direct" : "office_head_direct",
+  });
+  if ("error" in result)
+    return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ complaint: result.complaint });
 }

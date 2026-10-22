@@ -1,3 +1,4 @@
+import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/reports/[id]/download/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -8,7 +9,11 @@ import { env } from "@/lib/env";
 import { GeneratedReport } from "@/models/GeneratedReport";
 import { complaintFilterForScope, getAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
 import { queryReportData } from "@/features/reports/services/report-data.service";
-import { generateCsv, generateExcel, generatePdf } from "@/features/reports/services/report-file.service";
+import {
+  generateCsv,
+  generateExcel,
+  generatePdf,
+} from "@/features/reports/services/report-file.service";
 
 const CONTENT_TYPES: Record<string, string> = {
   csv: "text/csv",
@@ -42,15 +47,20 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   // Rebuild scoped downloads using current permissions. Older stored files
   // may have been generated before OSAS complaints were made private.
-  if (isScopedAdminRole(session.user.role)) {
+  if (isScopedAdminRole(session.user.role) || session.user.role === "office_staff") {
     const rows = await queryReportData(
       (report as any).filters ?? {},
-      await complaintFilterForScope(getAdminScope(session.user.role)),
+      session.user.role === "office_staff"
+        ? await staffComplaintFilter(session)
+        : await complaintFilterForScope(getAdminScope(session.user.role)),
     );
     const format = report.format;
-    const buffer = format === "csv" ? generateCsv(rows)
-      : format === "excel" ? await generateExcel(rows)
-      : await generatePdf(rows, report.reportType);
+    const buffer =
+      format === "csv"
+        ? generateCsv(rows)
+        : format === "excel"
+          ? await generateExcel(rows)
+          : await generatePdf(rows, report.reportType);
     return new NextResponse(Buffer.from(buffer), {
       headers: {
         "Content-Type": CONTENT_TYPES[format] ?? "application/octet-stream",

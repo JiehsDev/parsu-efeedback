@@ -1,85 +1,32 @@
-import { Office } from "@/models/Office";
+// Supervisory escalation stays within OSAS; legacy office hierarchy is ignored.
 import { User } from "@/models/User";
-import { SLARule } from "@/models/SLARule";
-import { getOsasEscalationOffice, isComplaintInOsasActionScope } from "@/lib/osas-complaint-scope";
+import { getOperationalOffice, refId } from "@/lib/osas-operations";
 import type { UserRole } from "@/lib/constants";
 export { isOfficeHead } from "@/lib/office-head";
-
 export type ManualEscalationTarget = {
   office: any;
   staff: any;
   currentOffice: any;
   currentStaffIsHead: boolean;
 };
-
-/** Resolve one configured next authority. The caller still enforces role scope. */
 export async function resolveManualEscalationTarget(
   complaint: any,
   actorRole?: UserRole,
 ): Promise<ManualEscalationTarget | null> {
-  if (!complaint.assignedOfficeRef) return null;
-
-  const currentOffice = await Office.findById(complaint.assignedOfficeRef).lean();
-  if (!currentOffice || !(currentOffice as any).isActive) return null;
-
-  const currentHeadId = (currentOffice as any).headUserRef
-    ? String((currentOffice as any).headUserRef)
-    : null;
-  const currentStaffIsHead = Boolean(
-    currentHeadId && String(complaint.assignedStaffRef ?? "") === currentHeadId,
-  );
-
-  let targetOffice: any =
-    actorRole === "osas" && (await isComplaintInOsasActionScope(complaint))
-      ? await getOsasEscalationOffice(complaint)
-      : null;
-  if (!currentStaffIsHead && currentHeadId) targetOffice = currentOffice;
-
-  if (!targetOffice) {
-    targetOffice = (currentOffice as any).parentOffice
-      ? await Office.findOne({ _id: (currentOffice as any).parentOffice, isActive: true }).lean()
-      : null;
-  }
-
-  if (!targetOffice && complaint.categoryRef) {
-    const rule = await SLARule.findOne({ categoryRef: complaint.categoryRef, isActive: true })
-      .select("escalateToOfficeRef")
-      .lean();
-    if ((rule as any)?.escalateToOfficeRef) {
-      targetOffice = await Office.findOne({
-        _id: (rule as any).escalateToOfficeRef,
-        isActive: true,
-      }).lean();
-    }
-  }
-
-  if (!targetOffice && (await isComplaintInOsasActionScope(complaint))) {
-    targetOffice = await getOsasEscalationOffice(complaint);
-  }
-
-  if (!targetOffice) {
-    const fallbackCode = (currentOffice as any).type === "college_office" ? "OVPAA" : "OVPAF";
-    targetOffice = await Office.findOne({ code: fallbackCode, isActive: true }).lean();
-  }
-
+  if (actorRole && ["vpaa", "vpaf"].includes(actorRole)) return null;
+  const office = await getOperationalOffice();
   if (
-    !targetOffice ||
-    (currentStaffIsHead && String((targetOffice as any)._id) === String((currentOffice as any)._id))
-  ) {
+    !office ||
+    refId(complaint.assignedOfficeRef) !== refId(office._id) ||
+    !office.headUserRef ||
+    refId(complaint.assignedStaffRef) === refId(office.headUserRef)
+  )
     return null;
-  }
-
-  const headId = (targetOffice as any).headUserRef;
-  if (!headId) return null;
   const staff = await User.findOne({
-    _id: headId,
+    _id: office.headUserRef,
+    officeRef: office._id,
     isActive: true,
-    officeRef: (targetOffice as any)._id,
-    role: { $in: ["office_staff", "vpaa", "vpaf", "osas"] },
-  })
-    .select("_id firstName lastName email role officeRef")
-    .lean();
-  if (!staff) return null;
-
-  return { office: targetOffice, staff, currentOffice, currentStaffIsHead };
+    role: { $in: ["osas", "office_staff"] },
+  }).lean();
+  return staff ? { office, staff, currentOffice: office, currentStaffIsHead: false } : null;
 }

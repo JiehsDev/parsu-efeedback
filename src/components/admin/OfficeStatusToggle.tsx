@@ -1,6 +1,8 @@
 // src/components/admin/OfficeStatusToggle.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -33,7 +35,7 @@ export function OfficeStatusToggle({
     }
 
     setIsSubmitting(true);
-    const res = await fetch(`/api/admin/offices/${officeId}`, {
+    const res = await clientFetch(`/api/admin/offices/${officeId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !isActive }),

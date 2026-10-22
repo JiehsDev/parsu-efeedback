@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import { redirect } from "next/navigation";
-import Image from "next/image";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { auth } from "@/lib/auth";
 import { homeRouteForRole } from "@/middleware/rbac";
 
@@ -13,7 +14,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-full flex-1 flex-col lg:flex-row">
-      {/* Brand panel — hidden on small screens so mobile goes straight to the form */}
+      {/* Brand panel â€” hidden on small screens so mobile goes straight to the form */}
       <div
         className="relative hidden overflow-hidden bg-gradient-to-br from-[#04121f] via-[#0a1f3d] to-[#0a50d8] lg:flex lg:w-[44%] lg:flex-col lg:justify-between lg:p-12 xl:p-16"
         style={{
@@ -32,15 +33,7 @@ export default async function PublicLayout({ children }: { children: React.React
         />
 
         <Link href="/" className="relative flex items-center gap-2.5 text-white">
-          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
-            <Image
-              src="/new_logo.jpg"
-              alt=""
-              width={32}
-              height={32}
-              className="h-full w-full object-contain"
-            />
-          </span>
+          <BrandLogo size={36} />
           <span className="text-base font-semibold tracking-tight">ParSU e-Feedback</span>
         </Link>
 
@@ -48,29 +41,24 @@ export default async function PublicLayout({ children }: { children: React.React
           <h2 className="max-w-sm text-3xl leading-tight font-semibold text-white xl:text-4xl">
             Heard. Handled. Resolved.
           </h2>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white">
             One place for Partido State University students to raise concerns, track every update,
             and see them through to resolution.
           </p>
         </div>
 
-        <p className="relative mt-12 text-xs text-white/40">
-          © {new Date().getFullYear()} Partido State University
+        <p className="relative mt-12 text-xs text-white">
+          Â© {new Date().getFullYear()} Partido State University
         </p>
       </div>
 
       {/* Form panel */}
-      <div className="flex flex-1 flex-col">
+      <div className="relative flex flex-1 flex-col">
+        <div className="absolute top-4 right-4 z-40">
+          <ThemeSwitcher />
+        </div>
         <div className="flex items-center gap-2.5 px-4 pt-6 sm:px-6 lg:hidden">
-          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#5b4bdb]">
-            <Image
-            src="/new_logo.jpg"
-              alt=""
-              width={28}
-              height={28}
-              className="h-full w-full object-contain"
-            />
-          </span>
+          <BrandLogo size={32} />
           <span className="text-sm font-semibold tracking-tight text-[var(--foreground)]">
             ParSU e-Feedback
           </span>

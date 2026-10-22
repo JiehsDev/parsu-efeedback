@@ -1,3 +1,4 @@
+import { isOversightRole } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { connectToDatabase } from "@/lib/db";
@@ -14,10 +15,7 @@ import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 // never has to PUT directly to R2. This avoids storage CORS failures on the
 // student complaint detail page while preserving the existing presigned flow
 // for new complaint submissions.
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isR2Configured() || !r2Client) {
     return NextResponse.json(
       { error: "File uploads are not configured yet.", code: "R2_NOT_CONFIGURED" },
@@ -28,9 +26,14 @@ export async function POST(
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "student") {
-    return NextResponse.json({ error: "Only the complaint owner can upload here." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Only the complaint owner can upload here." },
+      { status: 403 },
+    );
   }
 
+  if (isOversightRole(session.user.role))
+    return NextResponse.json({ error: "Oversight access is read-only." }, { status: 403 });
   await connectToDatabase();
   const { id } = await params;
   const complaint = await Complaint.findById(id).lean();
@@ -38,8 +41,16 @@ export async function POST(
   if (String(complaint.studentRef) !== session.user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  if (["closed", "withdrawn"].includes(complaint.status))
+    return NextResponse.json(
+      { error: "Closed and withdrawn complaints are read-only." },
+      { status: 403 },
+    );
   if (complaint.isArchived) {
-    return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Archived complaints are read-only until restored." },
+      { status: 403 },
+    );
   }
 
   const form = await req.formData();

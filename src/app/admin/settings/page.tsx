@@ -1,6 +1,8 @@
 // src/app/admin/settings/page.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { SlaCalendarRecalculation } from "@/components/admin/SlaCalendarRecalculation";
 import { useEffect, useState } from "react";
 import {
@@ -35,7 +37,7 @@ export default function AdminSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    clientFetch("/api/admin/settings")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load settings.");
@@ -69,7 +71,7 @@ export default function AdminSettingsPage() {
         .filter(Boolean),
     };
 
-    const res = await fetch("/api/admin/settings", {
+    const res = await clientFetch("/api/admin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

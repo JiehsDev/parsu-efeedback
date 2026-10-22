@@ -1,4 +1,6 @@
 "use client";
+
+import { clientFetch } from "@/lib/client-fetch";
 import { useState } from "react";
 import { Archive, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -12,7 +14,7 @@ export function ArchiveRequestButton({ complaintId }: { complaintId: string }) {
   async function submit() {
     if (!reasonText.trim()) { showToast("Please provide an archive reason.", "error"); return; }
     setSubmitting(true);
-    const response = await fetch(`/api/complaints/${complaintId}/archive-request`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reasonCode, reasonText: reasonText.trim() }) });
+    const response = await clientFetch(`/api/complaints/${complaintId}/archive-request`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reasonCode, reasonText: reasonText.trim() }) });
     const data = await response.json().catch(() => ({})); setSubmitting(false);
     if (!response.ok) { showToast(typeof data.error === "string" ? data.error : "Could not submit archive request.", "error"); return; }
     showToast("Archive request submitted for Office Head approval."); setOpen(false); router.refresh();

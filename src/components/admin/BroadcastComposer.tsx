@@ -1,6 +1,8 @@
 // src/components/admin/BroadcastComposer.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, Megaphone } from "lucide-react";
 import { FormField, inputClass } from "@/components/admin/FormField";
@@ -39,7 +41,7 @@ export function BroadcastComposer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/offices")
+    clientFetch("/api/admin/offices")
       .then((res) => res.json())
       .then((data) => setOffices(data.offices ?? []));
   }, []);
@@ -53,7 +55,7 @@ export function BroadcastComposer() {
     if (audience === "role") payload.role = role;
     if (audience === "office") payload.officeRef = officeRef;
 
-    const res = await fetch("/api/admin/notifications/broadcast", {
+    const res = await clientFetch("/api/admin/notifications/broadcast", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

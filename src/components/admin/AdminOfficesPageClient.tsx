@@ -1,6 +1,8 @@
 // src/components/admin/AdminOfficesPageClient.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Building2, ChevronRight, Loader2, Plus } from "lucide-react";
@@ -55,7 +57,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
   function refresh() {
     setLoadError(null);
     setIsLoading(true);
-    fetch("/api/admin/offices")
+    clientFetch("/api/admin/offices")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load offices.");
@@ -72,7 +74,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
     setError(null);
     setIsSubmitting(true);
 
-    const res = await fetch("/api/admin/offices", {
+    const res = await clientFetch("/api/admin/offices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -102,7 +104,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
       if (!ok) return;
     }
 
-    const res = await fetch(`/api/admin/offices/${office._id}`, {
+    const res = await clientFetch(`/api/admin/offices/${office._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !office.isActive }),

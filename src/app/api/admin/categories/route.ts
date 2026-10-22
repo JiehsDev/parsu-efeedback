@@ -1,3 +1,5 @@
+import { RoutingRule } from "@/models/RoutingRule";
+import { getOperationalOffice } from "@/lib/osas-operations";
 // src/app/api/admin/categories/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -6,7 +8,7 @@ import { Category } from "@/models/Category";
 import { createCategorySchema } from "@/features/admin/schemas/category.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const guard = await requireAdmin();
   if (guard.error) return guard.error;
 
@@ -22,6 +24,9 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
 
   const body = await req.json();
+  const osas = await getOperationalOffice();
+  if (!osas) return NextResponse.json({ error: "OSAS is unavailable" }, { status: 409 });
+  body.defaultOfficeRef = String(osas._id);
   const parsed = createCategorySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -38,6 +43,13 @@ export async function POST(req: NextRequest) {
   // switched on, once a rule exists.
   const category = await Category.create({ ...parsed.data, isActive: false });
 
+  await RoutingRule.create({
+    categoryRef: category._id,
+    targetOfficeRef: osas._id,
+    conditions: {},
+    isActive: true,
+  });
+
   await writeAuditLog({
     actorId: guard.session.user.id,
     action: "category.create",
@@ -52,7 +64,7 @@ export async function POST(req: NextRequest) {
     {
       category,
       message:
-        "Category created as inactive. Create an active routing rule for it, then PATCH isActive:true to enable it.",
+        "Category created as inactive with OSAS routing. Configure its SLA, then activate it.",
     },
     { status: 201 },
   );

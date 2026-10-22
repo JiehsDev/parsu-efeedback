@@ -1,6 +1,8 @@
 // src/components/student/FeedbackForm.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -57,7 +59,7 @@ export function FeedbackForm() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/feedback", {
+      const res = await clientFetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

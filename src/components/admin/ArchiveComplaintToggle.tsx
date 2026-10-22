@@ -1,6 +1,8 @@
 // src/components/admin/ArchiveComplaintToggle.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
@@ -35,7 +37,7 @@ export function ArchiveComplaintToggle({
     }
 
     setIsSubmitting(true);
-    const res = await fetch(mode === "admin" ? `/api/admin/complaints/${complaintId}` : `/api/complaints/${complaintId}/archive`, {
+    const res = await clientFetch(mode === "admin" ? `/api/admin/complaints/${complaintId}` : `/api/complaints/${complaintId}/archive`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isArchived: !isArchived, reason: selectedReason }),

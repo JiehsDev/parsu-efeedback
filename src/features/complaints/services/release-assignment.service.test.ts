@@ -25,7 +25,8 @@ beforeEach(clearTestDb);
 
 async function setup(status: ComplaintStatus = "in_progress") {
   const { category } = await createActivatableCategory();
-  const office = await createTestOffice({ name: "Registrar" });
+  const office =
+    (await Office.findOne({ code: "OSAS" })) ?? (await createTestOffice({ code: "OSAS" }));
   const head = await createTestUser({ role: "office_staff", officeRef: office._id });
   const staff = await createTestUser({ role: "office_staff", officeRef: office._id });
   const otherStaff = await createTestUser({ role: "office_staff", officeRef: office._id });
@@ -56,7 +57,12 @@ describe("releaseAssignment", () => {
       destinationOfficeRef: office._id,
       actionType: "assign",
     });
-    await ComplaintTimeline.create({ complaintRef: complaint._id, eventType: "note_added", actorRef: staff._id, message: "Existing history" });
+    await ComplaintTimeline.create({
+      complaintRef: complaint._id,
+      eventType: "note_added",
+      actorRef: staff._id,
+      message: "Existing history",
+    });
 
     const result = await releaseAssignment({
       complaintId: String(complaint._id),
@@ -71,31 +77,82 @@ describe("releaseAssignment", () => {
     expect((saved as any)!.assignedStaffRef).toBeNull();
     expect((saved as any)!.status).toBe("submitted");
     expect(await Assignment.countDocuments({ complaintRef: complaint._id })).toBe(2);
-    expect(await ComplaintTimeline.countDocuments({ complaintRef: complaint._id, eventType: "note_added" })).toBe(1);
-    expect(await ComplaintTimeline.countDocuments({ complaintRef: complaint._id, eventType: "assignment_released" })).toBe(1);
-    expect(await AuditLog.exists({ entityId: complaint._id, action: "ASSIGNMENT_RELEASED" })).not.toBeNull();
-    expect(await Notification.exists({ userRef: head._id, type: "assignment_released", relatedComplaintRef: complaint._id })).not.toBeNull();
+    expect(
+      await ComplaintTimeline.countDocuments({
+        complaintRef: complaint._id,
+        eventType: "note_added",
+      }),
+    ).toBe(1);
+    expect(
+      await ComplaintTimeline.countDocuments({
+        complaintRef: complaint._id,
+        eventType: "assignment_released",
+      }),
+    ).toBe(1);
+    expect(
+      await AuditLog.exists({ entityId: complaint._id, action: "ASSIGNMENT_RELEASED" }),
+    ).not.toBeNull();
+    expect(
+      await Notification.exists({
+        userRef: head._id,
+        type: "assignment_released",
+        relatedComplaintRef: complaint._id,
+      }),
+    ).not.toBeNull();
   });
 
   it("requires a reason and only allows the current assigned handler", async () => {
     const { complaint, staff, otherStaff } = await setup();
-    await expect(releaseAssignment({ complaintId: String(complaint._id), actorId: String(staff._id), actorRole: "office_staff", reason: "" })).resolves.toMatchObject({ status: 400 });
-    await expect(releaseAssignment({ complaintId: String(complaint._id), actorId: String(otherStaff._id), actorRole: "office_staff", reason: "Not my assignment" })).resolves.toMatchObject({ status: 403 });
+    await expect(
+      releaseAssignment({
+        complaintId: String(complaint._id),
+        actorId: String(staff._id),
+        actorRole: "office_staff",
+        reason: "",
+      }),
+    ).resolves.toMatchObject({ status: 400 });
+    await expect(
+      releaseAssignment({
+        complaintId: String(complaint._id),
+        actorId: String(otherStaff._id),
+        actorRole: "office_staff",
+        reason: "Not my assignment",
+      }),
+    ).resolves.toMatchObject({ status: 403 });
   });
 
   it("blocks resolved, closed, withdrawn, and archived complaints", async () => {
     for (const status of ["resolved", "closed", "withdrawn"] as ComplaintStatus[]) {
       const { complaint, staff } = await setup(status);
-      await expect(releaseAssignment({ complaintId: String(complaint._id), actorId: String(staff._id), actorRole: "office_staff", reason: "Should be blocked" })).resolves.toMatchObject({ status: 400 });
+      await expect(
+        releaseAssignment({
+          complaintId: String(complaint._id),
+          actorId: String(staff._id),
+          actorRole: "office_staff",
+          reason: "Should be blocked",
+        }),
+      ).resolves.toMatchObject({ status: 400 });
     }
     const { complaint, staff } = await setup();
     await Complaint.updateOne({ _id: complaint._id }, { $set: { isArchived: true } });
-    await expect(releaseAssignment({ complaintId: String(complaint._id), actorId: String(staff._id), actorRole: "office_staff", reason: "Should be blocked" })).resolves.toMatchObject({ status: 400 });
+    await expect(
+      releaseAssignment({
+        complaintId: String(complaint._id),
+        actorId: String(staff._id),
+        actorRole: "office_staff",
+        reason: "Should be blocked",
+      }),
+    ).resolves.toMatchObject({ status: 400 });
   });
 
   it("allows pending information to return to submitted without deleting its workflow history", async () => {
     const { complaint, staff } = await setup("pending_information");
-    const result = await releaseAssignment({ complaintId: String(complaint._id), actorId: String(staff._id), actorRole: "office_staff", reason: "Unavailable to continue handling" });
+    const result = await releaseAssignment({
+      complaintId: String(complaint._id),
+      actorId: String(staff._id),
+      actorRole: "office_staff",
+      reason: "Unavailable to continue handling",
+    });
     expect("error" in result).toBe(false);
     expect((await Complaint.findById(complaint._id).lean())!.status).toBe("submitted");
   });

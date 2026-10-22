@@ -1,3 +1,4 @@
+import { assignByOsasHead } from "./helpers";
 // tests/e2e/edit-withdraw-complaint.spec.ts — BR-101
 // Student may edit (title/description only — NOT priority, see BR-022/037)
 // or withdraw their own complaint while it's still "submitted" — before any
@@ -35,7 +36,11 @@ adminTest.describe("Edit / withdraw a complaint before pickup", () => {
       // API call that includes it has the field silently dropped, not
       // applied. "Grade Concern" seeds as defaultPriority: "medium".
       const priorityAttemptRes = await studentPage.request.patch(`/api/complaints/${id}`, {
-        data: { title: newTitle, description: "Trying to sneak a priority change in.", priority: "critical" },
+        data: {
+          title: newTitle,
+          description: "Trying to sneak a priority change in.",
+          priority: "critical",
+        },
       });
       expect(priorityAttemptRes.ok()).toBeTruthy();
       const { complaint: afterPriorityAttempt } = await priorityAttemptRes.json();
@@ -46,17 +51,13 @@ adminTest.describe("Edit / withdraw a complaint before pickup", () => {
       // client somehow still had the form open.
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
+      await assignByOsasHead(staffPage, id);
       await staffPage.goto(`/staff/complaints/${id}`);
       // Wait for the actual assign response, not just the click — the
       // button's router.refresh() afterward is async and its completion
       // isn't a reliable enough signal on its own (same class of race as
       // complaint-status-lifecycle.spec.ts's status-update waits).
-      await Promise.all([
-        staffPage.waitForResponse(
-          (res) => res.url().includes(`/api/complaints/${id}/assign`) && res.request().method() === "POST",
-        ),
-        staffPage.getByRole("button", { name: "Pick Up This Complaint" }).click(),
-      ]);
+
       await expect(staffPage.getByRole("combobox")).toBeVisible();
       await staffContext.close();
 
@@ -111,9 +112,12 @@ adminTest.describe("Edit / withdraw a complaint before pickup", () => {
       // rather than quietly re-entering the office's active queue.
       const staffContext = await browser.newContext({ storageState: "tests/e2e/.auth/staff.json" });
       const staffPage = await staffContext.newPage();
+      await assignByOsasHead(staffPage, id);
       await staffPage.goto(`/staff/complaints/${id}`);
       await expect(staffPage.getByText("Withdrawn by student")).toBeVisible();
-      await expect(staffPage.getByRole("button", { name: "Pick Up This Complaint" })).toHaveCount(0);
+      await expect(staffPage.getByRole("button", { name: "Pick Up This Complaint" })).toHaveCount(
+        0,
+      );
 
       const staffReviveRes = await staffPage.request.patch(`/api/complaints/${id}`, {
         data: { status: "assigned" },

@@ -1,6 +1,8 @@
 // src/components/admin/AdminUsersPageClient.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -47,7 +49,16 @@ function affiliationLabel(u: UserRow): string {
 }
 
 function roleLabel(role: string): string {
-  return { office_staff: "Office Staff", administrator: "Administrator", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS", student: "Student" }[role] ?? role;
+  return (
+    {
+      office_staff: "Office Staff",
+      administrator: "Administrator",
+      vpaa: "VPAA",
+      vpaf: "VPAF",
+      osas: "OSAS",
+      student: "Student",
+    }[role] ?? role
+  );
 }
 
 interface Office {
@@ -131,7 +142,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
     // under this, and it keeps every user in memory for the client-side
     // search/sort/filter below instead of only ever seeing the API's
     // default first page.
-    fetch("/api/admin/users?limit=2000")
+    clientFetch("/api/admin/users?limit=2000")
       .then((res) => res.json())
       .then((data) => {
         setUsers(data.users ?? []);
@@ -145,15 +156,16 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
     // The shared, unscoped /api/offices (not /api/admin/offices) — osas has
     // no Offices *management* access, but still needs the college list to
     // populate the "College" field when creating a student.
-    fetch("/api/offices")
+    clientFetch("/api/offices")
       .then((res) => res.json())
       .then((data) => setOffices(data.offices ?? []));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const needsOffice = ["office_staff", "vpaa", "vpaf", "osas"].includes(form.role);
+  const needsOffice = ["office_staff", "osas"].includes(form.role);
   const needsCollege = form.role === "student";
-  const scopedOfficeCode = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" }[form.role as "vpaa" | "vpaf" | "osas"];
+  const scopedOfficeCode = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" }[
+    form.role as "vpaa" | "vpaf" | "osas"
+  ];
   const officeOptionsForSelectedRole = scopedOfficeCode
     ? officeOptionsForRole.filter((office) => office.code === scopedOfficeCode)
     : officeOptionsForRole;
@@ -167,7 +179,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
     if (!needsOffice) delete payload.officeRef;
     if (!needsCollege) delete payload.collegeRef;
 
-    const res = await fetch("/api/admin/users", {
+    const res = await clientFetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -206,7 +218,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
       if (!ok) return;
     }
 
-    const res = await fetch(`/api/admin/users/${user._id}`, {
+    const res = await clientFetch(`/api/admin/users/${user._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !user.isActive }),
@@ -444,7 +456,13 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
       )}
 
       {showCreate && (
-        <Modal title="Add User" onClose={() => { setShowCreate(false); setShowCreatePassword(false); }}>
+        <Modal
+          title="Add User"
+          onClose={() => {
+            setShowCreate(false);
+            setShowCreatePassword(false);
+          }}
+        >
           <form onSubmit={handleCreate} className="space-y-4">
             {error && (
               <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
@@ -508,7 +526,11 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
                   onClick={() => setShowCreatePassword((visible) => !visible)}
                   className="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
                 >
-                  {showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showCreatePassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </FormField>
@@ -516,18 +538,20 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
             <FormField label="Role" required>
               <Select
                 value={form.role}
-                onValueChange={(value) => setForm((p) => ({
-                  ...p,
-                  role: value,
-                  officeRef: value === "student" || value === "administrator" ? "" : p.officeRef,
-                  collegeRef: value === "student" ? p.collegeRef : "",
-                }))}
+                onValueChange={(value) =>
+                  setForm((p) => ({
+                    ...p,
+                    role: value,
+                    officeRef: value === "student" || value === "administrator" ? "" : p.officeRef,
+                    collegeRef: value === "student" ? p.collegeRef : "",
+                  }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    {roleOptions.map((r) => (
+                  {roleOptions.map((r) => (
                     <SelectItem key={r} value={r}>
                       {roleLabel(r)}
                     </SelectItem>

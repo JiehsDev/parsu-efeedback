@@ -1,6 +1,8 @@
 // src/components/admin/UserStatusToggle.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -33,7 +35,7 @@ export function UserStatusToggle({
     }
 
     setIsSubmitting(true);
-    const res = await fetch(`/api/admin/users/${userId}`, {
+    const res = await clientFetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !isActive }),

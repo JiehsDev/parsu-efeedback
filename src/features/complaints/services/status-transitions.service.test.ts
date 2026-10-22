@@ -4,7 +4,7 @@ import { isValidTransition } from "./status-transitions.service";
 
 describe("status-transitions.service — BR-040/041/043", () => {
   it("BR-041: allows the documented forward lifecycle", () => {
-    expect(isValidTransition("submitted", "assigned")).toBe(true);
+    expect(isValidTransition("submitted", "assigned")).toBe(false);
     expect(isValidTransition("assigned", "in_progress")).toBe(true);
     expect(isValidTransition("in_progress", "pending_information")).toBe(true);
     expect(isValidTransition("in_progress", "resolved")).toBe(true);

@@ -1,6 +1,8 @@
 // src/components/admin/ForceLogoutButton.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
@@ -23,7 +25,7 @@ export function ForceLogoutButton({ userId, userName }: { userId: string; userNa
     if (!ok) return;
 
     setIsSubmitting(true);
-    const res = await fetch(`/api/admin/users/${userId}`, {
+    const res = await clientFetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ forceLogout: true }),

@@ -1,6 +1,8 @@
 // src/components/admin/EditOfficeButton.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Pencil } from "lucide-react";
@@ -76,7 +78,7 @@ export function EditOfficeButton({
     };
     if (canManageHead) payload.headUserRef = form.headUserRef || null;
 
-    const res = await fetch(`/api/admin/offices/${office._id}`, {
+    const res = await clientFetch(`/api/admin/offices/${office._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

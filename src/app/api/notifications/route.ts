@@ -1,3 +1,4 @@
+import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/notifications/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -19,8 +20,14 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Number(searchParams.get("limit") ?? 20));
 
   const filter: Record<string, unknown> = { userRef: session.user.id };
-  if (isScopedAdminRole(session.user.role)) {
-    const complaints = await Complaint.find(await complaintFilterForScope(getAdminScope(session.user.role))).select("_id").lean();
+  if (isScopedAdminRole(session.user.role) || session.user.role === "office_staff") {
+    const complaints = await Complaint.find(
+      await (session.user.role === "office_staff"
+        ? staffComplaintFilter(session)
+        : complaintFilterForScope(getAdminScope(session.user.role))),
+    )
+      .select("_id")
+      .lean();
     filter.$or = [
       { relatedComplaintRef: null },
       { relatedComplaintRef: { $in: complaints.map((complaint) => complaint._id) } },

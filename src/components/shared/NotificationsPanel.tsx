@@ -1,6 +1,8 @@
 // src/components/shared/NotificationsPanel.tsx
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { NotificationDot } from "./NotificationIcon";
@@ -28,7 +30,7 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
     setError(null);
     setLoading(true);
     const url = filter === "unread" ? "/api/notifications?unreadOnly=true" : "/api/notifications";
-    fetch(url)
+    clientFetch(url)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load notifications.");
@@ -43,12 +45,12 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
   }, [refresh]);
 
   async function markRead(id: string) {
-    await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
+    await clientFetch(`/api/notifications/${id}/read`, { method: "PATCH" });
     setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
   }
 
   async function markAllRead() {
-    await fetch("/api/notifications/read-all", { method: "PATCH" });
+    await clientFetch("/api/notifications/read-all", { method: "PATCH" });
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   }
 

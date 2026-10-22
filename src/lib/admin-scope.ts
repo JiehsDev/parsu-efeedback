@@ -11,8 +11,7 @@
 // between the dean dashboard and /api/analytics/trends.
 import type { UserRole, OfficeType } from "@/lib/constants";
 import { Office } from "@/models/Office";
-import { Types } from "mongoose";
-import { getOsasComplaintFilter } from "@/lib/osas-complaint-scope";
+import { getOperationalOffice } from "@/lib/osas-operations";
 import { Complaint } from "@/models/Complaint";
 
 export type AdminScope =
@@ -64,19 +63,12 @@ export async function userFilterForScope(scope: AdminScope): Promise<Record<stri
   return officeIds ? { officeRef: { $in: officeIds } } : {};
 }
 
-/** OSAS sees its complaints; other sub-admins exclude them. Only administrator is unrestricted. */
+// VPAA/VPAF have global read-only oversight until a reliable category-domain
+// mapping is configured. Their office classification never grants processing rights.
 export async function complaintFilterForScope(scope: AdminScope): Promise<Record<string, unknown>> {
-  if (scope.kind === "all") return {};
-  const osasFilter = await getOsasComplaintFilter();
-  // Keep authorization inside $and so search/office filters cannot replace it.
-  if (scope.kind === "student") return { $and: [osasFilter] };
-  const officeIds = await officeIdsForScope(scope);
-  return {
-    $and: [
-      { assignedOfficeRef: { $in: (officeIds ?? []).map((id) => new Types.ObjectId(id)) } },
-      { $nor: [osasFilter] },
-    ],
-  };
+  if (scope.kind !== "student") return {};
+  const office = await getOperationalOffice();
+  return { $and: [office ? { assignedOfficeRef: office._id } : { _id: { $in: [] } }] };
 }
 
 /**

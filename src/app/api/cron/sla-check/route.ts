@@ -1,3 +1,5 @@
+import { getOperationalOffice } from "@/lib/osas-operations";
+import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
 // src/app/api/cron/sla-check/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Types } from "mongoose";
@@ -6,7 +8,6 @@ import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Assignment } from "@/models/Assignment";
 import { SLARule } from "@/models/SLARule";
-import { Office } from "@/models/Office";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { updateSettings } from "@/features/settings/services/settings.service";
 import { env } from "@/lib/env";
@@ -56,22 +57,12 @@ async function checkDeadline(
     const fromStatus = complaint.status;
     const fromOffice = complaint.assignedOfficeRef;
 
-    const rule = await resolveSlaRule(complaint.categoryRef, complaint.priority);
-
-    const update: Record<string, unknown> = { isOverdue: true, status: "escalated" };
-    if ((rule as any)?.escalateToOfficeRef) {
-      // Explicit override — cross-office escalation. The old staff
-      // assignment doesn't carry over to an office they don't belong to.
-      update.assignedOfficeRef = (rule as any).escalateToOfficeRef;
-      update.assignedStaffRef = null;
-    } else if (fromOffice) {
-      // Default path: escalate to whoever heads the office that's already
-      // sitting on this complaint — per-office, rather than requiring
-      // separate escalation config.
-      const office = await Office.findById(fromOffice).select("headUserRef").lean();
-      if ((office as any)?.headUserRef) {
-        update.assignedStaffRef = (office as any).headUserRef;
-      }
+    const target = await resolveManualEscalationTarget(complaint);
+    const update: Record<string, unknown> = { isOverdue: true, supervisorReviewRequired: true };
+    if (target) {
+      update.assignedStaffRef = target.staff._id;
+      if (["submitted", "assigned", "escalated"].includes(complaint.status))
+        update.status = "in_progress";
     }
 
     // Atomic claim: the `isOverdue: false` condition is re-checked here at
@@ -80,7 +71,7 @@ async function checkDeadline(
     // this complaint, this returns null and we skip the timeline/audit/
     // notification side effects below instead of duplicating them.
     const updated = await Complaint.findOneAndUpdate(
-      { _id: complaint._id, isOverdue: false },
+      { _id: complaint._id, isOverdue: false, isArchived: false, status: { $in: ACTIVE_STATUSES } },
       update,
       { returnDocument: "after" },
     ).lean();
@@ -108,7 +99,7 @@ async function checkDeadline(
       eventType: "escalated",
       actorRef: null,
       fromValue: fromStatus,
-      toValue: "escalated",
+      toValue: updated.status,
       message:
         clock === "response"
           ? "SLA first-response deadline breached — auto-escalated"
@@ -122,7 +113,7 @@ async function checkDeadline(
       entityId: complaint._id,
       beforeState: { status: fromStatus, assignedOfficeRef: fromOffice },
       afterState: {
-        status: "escalated",
+        status: updated.status,
         assignedOfficeRef: (updated as any)?.assignedOfficeRef,
         assignedStaffRef: (updated as any)?.assignedStaffRef,
         escalationReason: "SLA_BREACH",
@@ -141,7 +132,7 @@ async function checkDeadline(
       ticketNumber: complaint.ticketNumber,
       complaintId: String(complaint._id),
       fromStatus,
-      toStatus: "escalated",
+      toStatus: updated.status,
     });
 
     return { escalated: true, warned: false };
@@ -152,7 +143,8 @@ async function checkDeadline(
   const rule = await resolveSlaRule(complaint.categoryRef, complaint.priority);
   if (!rule && !complaint.slaPolicy) return { escalated: false, warned: false };
 
-  const warningThreshold = complaint.slaPolicy?.warningThresholdPercent ?? (rule as any)?.warningThresholdPercent ?? 80;
+  const warningThreshold =
+    complaint.slaPolicy?.warningThresholdPercent ?? (rule as any)?.warningThresholdPercent ?? 80;
   const clockHours =
     clock === "response" ? (rule as any)?.responseHours : (rule as any)?.resolutionHours;
   const elapsedPercent = slaElapsedPercent(now, dueAt, clock, clockHours, complaint.slaPolicy);
@@ -208,7 +200,10 @@ async function runSlaCheck(req: NextRequest) {
   await connectToDatabase();
   const now = new Date();
 
+  const osas = await getOperationalOffice();
+  if (!osas) return NextResponse.json({ error: "OSAS is unavailable" }, { status: 503 });
   const candidates = await Complaint.find({
+    assignedOfficeRef: osas._id,
     status: { $in: ACTIVE_STATUSES },
     isArchived: false,
   }).lean();

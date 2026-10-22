@@ -74,11 +74,9 @@ export default async function AdminCategoryDetailPage({
             <Tag className="h-6 w-6" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
-              {c.name}
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">{c.name}</h1>
             <div className="mt-1 flex items-center gap-2">
-              <span className="rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+              <span className="rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
                 {c.defaultPriority} priority
               </span>
               <span
@@ -100,9 +98,14 @@ export default async function AdminCategoryDetailPage({
               _id: String(c._id),
               name: c.name,
               description: c.description,
+              domain: c.domain ?? "other",
             }}
           />
-          <CategoryStatusToggle categoryId={String(c._id)} categoryName={c.name} isActive={c.isActive} />
+          <CategoryStatusToggle
+            categoryId={String(c._id)}
+            categoryName={c.name}
+            isActive={c.isActive}
+          />
         </div>
       </div>
 

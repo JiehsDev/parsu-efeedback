@@ -48,7 +48,7 @@ describe("report-file.service — BR-079", () => {
     const lines = text.split("\n");
     expect(lines).toHaveLength(3); // header + 2 rows
     expect(lines[0]).toBe(
-      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,Resolution details,SLA Met,SLA Calendar",
+      "Ticket,Title,Status,Priority,Office,Category,Service domain,Response hours,Resolution hours,Student ID,College,Submitted,Resolved,Resolution details,SLA Met,SLA Calendar",
     );
     expect(lines[1]).toContain("PARSU-2026-000001");
     expect(lines[1]).toContain("2023-10492");
@@ -66,7 +66,7 @@ describe("report-file.service — BR-079", () => {
   it("generateCsv returns just the header for an empty row set", () => {
     const buffer = generateCsv([]);
     expect(buffer.toString("utf-8")).toBe(
-      "Ticket,Title,Status,Priority,Office,Category,Student ID,College,Submitted,Resolved,Resolution details,SLA Met,SLA Calendar",
+      "Ticket,Title,Status,Priority,Office,Category,Service domain,Response hours,Resolution hours,Student ID,College,Submitted,Resolved,Resolution details,SLA Met,SLA Calendar",
     );
   });
 
@@ -85,9 +85,9 @@ describe("report-file.service — BR-079", () => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(Uint8Array.from(await generateExcel(data)).buffer);
     const sheet = workbook.worksheets[0]!;
-    expect(sheet.getRow(1).getCell(11).value).toBe("Resolution details");
-    expect(sheet.getRow(2).getCell(11).value).toBe(resolutionSummary);
-    expect(sheet.getRow(2).getCell(11).alignment.wrapText).toBe(true);
+    expect(sheet.getRow(1).getCell(14).value).toBe("Resolution details");
+    expect(sheet.getRow(2).getCell(14).value).toBe(resolutionSummary);
+    expect(sheet.getRow(2).getCell(14).alignment.wrapText).toBe(true);
   });
 
   it("exports long resolutions to PDF without a fixed row height", async () => {

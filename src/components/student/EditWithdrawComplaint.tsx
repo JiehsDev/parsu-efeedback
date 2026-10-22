@@ -8,6 +8,8 @@
 // same cutoff server-side regardless.
 "use client";
 
+import { clientFetch } from "@/lib/client-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Pencil, X } from "lucide-react";
@@ -41,7 +43,7 @@ export function EditWithdrawComplaint({
     setError(null);
     setIsSubmitting(true);
 
-    const res = await fetch(`/api/complaints/${complaintId}`, {
+    const res = await clientFetch(`/api/complaints/${complaintId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, description }),
@@ -69,7 +71,7 @@ export function EditWithdrawComplaint({
     if (!ok) return;
 
     setIsSubmitting(true);
-    const res = await fetch(`/api/complaints/${complaintId}`, {
+    const res = await clientFetch(`/api/complaints/${complaintId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "withdrawn" }),

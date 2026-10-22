@@ -1,3 +1,5 @@
+import { isOversightRole } from "@/lib/osas-operations";
+import { canAccessComplaint } from "@/lib/complaint-access";
 // src/app/api/complaints/[id]/attachments/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -7,20 +9,7 @@ import { Attachment } from "@/models/Attachment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { createAttachmentSchema } from "@/features/attachments/schemas/attachment.schema";
 import { getSettings } from "@/features/settings/services/settings.service";
-import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-
-async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
-  const { role, id, officeRef } = session.user;
-  if (role === "administrator") return true;
-  if (role === "student") return String(complaint.studentRef) === id;
-  if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
-  // QA-style access, scoped to each sub-admin's own category.
-  if (role === "vpaa" || role === "vpaf" || role === "osas") {
-    return isComplaintInAdminScope(getAdminScope(role), complaint);
-  }
-  return false;
-}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -28,12 +17,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (isOversightRole(session.user.role))
+    return NextResponse.json({ error: "Oversight access is read-only." }, { status: 403 });
   await connectToDatabase();
   const { id } = await params;
 
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only until restored." }, { status: 403 });
+  if (["closed", "withdrawn"].includes(complaint.status))
+    return NextResponse.json(
+      { error: "Closed and withdrawn complaints are read-only." },
+      { status: 403 },
+    );
+  if (complaint.isArchived)
+    return NextResponse.json(
+      { error: "Archived complaints are read-only until restored." },
+      { status: 403 },
+    );
 
   if (!(await canAccessComplaint(session, complaint))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

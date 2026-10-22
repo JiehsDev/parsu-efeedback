@@ -1,3 +1,6 @@
+import { User } from "@/models/User";
+import { getOperationalOffice } from "@/lib/osas-operations";
+import { canSuperviseComplaint } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
@@ -6,22 +9,9 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { reopenComplaintSchema } from "@/features/complaints/schemas/complaint.schema";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { notifyComplaintReopened } from "@/features/notifications/services/notification.service";
-import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
-import { isOfficeHead } from "@/lib/archive-workflow";
 
 async function canReopen(session: any, complaint: any) {
-  if (session.user.role === "administrator") return true;
-  if (session.user.role === "office_staff") {
-    return Boolean(
-      complaint.assignedOfficeRef &&
-        String(complaint.assignedOfficeRef) === String(session.user.officeRef ?? "") &&
-        (await isOfficeHead(session.user.id, complaint.assignedOfficeRef)),
-    );
-  }
-  if (["vpaa", "vpaf", "osas"].includes(session.user.role)) {
-    return isComplaintInAdminScope(getAdminScope(session.user.role), complaint);
-  }
-  return false;
+  return session.user.role === "administrator" || canSuperviseComplaint(session, complaint);
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -32,20 +22,40 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
-  if (complaint.isArchived) return NextResponse.json({ error: "Archived complaints are read-only." }, { status: 400 });
-  if (!(await canReopen(session, complaint))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (complaint.isArchived)
+    return NextResponse.json({ error: "Archived complaints are read-only." }, { status: 400 });
+  if (!(await canReopen(session, complaint)))
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const parsed = reopenComplaintSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   if (!["resolved", "closed"].includes(complaint.status)) {
-    return NextResponse.json({ error: "Only resolved or closed complaints can be reopened." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Only resolved or closed complaints can be reopened." },
+      { status: 400 },
+    );
   }
   if (complaint.status === "closed" && session.user.role !== "administrator") {
-    return NextResponse.json({ error: "Only an administrator can reopen a closed complaint." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Only an administrator can reopen a closed complaint." },
+      { status: 403 },
+    );
   }
 
   const beforeStatus = complaint.status;
-  complaint.status = "in_progress";
+  const osas = await getOperationalOffice();
+  if (!osas) return NextResponse.json({ error: "OSAS is unavailable" }, { status: 409 });
+  const handler = complaint.assignedStaffRef
+    ? await User.findOne({
+        _id: complaint.assignedStaffRef,
+        officeRef: osas._id,
+        isActive: true,
+        role: { $in: ["office_staff", "osas"] },
+      })
+    : null;
+  complaint.assignedOfficeRef = osas._id;
+  if (!handler) complaint.assignedStaffRef = null;
+  complaint.status = handler ? "in_progress" : "submitted";
   complaint.reopenCount += 1;
   await complaint.save();
 
@@ -54,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     eventType: "reopened",
     actorRef: session.user.id,
     fromValue: beforeStatus,
-    toValue: "in_progress",
+    toValue: complaint.status,
     message: parsed.data.reason,
   });
   await writeAuditLog({
@@ -63,7 +73,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     entityType: "Complaint",
     entityId: complaint._id,
     beforeState: { status: beforeStatus },
-    afterState: { status: "in_progress", reason: parsed.data.reason, reopenCount: complaint.reopenCount },
+    afterState: {
+      status: complaint.status,
+      reason: parsed.data.reason,
+      reopenCount: complaint.reopenCount,
+    },
     ipAddress: req.headers.get("x-forwarded-for"),
     userAgent: req.headers.get("user-agent"),
   });

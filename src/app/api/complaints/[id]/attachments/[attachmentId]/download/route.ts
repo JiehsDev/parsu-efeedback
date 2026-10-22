@@ -1,3 +1,4 @@
+import { canAccessComplaint } from "@/lib/complaint-access";
 // src/app/api/complaints/[id]/attachments/[attachmentId]/download/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -7,25 +8,18 @@ import { r2Client, isR2Configured } from "@/lib/r2";
 import { env } from "@/lib/env";
 import { Complaint } from "@/models/Complaint";
 import { Attachment } from "@/models/Attachment";
-import { getAdminScope, isComplaintInAdminScope } from "@/lib/admin-scope";
 
 // Hardcoded independently of the admin-configurable upload allow-list:
 // rendering a response inline (rather than forcing a download) is only
 // safe for types a browser can't be tricked into executing as script.
 // SVG is deliberately excluded — inline SVG can carry <script>.
-const INLINE_SAFE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf"]);
-
-async function canAccessComplaint(session: any, complaint: any): Promise<boolean> {
-  const { role, id, officeRef } = session.user;
-  if (role === "administrator") return true;
-  if (role === "student") return String(complaint.studentRef) === id;
-  if (role === "office_staff") return String(complaint.assignedOfficeRef) === officeRef;
-  // QA-style access, scoped to each sub-admin's own category.
-  if (role === "vpaa" || role === "vpaf" || role === "osas") {
-    return isComplaintInAdminScope(getAdminScope(role), complaint);
-  }
-  return false;
-}
+const INLINE_SAFE_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+]);
 
 export async function GET(
   _req: NextRequest,

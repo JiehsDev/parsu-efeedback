@@ -22,7 +22,7 @@ afterAll(disconnectTestDb);
 beforeEach(clearTestDb);
 
 async function setup() {
-  const office = await createTestOffice();
+  const office = await createTestOffice({ code: "OSAS" });
   const head = await createTestUser({ role: "office_staff", officeRef: office._id });
   const staff = await createTestUser({ role: "office_staff", officeRef: office._id });
   const student = await createTestUser();
@@ -109,24 +109,22 @@ describe("assignment requires a target", () => {
       ).status,
     ).toBe(200);
     const saved = (await Complaint.findById(complaint._id))!;
-    expect(saved.status).toBe("assigned");
+    expect(saved.status).toBe("in_progress");
     expect(String(saved.assignedStaffRef)).toBe(String(staff._id));
     const history = (await Assignment.findOne({ complaintRef: complaint._id }))!;
     expect(String(history.assignedToRef)).toBe(String(staff._id));
     expect(history.reason).toBe("Please inspect the room.");
     expect((await ComplaintTimeline.findOne({ complaintRef: complaint._id }))!.toValue).toBe(
-      "assigned",
+      "in_progress",
     );
   });
 
-  it("keeps self-pickup moving directly into processing with the picker as target", async () => {
+  it("rejects ordinary staff self-pickup", async () => {
     const { staff, complaint, assign, office } = await setup();
     mocks.auth.mockResolvedValue({
       user: { id: String(staff._id), role: "office_staff", officeRef: String(office._id) },
     });
-    expect((await assign({ assignedStaffRef: String(staff._id) })).status).toBe(200);
-    const saved = (await Complaint.findById(complaint._id))!;
-    expect(saved.status).toBe("in_progress");
-    expect(String(saved.assignedStaffRef)).toBe(String(staff._id));
+    expect((await assign({ assignedStaffRef: String(staff._id) })).status).toBe(403);
+    expect((await Complaint.findById(complaint._id))!.status).toBe("submitted");
   });
 });

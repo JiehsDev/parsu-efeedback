@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/lib/db", () => ({ connectToDatabase: vi.fn() }));
+vi.mock("@/lib/osas-operations", () => ({
+  canProcessComplaint: async (s: any, c: any) => s.user.officeRef === c.assignedOfficeRef,
+}));
+vi.mock("@/lib/complaint-access", () => ({ canAccessComplaint: async () => true }));
 vi.mock("@/models/Complaint", () => ({ Complaint: { findById: mocks.findById } }));
 vi.mock("@/models/ComplaintTimeline", () => ({ ComplaintTimeline: { create: mocks.timeline } }));
 vi.mock("@/features/audit-log/services/audit-log.service", () => ({ writeAuditLog: mocks.audit }));
@@ -61,14 +65,17 @@ beforeEach(() => {
 });
 
 describe("complaint resolution", () => {
-  it.each(["submitted", "escalated"])("requires the assignment workflow to mark %s complaints assigned", async (status) => {
-    complaint.status = status;
-    const response = await update({ status: "assigned" });
-    expect(response.status).toBe(400);
-    expect((await response.json()).error).toContain("select a staff member");
-    expect(complaint.save).not.toHaveBeenCalled();
-    expect(mocks.timeline).not.toHaveBeenCalled();
-  });
+  it.each(["submitted", "escalated"])(
+    "requires the assignment workflow to mark %s complaints assigned",
+    async (status) => {
+      complaint.status = status;
+      const response = await update({ status: "assigned" });
+      expect(response.status).toBe(400);
+      expect((await response.json()).error).toContain("select a staff member");
+      expect(complaint.save).not.toHaveBeenCalled();
+      expect(mocks.timeline).not.toHaveBeenCalled();
+    },
+  );
   it.each([undefined, "", " \n "])(
     "allows resolution without details",
     async (resolutionSummary) => {
