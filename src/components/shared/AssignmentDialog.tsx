@@ -2,7 +2,7 @@
 
 import { clientFetch } from "@/lib/client-fetch";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Shuffle, UserCheck } from "lucide-react";
 import { Modal } from "@/components/admin/Modal";
@@ -18,12 +18,6 @@ import {
 } from "@/components/ui/select";
 import { FieldError } from "@/components/ui/form-field";
 
-interface AssignmentOfficeOption {
-  _id: string;
-  name: string;
-  type?: string;
-}
-
 interface StaffOption {
   _id: string;
   firstName: string;
@@ -32,10 +26,10 @@ interface StaffOption {
 }
 
 const REASSIGNMENT_REASONS = [
-  "Misrouted complaint",
-  "Requires another office",
-  "Staff workload transfer",
-  "Office coordination",
+  "Staff availability",
+  "Workload balancing",
+  "Specialist assistance",
+  "OSAS Head review",
   "Other",
 ] as const;
 
@@ -45,35 +39,22 @@ export function AssignmentDialog({
   currentOfficeName,
   currentStaffId,
   currentStaffName,
-  offices,
-  canChangeOffice,
   label,
   action = "reassign",
-  destinationOfficeId,
-  destinationStaffId,
 }: {
   complaintId: string;
   currentOfficeId: string | null;
   currentOfficeName: string | null;
   currentStaffId: string | null;
   currentStaffName: string | null;
-  offices: AssignmentOfficeOption[];
-  canChangeOffice: boolean;
   label?: string;
   action?: "assign" | "reassign" | "escalate";
-  destinationOfficeId?: string | null;
-  destinationStaffId?: string | null;
 }) {
   const router = useRouter();
   const { show: showToast } = useToast();
   const confirm = useConfirm();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOfficeId, setSelectedOfficeId] = useState(
-    destinationOfficeId ?? currentOfficeId ?? offices[0]?._id ?? "",
-  );
-  const [selectedStaffId, setSelectedStaffId] = useState<string>(
-    destinationStaffId ?? currentStaffId ?? "",
-  );
+  const [selectedStaffId, setSelectedStaffId] = useState(currentStaffId ?? "");
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,38 +68,34 @@ export function AssignmentDialog({
   const title =
     label ??
     (action === "escalate"
-      ? "Escalate Complaint"
-      : currentOfficeId || currentStaffId
-        ? "Reassign Complaint"
-        : "Assign Complaint");
-  const selectedOfficeName = useMemo(
-    () => offices.find((office) => office._id === selectedOfficeId)?.name ?? "selected office",
-    [offices, selectedOfficeId],
-  );
+      ? "Request OSAS Head Review"
+      : action === "reassign"
+        ? "Change Assignee"
+        : "Assign Staff");
 
   useEffect(() => {
-    if (!isOpen || !selectedOfficeId || action === "escalate") return;
+    if (!isOpen || !currentOfficeId || action === "escalate") return;
     setLoadingStaff(true);
-    clientFetch(`/api/offices/${selectedOfficeId}/staff`)
+    clientFetch(`/api/offices/${currentOfficeId}/staff`)
       .then((res) => (res.ok ? res.json() : { staff: [] }))
       .then((data) => setStaff(data.staff ?? []))
       .catch(() => setStaff([]))
       .finally(() => setLoadingStaff(false));
-  }, [action, isOpen, selectedOfficeId]);
+  }, [action, isOpen, currentOfficeId]);
 
   useEffect(() => {
     if (!isOpen) return;
-    setSelectedOfficeId(destinationOfficeId ?? currentOfficeId ?? offices[0]?._id ?? "");
-    setSelectedStaffId(destinationStaffId ?? currentStaffId ?? "");
+    setSelectedStaffId(currentStaffId ?? "");
     setStaffError(null);
+    setReasonError(null);
     setReason("");
     setCustomReason("");
     setError(null);
-  }, [currentOfficeId, currentStaffId, destinationOfficeId, destinationStaffId, isOpen, offices]);
+  }, [currentStaffId, isOpen]);
 
   async function submit() {
-    if (!selectedOfficeId) {
-      setError("Select an office before saving.");
+    if (!currentOfficeId) {
+      setError("OSAS staff are unavailable. Please try again.");
       return;
     }
     const targetStaff = staff.find((member) => member._id === selectedStaffId);
@@ -127,15 +104,15 @@ export function AssignmentDialog({
       return;
     }
     setStaffError(null);
-    const transferReason = requiresReason
+    const assignmentReason = requiresReason
       ? reason === "Other"
         ? customReason.trim()
         : reason
       : customReason.trim();
-    if (requiresReason && !transferReason) {
+    if (requiresReason && !assignmentReason) {
       setReasonError(
         action === "escalate"
-          ? "Please provide a reason for escalation."
+          ? "Please provide a reason for OSAS Head review."
           : "Please provide a reason for reassignment.",
       );
       setError("Please correct the highlighted fields below.");
@@ -150,21 +127,18 @@ export function AssignmentDialog({
       title,
       message:
         action === "escalate"
-          ? `Escalate this complaint to ${selectedOfficeName}?`
-          : `Assign this complaint to ${targetStaff!.firstName} ${targetStaff!.lastName} in ${selectedOfficeName}? This will append a new assignment history record.`,
+          ? "Request a review of this complaint by the OSAS Head?"
+          : `Assign this complaint to ${targetStaff!.firstName} ${targetStaff!.lastName}?`,
       confirmLabel: title,
-      danger: currentOfficeId !== null && selectedOfficeId !== currentOfficeId,
     });
     if (!ok) return;
 
     setError(null);
     setIsSubmitting(true);
     const payload: Record<string, unknown> = {
-      message: transferReason || undefined,
+      message: assignmentReason || undefined,
       action,
     };
-    if (canChangeOffice || selectedOfficeId !== currentOfficeId)
-      payload.assignedOfficeRef = selectedOfficeId;
     payload.assignedStaffRef = selectedStaffId || null;
 
     const res = await clientFetch(
@@ -174,7 +148,7 @@ export function AssignmentDialog({
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(action === "escalate" ? { reason: transferReason } : payload),
+        body: JSON.stringify(action === "escalate" ? { reason: assignmentReason } : payload),
       },
     );
     const data = await res.json().catch(() => ({}));
@@ -187,8 +161,8 @@ export function AssignmentDialog({
 
     showToast(
       action === "escalate"
-        ? "Complaint escalated"
-        : currentOfficeId || currentStaffId
+        ? "OSAS Head review requested"
+        : action === "reassign"
           ? "Complaint reassigned"
           : "Complaint assigned",
     );
@@ -218,46 +192,14 @@ export function AssignmentDialog({
             )}
 
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/30 px-4 py-3 text-sm">
-              <p className="text-xs text-[var(--muted-foreground)]">Current authority</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Handling office</p>
               <p className="mt-1 font-medium text-[var(--foreground)]">
-                {currentOfficeName ?? "No office assigned"}
+                {currentOfficeName ?? "OSAS"}
               </p>
               <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                 {currentStaffName ? `Staff: ${currentStaffName}` : "No staff member assigned"}
               </p>
             </div>
-
-            {(canChangeOffice || action === "escalate") && (
-              <FormField
-                label="Destination office"
-                hint={
-                  action === "escalate"
-                    ? "The destination is computed from the escalation hierarchy."
-                    : undefined
-                }
-              >
-                <Select
-                  value={selectedOfficeId}
-                  onValueChange={(value) => {
-                    setSelectedOfficeId(value);
-                    setSelectedStaffId("");
-                    setStaffError(null);
-                  }}
-                  disabled={!canChangeOffice || action === "escalate"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select office" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {offices.map((office) => (
-                      <SelectItem key={office._id} value={office._id}>
-                        {office.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-            )}
 
             {action !== "escalate" && (
               <FormField
@@ -306,13 +248,13 @@ export function AssignmentDialog({
               label={
                 requiresReason
                   ? action === "escalate"
-                    ? "Reason for escalation"
+                    ? "Reason for OSAS Head review"
                     : "Reason for reassignment"
                   : "Assignment note"
               }
               hint={
                 requiresReason
-                  ? "Required for the transfer record."
+                  ? "Required for the assignment history."
                   : "Optional note for the timeline."
               }
               required={requiresReason}
@@ -368,7 +310,7 @@ export function AssignmentDialog({
               onClick={submit}
               disabled={
                 isSubmitting ||
-                !selectedOfficeId ||
+                !currentOfficeId ||
                 (action !== "escalate" &&
                   (loadingStaff || !staff.some((member) => member._id === selectedStaffId))) ||
                 (requiresReason && (!reason || (reason === "Other" && !customReason.trim())))

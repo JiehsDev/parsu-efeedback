@@ -31,13 +31,13 @@ it("adds valid, actionable demo scenarios and preserves data and user changes on
   };
   await db.collection("complaints").insertOne(untouched);
   const result = await seedDemo(db, { now });
-  expect(result.created).toBe(100);
+  expect(result.created).toBe(30);
   expect(result.accounts).toHaveLength(8);
   expect(await db.collection("complaints").findOne({ _id: untouched._id })).toEqual(untouched);
   expect((await User.findById(student!._id))!.passwordHash).toBe(student!.passwordHash);
 
   const demo = await Complaint.find({ ticketNumber: /^DEMO-OSAS-/ }).lean();
-  expect(new Set(demo.map((item) => String(item.categoryRef))).size).toBe(40);
+  expect(new Set(demo.map((item) => String(item.categoryRef))).size).toBe(5);
   expect(new Set(demo.map((item) => item.priority)).size).toBe(4);
   expect(new Set(demo.map((item) => item.status))).toEqual(
     new Set(["submitted", "in_progress", "pending_information", "resolved", "closed", "withdrawn"]),
@@ -105,7 +105,7 @@ it("adds valid, actionable demo scenarios and preserves data and user changes on
   );
   const repeated = await seedDemo(db, { now });
   expect(repeated.created).toBe(0);
-  expect(repeated.skipped).toBe(100);
+  expect(repeated.skipped).toBe(30);
   expect((await Complaint.findById(target._id))!.title).toBe("My edited demo complaint");
   expect(
     await Promise.all(

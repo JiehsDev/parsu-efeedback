@@ -1,5 +1,5 @@
 import { isOversightRole } from "@/lib/osas-operations";
-import { canAccessComplaint } from "@/lib/complaint-access";
+import { canAccessComplaint, canAttachToComplaint } from "@/lib/complaint-access";
 // src/app/api/complaints/[id]/attachments/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       { status: 403 },
     );
 
-  if (!(await canAccessComplaint(session, complaint))) {
+  if (!(await canAttachToComplaint(session, complaint))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

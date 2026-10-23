@@ -1,4 +1,4 @@
-import { canAccessComplaint } from "@/lib/complaint-access";
+import { canAttachToComplaint } from "@/lib/complaint-access";
 import { isOversightRole } from "@/lib/osas-operations";
 // src/app/api/uploads/presign/route.ts
 import { NextRequest, NextResponse } from "next/server";
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     );
   if (complaint.isArchived)
     return NextResponse.json({ error: "Archived complaints are read-only." }, { status: 403 });
-  const canAccess = await canAccessComplaint(session, complaint);
+  const canAccess = await canAttachToComplaint(session, complaint);
   if (!canAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

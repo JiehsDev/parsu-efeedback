@@ -46,7 +46,9 @@ import {
 import { Complaint, Office, User, Assignment, ComplaintTimeline, ArchiveRequest } from "@/models";
 import { POST as submit, GET as list } from "@/app/api/complaints/route";
 import { POST as assign } from "@/app/api/complaints/[id]/assign/route";
-import { PATCH as status } from "@/app/api/complaints/[id]/route";
+import { GET as detail, PATCH as status } from "@/app/api/complaints/[id]/route";
+import { GET as readAttachments, POST as attach } from "@/app/api/complaints/[id]/attachments/route";
+import { canAttachToComplaint, canWriteInternalComplaintNotes } from "@/lib/complaint-access";
 import { POST as information } from "@/app/api/complaints/[id]/information-request/route";
 import { POST as note } from "@/app/api/complaints/[id]/notes/route";
 import { POST as escalate } from "@/app/api/complaints/[id]/escalate/route";
@@ -236,12 +238,42 @@ describe("centralized OSAS architecture", () => {
     );
     await expect(
       (await list(new NextRequest("http://localhost/api/complaints"))).json(),
-    ).resolves.toMatchObject({ total: 0 });
+    ).resolves.toMatchObject({ total: 1 });
     d.complaint.assignedStaffRef = d.staff._id;
     d.complaint.status = "in_progress";
     await d.complaint.save();
     expect((await status(request({ status: "resolved" }, "PATCH"), ctx)).status).toBe(200);
   });
+  it.each(["submitted", "in_progress", "resolved", "closed"])(
+    "lets office colleagues read %s complaints without granting actions",
+    async (complaintStatus) => {
+      const d = await setup();
+      d.complaint.assignedStaffRef = d.other._id;
+      d.complaint.status = complaintStatus as any;
+      await d.complaint.save();
+      d.login(d.staff);
+      const ctx = context(d.complaint._id);
+      const getRequest = new NextRequest("http://localhost/api/test");
+      expect((await detail(getRequest, ctx)).status).toBe(200);
+      expect((await readAttachments(getRequest, ctx)).status).toBe(200);
+      expect(await (await list(new NextRequest("http://localhost/api/complaints"))).json()).toMatchObject({ total: 1 });
+      for (const [handler, body, method] of [
+        [status, { status: "resolved", resolutionSummary: "Completed" }, "PATCH"],
+        [note, { body: "Unauthorized colleague note" }, "POST"],
+        [information, { requestMessage: "Please send supporting details" }, "POST"],
+        [attach, {}, "POST"],
+        [requestArchive, { reason: "Requesting archival review" }, "POST"],
+      ] as const) {
+        expect((await handler(request(body, method), ctx)).status).toBe(403);
+      }
+      const session = await mocks.auth();
+      expect(await canAttachToComplaint(session, d.complaint)).toBe(false);
+      expect(await canWriteInternalComplaintNotes(session, d.complaint)).toBe(false);
+      d.login(d.outsider);
+      expect((await detail(getRequest, ctx)).status).toBe(403);
+      expect(await (await list(new NextRequest("http://localhost/api/complaints"))).json()).toMatchObject({ total: 0 });
+    },
+  );
   it("returns released assignments to the OSAS unassigned queue", async () => {
     const d = await setup();
     d.complaint.assignedStaffRef = d.staff._id;

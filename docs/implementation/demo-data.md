@@ -4,7 +4,7 @@ Run `npm run seed:demo` from the project root with the development database conf
 
 The normal development reset seed remains separate and clears tickets. Do not run that reset when you want to keep your demo work.
 
-With the standard 40 categories, the demo seed adds **100 complaints**: 20 workflow examples and 80 recent/historical cases across all categories, four priorities, and approximately six months. These populate charts, SLA compliance, response/resolution averages, satisfaction, filters, and report exports. Every complaint belongs to OSAS. Staff examples are assigned only to active OSAS personnel.
+With the five OSAS categories, the demo seed adds **30 complaints**: 20 workflow examples and 10 recent/historical cases across the OSAS categories, four priorities, and approximately six months. These populate charts, SLA compliance, response/resolution averages, satisfaction, filters, and report exports. Every complaint belongs to OSAS. Staff examples are assigned only to active OSAS personnel.
 
 ## Accounts
 
@@ -13,8 +13,8 @@ New demo accounts use password `ParSU_test2026`. Existing account passwords are 
 | Account | Purpose |
 | --- | --- |
 | `osasdirector@parsu.edu.ph` | Existing OSAS head: assignment, personal handling, supervisor and archive reviews. Use its existing password. |
-| `osas.demo.staff@parsu.edu.ph` | First demo handler; can see their own assigned complaints. |
-| `osas.demo.staff2@parsu.edu.ph` | Second demo handler; verify a different assignment queue. |
+| `osas.demo.staff@parsu.edu.ph` | First demo handler; can view all OSAS complaints and act only on their assignments. |
+| `osas.demo.staff2@parsu.edu.ph` | Second demo handler; same office queue, different complaints available for action. |
 | `demo.student@parsu.edu.ph` | Owns all 20 workflow examples plus historical cases; submit information, rate, close, or withdraw eligible complaints. |
 | `demo.student2@parsu.edu.ph` through `demo.student6@parsu.edu.ph` | Separate students across configured colleges with their own historical complaints. |
 
@@ -30,7 +30,7 @@ Search by ticket number in the complaint list. All numbers start with `DEMO-OSAS
 | `0002` | Unassigned, response SLA nearing its deadline. |
 | `0003` | Unassigned and overdue. |
 | `0004` | Assigned to second demo handler; public status message and private internal note. |
-| `0005` | Assigned to second demo handler; compare visibility between staff accounts. |
+| `0005` | Assigned to second demo handler; compare action permissions between staff accounts. |
 | `0006` | Head handling personally. |
 | `0007` | Pending information: sign in as primary demo student and respond. |
 | `0008` | Student already responded; handler continues processing. |
@@ -54,3 +54,7 @@ Use a real local file when trying attachment upload/download; the seed does not 
 ## Verification
 
 `npx vitest run src/features/seed/demo-seed.integration.test.ts --maxWorkers=1` verifies schema validity, workflow coverage, account references, both SLA clocks, data preservation, idempotence, and recovery after an interrupted fixture insert using an isolated database.
+
+## OSAS catalog cleanup
+
+`node scripts/cleanup-non-osas.cjs` previews removal of unrelated demo complaints and non-OSAS staff logins. Add `--apply` to save a full local EJSON database backup under `.local-backups` and apply it. The five student-affairs categories remain selectable. Categories still referenced by user-entered complaints are retired instead of deleted. Staff identities referenced by surviving history are disabled instead of deleted; their sessions and reset tokens are revoked. Students, OSAS personnel, administrators, and oversight accounts are preserved. This development command refuses production mode.

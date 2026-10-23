@@ -111,8 +111,8 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
             </FormField>
 
             <p className="text-xs text-[var(--muted-foreground)]">
-              Office and priority are set from this category&apos;s routing and SLA rules, not here
-              — edit them from the Configuration Status panel below.
+              Complaints are handled by OSAS. Update this category&apos;s priority in the SLA settings
+              in the Configuration Status panel.
             </p>
 
             <button

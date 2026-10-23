@@ -159,7 +159,7 @@ export default function AdminCategoriesPage() {
       )}
 
       <p className="text-sm text-[var(--muted-foreground)]">
-        Each category's routing rule is managed from its own page. Institution-wide SLA defaults
+        All complaints are handled by OSAS. Institution-wide SLA defaults
         live in{" "}
         <Link href="/admin/sla-rules" className="text-[var(--primary)] hover:underline">
           SLA Rules

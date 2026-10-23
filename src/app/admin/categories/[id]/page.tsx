@@ -8,7 +8,6 @@ import {
   Building2,
   CheckCircle2,
   Flag,
-  Route,
   Tag,
   Timer,
   XCircle,
@@ -17,11 +16,9 @@ import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Category } from "@/models/Category";
 import { Office } from "@/models/Office";
-import { RoutingRule } from "@/models/RoutingRule";
 import { SLARule } from "@/models/SLARule";
 import { CategoryStatusToggle } from "@/components/admin/CategoryStatusToggle";
 import { EditCategoryButton } from "@/components/admin/EditCategoryButton";
-import { EditRoutingRuleButton } from "@/components/admin/EditRoutingRuleButton";
 import { EditSlaRuleButton } from "@/components/admin/EditSlaRuleButton";
 
 export default async function AdminCategoryDetailPage({
@@ -43,11 +40,8 @@ export default async function AdminCategoryDetailPage({
 
   const c = category as any;
 
-  const [defaultOffice, routingRule, slaRule, allOffices] = await Promise.all([
+  const [defaultOffice, slaRule, allOffices] = await Promise.all([
     c.defaultOfficeRef ? Office.findById(c.defaultOfficeRef).select("name code").lean() : null,
-    RoutingRule.findOne({ categoryRef: id, isActive: true })
-      .populate("targetOfficeRef", "name")
-      .lean(),
     // A category only ever has one active SLA rule — its priority is fixed
     // to the category's own defaultPriority (see src/models/SLARule.ts).
     SLARule.findOne({ categoryRef: id, isActive: true })
@@ -152,34 +146,11 @@ export default async function AdminCategoryDetailPage({
           </div>
           <div className="mt-4 space-y-4 text-sm">
             <div className="flex items-start gap-2.5">
-              {routingRule ? (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              ) : (
-                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--destructive)]" />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
-                    <Route className="h-3.5 w-3.5" />
-                    Routing rule
-                  </p>
-                  <EditRoutingRuleButton
-                    categoryId={String(c._id)}
-                    rule={
-                      routingRule
-                        ? {
-                            _id: String((routingRule as any)._id),
-                            targetOfficeRef: String((routingRule as any).targetOfficeRef?._id),
-                          }
-                        : null
-                    }
-                    offices={officeOptions}
-                  />
-                </div>
+              <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
+              <div>
+                <p className="font-medium text-[var(--foreground)]">Handling office</p>
                 <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                  {routingRule
-                    ? `Routes to ${(routingRule as any).targetOfficeRef?.name ?? "—"}`
-                    : "No active routing rule — this category can't be activated until one exists."}
+                  All complaints are handled by OSAS.
                 </p>
               </div>
             </div>

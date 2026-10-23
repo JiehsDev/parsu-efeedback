@@ -41,8 +41,6 @@ export async function ComplaintActions({
     currentOfficeName: office?.name ?? "OSAS",
     currentStaffId: c.assignedStaffRef ? refId(c.assignedStaffRef) : null,
     currentStaffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
-    offices: office ? [{ _id: refId(office._id), name: office.name }] : [],
-    canChangeOffice: false,
   };
   if (!admin && !head && !mine) return null;
   return (
@@ -95,8 +93,6 @@ export async function ComplaintActions({
               {...assignmentProps}
               label="Request OSAS Head Review"
               action="escalate"
-              destinationOfficeId={refId(target.office._id)}
-              destinationStaffId={refId(target.staff._id)}
             />
           )}
           {(head || admin) && (

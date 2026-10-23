@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { canAccessComplaint, canWriteInternalComplaintNotes } from "@/lib/complaint-access";
-import { refId } from "@/lib/osas-operations";
+import { canSuperviseComplaint, refId } from "@/lib/osas-operations";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { ComplaintNote } from "@/models/ComplaintNote";
@@ -60,6 +60,9 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
       .lean(),
   ]);
   const readOnly = !(await canWriteInternalComplaintNotes(session, c));
+  const viewOnly = ["office_staff", "osas"].includes(session.user.role) &&
+    refId(c.assignedStaffRef) !== session.user.id &&
+    !(await canSuperviseComplaint(session, c));
   return (
     <div className="mx-auto max-w-[1440px] space-y-5">
       <Link href={`/${base}/complaints`} className="text-sm text-[var(--muted-foreground)]">
@@ -76,6 +79,11 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
           )}
         </div>
       </header>
+      {viewOnly && (
+        <p className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4 text-sm text-[var(--foreground)]">
+          View only. You can review this office complaint, but only its assigned handler can take action.
+        </p>
+      )}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
         <main className="min-w-0 space-y-5">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">

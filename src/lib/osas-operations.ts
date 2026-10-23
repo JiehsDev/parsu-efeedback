@@ -1,4 +1,3 @@
-import { Types } from "mongoose";
 import { Office } from "@/models/Office";
 
 export function refId(value: any): string {
@@ -45,12 +44,8 @@ export async function canSuperviseComplaint(session: any, complaint: any): Promi
 export async function staffComplaintFilter(session: any): Promise<Record<string, unknown>> {
   const office = await getOperationalOffice();
   if (!office || !["office_staff", "osas"].includes(session.user.role)) return { _id: { $in: [] } };
-  if (await isOsasHead(session)) return { $and: [{ assignedOfficeRef: office._id }] };
   if (refId(session.user.officeRef) !== refId(office._id)) return { _id: { $in: [] } };
-  return {
-    $and: [
-      { assignedOfficeRef: office._id },
-      { assignedStaffRef: new Types.ObjectId(session.user.id) },
-    ],
-  };
+  // Office membership controls reading; handler assignment controls mutations.
+  // Keep this independent of lifecycle status so resolved cases remain visible.
+  return { assignedOfficeRef: office._id };
 }

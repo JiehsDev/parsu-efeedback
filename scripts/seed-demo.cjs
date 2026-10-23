@@ -4,6 +4,7 @@ const { MongoClient, ObjectId } = require("mongodb");
 const bcrypt = require("bcryptjs");
 const { createHash } = require("node:crypto");
 const { addSlaHours } = require("../src/lib/sla-calendar.ts");
+const { SEED_CATEGORIES } = require("../src/features/seed/categories.ts");
 
 const PREFIX = "DEMO-OSAS-";
 const PASSWORD = "ParSU_test2026";
@@ -24,7 +25,14 @@ async function seedDemo(db, { now = new Date() } = {}) {
   if (!head) throw new Error("Configure an active OSAS head before adding demo data.");
   const categories = await db
     .collection("categories")
-    .find({ isActive: true })
+    .find({
+      isActive: true,
+      defaultOfficeRef: office._id,
+      $or: [
+        { name: { $in: SEED_CATEGORIES.map((category) => category.name) } },
+        { domain: "student_services" },
+      ],
+    })
     .sort({ name: 1 })
     .toArray();
   if (!categories.length) throw new Error("At least one active category is required.");
@@ -107,7 +115,7 @@ async function seedDemo(db, { now = new Date() } = {}) {
     { label: "Overdue unassigned complaint", status: "submitted", due: -24 },
     { label: "Staff handling with public update", status: "in_progress", age: 1 },
     {
-      label: "Another staff member's private queue",
+      label: "Another staff member's complaint (view only)",
       status: "in_progress",
       age: 1,
       otherStaff: true,

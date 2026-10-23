@@ -1,4 +1,4 @@
-import { staffComplaintFilter } from "@/lib/osas-operations";
+import { isOsasHead, staffComplaintFilter } from "@/lib/osas-operations";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -214,6 +214,7 @@ export default async function StaffComplaintsPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
   await connectToDatabase();
+  const isHead = await isOsasHead(session);
   const params = await searchParams;
   const pageNumber = Math.max(1, Number(params.page) || 1);
   const PAGE_SIZE = 25;
@@ -224,7 +225,6 @@ export default async function StaffComplaintsPage({
   const activeFilter: Record<string, unknown> = {
     ...(await staffComplaintFilter(session)),
     isArchived: false,
-    status: { $ne: "withdrawn" },
     ...(validStatus ? { status: validStatus } : {}),
     ...(isMine ? { assignedStaffRef: session.user.id } : {}),
     ...(isUnassigned ? { assignedStaffRef: null } : {}),
@@ -241,7 +241,6 @@ export default async function StaffComplaintsPage({
   const allComplaints = await Complaint.find({
     ...(await staffComplaintFilter(session)),
     isArchived: false,
-    status: { $ne: "withdrawn" },
   })
     .populate("assignedOfficeRef", "name")
     .populate("categoryRef", "name")
@@ -253,7 +252,7 @@ export default async function StaffComplaintsPage({
     .populate("assignedStaffRef", "firstName lastName role")
     .lean();
   const active = allComplaints.filter(
-    (complaint: any) => !["resolved", "closed"].includes(complaint.status),
+    (complaint: any) => !["resolved", "closed", "withdrawn"].includes(complaint.status),
   );
   const myAssignedCount = active.filter(
     (complaint: any) =>
@@ -312,12 +311,14 @@ export default async function StaffComplaintsPage({
     hrefFor({ ...preserved, status: validStatus, ...values });
   const emptyMessage =
     params.sla === "overdue"
-      ? "No overdue complaints in your office."
+      ? "No overdue complaints in your queue."
       : isMine
         ? "You currently have no assigned complaints."
         : hasFilters
           ? "No complaints match the selected filters."
-          : "No open complaints currently in your office.";
+          : isHead
+            ? "No complaints currently in the OSAS queue."
+            : "No complaints currently in your office.";
   const totalFiltered = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const safePage = Math.min(pageNumber, totalPages);
@@ -337,11 +338,13 @@ export default async function StaffComplaintsPage({
             Complaint Queue
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Work from the most urgent complaint first.
+            {isHead
+              ? "Review the OSAS queue and assign complaints to a handler."
+              : "View all OSAS complaints. You can take action only on complaints assigned to you."}
           </p>
         </div>
         <p className="text-xs text-[var(--muted-foreground)]">
-          {totalOpen} open complaint{totalOpen === 1 ? "" : "s"} in your office
+          {totalOpen} open complaint{totalOpen === 1 ? "" : "s"} in your queue
         </p>
       </header>
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -386,9 +389,9 @@ export default async function StaffComplaintsPage({
           {tabItems.map((tab) => (
             <Link
               key={tab.value || "all"}
-              href={filterHref({ status: tab.value || undefined })}
-              aria-current={(validStatus ?? "") === tab.value ? "page" : undefined}
-              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3 ${(validStatus ?? "") === tab.value ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+              href={tab.value ? filterHref({ status: tab.value }) : "/staff/complaints"}
+              aria-current={(tab.value ? validStatus === tab.value : !hasFilters) ? "page" : undefined}
+              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3 ${(tab.value ? validStatus === tab.value : !hasFilters) ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
             >
               {tab.label} <span className="ml-1 tabular-nums opacity-65">{tab.count}</span>
             </Link>
@@ -473,7 +476,22 @@ export default async function StaffComplaintsPage({
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--muted)] text-[var(--muted-foreground)]">
             <Inbox className="h-5 w-5" />
           </span>
-          <p className="text-sm font-semibold text-[var(--foreground)]">{emptyMessage}</p>
+          <div>
+            <p className="text-sm font-semibold text-[var(--foreground)]">{emptyMessage}</p>
+            {hasFilters && (
+              <Link
+                href="/staff/complaints"
+                className="mt-2 inline-flex text-sm font-semibold text-[var(--primary)] hover:underline"
+              >
+                View all office complaints
+              </Link>
+            )}
+            {!isHead && allComplaints.length === 0 && (
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                New complaints routed to OSAS will appear here for everyone in the office.
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         <section

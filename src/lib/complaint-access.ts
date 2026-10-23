@@ -24,6 +24,12 @@ export async function canAccessInternalComplaintNotes(
 ): Promise<boolean> {
   return session.user.role !== "student" && canAccessComplaint(session, complaint);
 }
+export async function canAttachToComplaint(session: any, complaint: any): Promise<boolean> {
+  if (!(await canAccessComplaint(session, complaint))) return false;
+  if (["osas", "office_staff"].includes(session.user.role))
+    return canProcessComplaint(session, complaint);
+  return session.user.role === "student" || session.user.role === "administrator";
+}
 export async function canWriteInternalComplaintNotes(
   session: any,
   complaint: any,
