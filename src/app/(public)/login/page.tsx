@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -42,6 +42,8 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   // Fixed: Replaced deprecated FormEvent with modern React 19 safe event modeling
   async function handleSubmit(event: React.BaseSyntheticEvent) {
@@ -95,7 +97,7 @@ function LoginForm() {
           Sign in to your ParSU e-Feedback account
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
+        <form method="post" onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
           {error && (
             <div
               role="alert"
@@ -169,7 +171,6 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                tabIndex={-1}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
               >
@@ -181,7 +182,7 @@ function LoginForm() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={!ready || isSubmitting}
             className="flex w-full items-center justify-center gap-2 rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -189,7 +190,6 @@ function LoginForm() {
           </button>
         </form>
       </div>
-
     </main>
   );
 }

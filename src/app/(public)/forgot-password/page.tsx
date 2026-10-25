@@ -24,7 +24,10 @@ export default function ForgotPasswordPage() {
         </p>
 
         {state?.success ? (
-          <div className="mt-8 flex items-start gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)]/40 p-4 text-sm text-[var(--foreground)]">
+          <div
+            role="status"
+            className="mt-8 flex items-start gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)]/40 p-4 text-sm text-[var(--foreground)]"
+          >
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
             <span>{state.message}</span>
           </div>
@@ -44,7 +47,7 @@ export default function ForgotPasswordPage() {
                 Email
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                 <input
                   id="email"
                   name="email"
@@ -55,14 +58,16 @@ export default function ForgotPasswordPage() {
                   autoComplete="email"
                   autoFocus
                   required
+                  aria-invalid={Boolean(state?.fieldErrors?.email?.length)}
+                  aria-describedby={state?.fieldErrors?.email?.length ? "email-error" : undefined}
                   className={inputClass}
                 />
               </div>
-              {state?.fieldErrors?.email?.map((message) => (
-                <p key={message} className="text-xs text-[var(--destructive)]">
-                  {message}
+              {state?.fieldErrors?.email?.length && (
+                <p id="email-error" className="text-xs text-[var(--destructive)]">
+                  {state.fieldErrors.email.join(" ")}
                 </p>
-              ))}
+              )}
             </div>
 
             <button

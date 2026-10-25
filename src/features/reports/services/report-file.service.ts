@@ -20,6 +20,8 @@ const COLUMNS = [
   { key: "resolutionSummary", label: "Resolution details" },
   { key: "slaCompliant", label: "SLA Met" },
   { key: "slaCalendar", label: "SLA Calendar" },
+  { key: "forwardedTo", label: "Forwarded to" },
+  { key: "forwardedAt", label: "Forwarded at" },
 ] as const;
 
 export function generateCsv(rows: ReportRow[]): Buffer {

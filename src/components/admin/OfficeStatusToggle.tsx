@@ -27,7 +27,7 @@ export function OfficeStatusToggle({
     if (isActive) {
       const ok = await confirm({
         title: "Deactivate this office?",
-        message: `"${officeName}" will stop being assignable to new complaints or staff.`,
+        message: `"${officeName}" will be marked inactive for new staff assignments. Existing complaint records will remain available.`,
         confirmLabel: "Deactivate",
         danger: true,
       });

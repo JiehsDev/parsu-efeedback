@@ -1,5 +1,4 @@
 import { canAccessComplaint } from "@/lib/complaint-access";
-import { isOversightRole } from "@/lib/osas-operations";
 // src/features/notifications/services/notification.service.ts
 import { connectToDatabase } from "@/lib/db";
 import { Notification } from "@/models/Notification";
@@ -22,7 +21,6 @@ import {
 async function getRecipient(userId: string, complaintId?: string | null) {
   const user = await User.findById(userId).select("email firstName lastName role officeRef").lean();
   if (!user) return null;
-  if (complaintId && isOversightRole(user.role)) return null;
   if (complaintId && user.role === "office_staff") {
     const complaint = await Complaint.findById(complaintId).lean();
     if (
@@ -36,7 +34,7 @@ async function getRecipient(userId: string, complaintId?: string | null) {
   }
   if (complaintId && isScopedAdminRole(user.role)) {
     const complaint = await Complaint.findById(complaintId)
-      .select("_id assignedOfficeRef categoryRef")
+      .select("_id assignedOfficeRef categoryRef forwardedToRole forwardedAt")
       .lean();
     if (!complaint || !(await isComplaintInAdminScope(getAdminScope(user.role), complaint)))
       return null;

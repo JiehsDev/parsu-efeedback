@@ -136,16 +136,16 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {oversight
-              ? `${role.toUpperCase()} oversight`
+            {data.receivingOffice
+              ? `${role.toUpperCase()} dashboard`
               : role === "administrator"
                 ? "System overview"
                 : "OSAS dashboard"}
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            {oversight
-              ? "Monitor open complaints and service deadlines."
-              : "See what needs attention and pick up your next action."}
+            {data.receivingOffice
+              ? "Handle complaints formally forwarded to your office by OSAS."
+              : "Review OSAS complaints, deadlines, and assigned work."}
           </p>
         </div>
         <Link
@@ -156,6 +156,24 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         </Link>
       </header>
 
+      {data.forwardingStats && (
+        <section aria-label="Forwarding summary" className="grid gap-3 sm:grid-cols-3">
+          {[
+            ["Pending Forwarding Requests", data.forwardingStats.pending],
+            ["Forwarded to VPAA", data.forwardingStats.vpaa],
+            ["Forwarded to VPAF", data.forwardingStats.vpaf],
+          ].map(([label, count]) => (
+            <Link
+              key={label}
+              href={`/${base}/forwarding-requests`}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
+            >
+              <h2 className="text-xs text-[var(--muted-foreground)]">{label}</h2>
+              <p className="mt-2 text-2xl font-semibold">{count}</p>
+            </Link>
+          ))}
+        </section>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-12">
         <section className="col-span-2 flex flex-col justify-between rounded-2xl bg-[var(--primary)] p-4 text-[var(--primary-foreground)] lg:col-span-3 lg:row-span-2">
           <div className="flex items-center justify-between gap-2">

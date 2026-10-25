@@ -48,10 +48,8 @@ interface ReportRecord {
 const STATUS_OPTIONS = [
   "",
   "submitted",
-  "assigned",
   "in_progress",
   "pending_information",
-  "escalated",
   "resolved",
   "closed",
 ];
@@ -146,22 +144,26 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
       },
     };
 
-    const res = await clientFetch("/api/reports/export", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    try {
+      const res = await clientFetch("/api/reports/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "Report generation failed.");
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "Report generation failed.");
+        return;
+      }
+
+      toast.show(`${form.format.toUpperCase()} report generated.`, "success");
+      refreshReports();
+    } catch {
+      setError("Could not generate the report. Please try again.");
+    } finally {
       setIsGenerating(false);
-      return;
     }
-
-    setIsGenerating(false);
-    toast.show(`${form.format.toUpperCase()} report generated.`, "success");
-    refreshReports();
   }
 
   async function handleDelete(report: ReportRecord) {
@@ -251,12 +253,14 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
 
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--foreground)]">Format</label>
+            <label htmlFor="report-format" className="text-sm font-medium text-[var(--foreground)]">
+              Format
+            </label>
             <Select
               value={form.format}
               onValueChange={(value) => setForm((p) => ({ ...p, format: value as any }))}
             >
-              <SelectTrigger>
+              <SelectTrigger id="report-format">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -268,12 +272,17 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--foreground)]">Category</label>
+            <label
+              htmlFor="report-category"
+              className="text-sm font-medium text-[var(--foreground)]"
+            >
+              Category
+            </label>
             <Select
               value={form.categoryRef}
               onValueChange={(value) => setForm((p) => ({ ...p, categoryRef: value }))}
             >
-              <SelectTrigger>
+              <SelectTrigger id="report-category">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
@@ -289,12 +298,17 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
 
           {showOfficeFilter && (
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--foreground)]">Office</label>
+              <label
+                htmlFor="report-office"
+                className="text-sm font-medium text-[var(--foreground)]"
+              >
+                Office
+              </label>
               <Select
                 value={form.officeRef}
                 onValueChange={(value) => setForm((p) => ({ ...p, officeRef: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger id="report-office">
                   <SelectValue placeholder="All offices" />
                 </SelectTrigger>
                 <SelectContent>
@@ -310,12 +324,14 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
           )}
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--foreground)]">Status</label>
+            <label htmlFor="report-status" className="text-sm font-medium text-[var(--foreground)]">
+              Status
+            </label>
             <Select
               value={form.status}
               onValueChange={(value) => setForm((p) => ({ ...p, status: value }))}
             >
-              <SelectTrigger>
+              <SelectTrigger id="report-status">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -329,8 +345,11 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--foreground)]">From</label>
+            <label htmlFor="report-from" className="text-sm font-medium text-[var(--foreground)]">
+              From
+            </label>
             <input
+              id="report-from"
               type="date"
               value={form.dateFrom}
               onChange={(e) => setForm((p) => ({ ...p, dateFrom: e.target.value }))}
@@ -339,8 +358,11 @@ export function ReportsPanel({ showOfficeFilter = true }: { showOfficeFilter?: b
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--foreground)]">To</label>
+            <label htmlFor="report-to" className="text-sm font-medium text-[var(--foreground)]">
+              To
+            </label>
             <input
+              id="report-to"
               type="date"
               value={form.dateTo}
               onChange={(e) => setForm((p) => ({ ...p, dateTo: e.target.value }))}

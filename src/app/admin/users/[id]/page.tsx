@@ -34,11 +34,7 @@ function affiliationLabel(u: any): string {
   return "—";
 }
 
-export default async function AdminUserDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!Types.ObjectId.isValid(id)) notFound();
 
@@ -103,7 +99,7 @@ export default async function AdminUserDetailPage({
               <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
                 {u.firstName} {u.lastName}
               </h1>
-              <span className="shrink-0 rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+              <span className="shrink-0 rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
                 {u.role.replace("_", " ")}
               </span>
             </div>
@@ -111,7 +107,7 @@ export default async function AdminUserDetailPage({
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                   u.isActive
-                    ? "bg-emerald-500/20 text-emerald-400"
+                    ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
                     : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                 }`}
               >

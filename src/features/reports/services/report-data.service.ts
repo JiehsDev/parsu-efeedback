@@ -22,6 +22,8 @@ export interface ReportFilters {
 }
 
 export interface ReportRow {
+  forwardedTo?: string;
+  forwardedAt?: string;
   ticketNumber: string;
   title: string;
   status: string;
@@ -170,6 +172,8 @@ export async function queryReportData(
         : "N/A";
 
     return {
+      forwardedTo: c.forwardedToRole?.toUpperCase() ?? "",
+      forwardedAt: c.forwardedAt ? new Date(c.forwardedAt).toISOString() : "",
       ticketNumber: c.ticketNumber,
       title: c.title,
       status: c.status,

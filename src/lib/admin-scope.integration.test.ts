@@ -43,19 +43,19 @@ async function setup() {
   });
   return { office, student, head, c, old };
 }
-describe("oversight and operational read scope", () => {
+describe("forwarded and operational read scope", () => {
   it.each(["vpaa", "vpaf"] as const)(
-    "allows %s global read-only oversight while domain scoping is unavailable",
+    "denies %s complaints that have not been formally forwarded",
     async (role) => {
       const d = await setup();
       const scope = getAdminScope(role);
-      expect(await Complaint.countDocuments(await complaintFilterForScope(scope))).toBe(2);
-      expect(await isComplaintInAdminScope(scope, d.c)).toBe(true);
-      expect(await isComplaintInAdminScope(scope, d.old)).toBe(true);
+      expect(await Complaint.countDocuments(await complaintFilterForScope(scope))).toBe(0);
+      expect(await isComplaintInAdminScope(scope, d.c)).toBe(false);
+      expect(await isComplaintInAdminScope(scope, d.old)).toBe(false);
       const session = { user: { id: String(d.student._id), role } };
-      expect(await canAccessComplaint(session, d.c)).toBe(true);
+      expect(await canAccessComplaint(session, d.c)).toBe(false);
       expect(await canWriteInternalComplaintNotes(session, d.c)).toBe(false);
-      expect((await queryReportData({}, await complaintFilterForScope(scope))).length).toBe(2);
+      expect((await queryReportData({}, await complaintFilterForScope(scope))).length).toBe(0);
     },
   );
   it("keeps OSAS handling limited to the OSAS queue", async () => {
@@ -89,8 +89,8 @@ describe("oversight and operational read scope", () => {
         });
         expect(response.status).toBe(200);
         const body = await response.text();
-        expect(body).toContain("OSAS-RECORD");
-        expect(body).toContain("HISTORICAL-RECORD");
+        expect(body).not.toContain("OSAS-RECORD");
+        expect(body).not.toContain("HISTORICAL-RECORD");
       }
     },
   );

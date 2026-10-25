@@ -149,7 +149,7 @@ export default function AdminSettingsPage() {
           </div>
         )}
         {success && (
-          <div className="flex items-start gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-400">
+          <div className="flex items-start gap-2 rounded-2xl border border-[var(--qa-success-strong)]/30 bg-[var(--qa-success-soft)] px-3 py-2.5 text-sm text-[var(--qa-success-strong)]">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{success}</span>
           </div>
@@ -187,8 +187,11 @@ export default function AdminSettingsPage() {
             <p className="text-sm font-semibold text-[var(--foreground)]">Ticket Numbering</p>
           </div>
           <div className="mt-4 space-y-1.5">
-            <label className="text-xs text-[var(--muted-foreground)]">Prefix</label>
+            <label htmlFor="settings-field-1" className="text-xs text-[var(--muted-foreground)]">
+              Prefix
+            </label>
             <input
+              id="settings-field-1"
               value={settings.ticketNumberPrefix}
               onChange={(e) => setSettings({ ...settings, ticketNumberPrefix: e.target.value })}
               className={inputClass}
@@ -208,8 +211,11 @@ export default function AdminSettingsPage() {
           </div>
           <div className="mt-4 space-y-3">
             <div className="space-y-1.5">
-              <label className="text-xs text-[var(--muted-foreground)]">Max file size (MB)</label>
+              <label htmlFor="settings-field-2" className="text-xs text-[var(--muted-foreground)]">
+                Max file size (MB)
+              </label>
               <input
+                id="settings-field-2"
                 type="number"
                 min={1}
                 value={settings.uploadMaxFileSizeMb}
@@ -220,10 +226,11 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-[var(--muted-foreground)]">
+              <label htmlFor="settings-field-3" className="text-xs text-[var(--muted-foreground)]">
                 Allowed MIME types (comma-separated)
               </label>
               <input
+                id="settings-field-3"
                 value={mimeTypesInput}
                 onChange={(e) => setMimeTypesInput(e.target.value)}
                 className={inputClass}
@@ -234,12 +241,12 @@ export default function AdminSettingsPage() {
 
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]">
               <ShieldAlert className="h-[18px] w-[18px]" />
             </span>
             <p className="text-sm font-semibold text-[var(--foreground)]">Authentication</p>
           </div>
-          <div className="mt-3 flex items-start gap-2 rounded-2xl bg-amber-500/10 px-3 py-2.5 text-xs text-amber-400">
+          <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[var(--qa-amber-soft)] px-3 py-2.5 text-xs text-[var(--qa-amber-strong)]">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>
               Session timeout is set at server startup (Auth.js config) — changing it here does not
@@ -249,10 +256,11 @@ export default function AdminSettingsPage() {
           </div>
           <div className="mt-4 space-y-3">
             <div className="space-y-1.5">
-              <label className="text-xs text-[var(--muted-foreground)]">
+              <label htmlFor="settings-field-4" className="text-xs text-[var(--muted-foreground)]">
                 Max failed login attempts
               </label>
               <input
+                id="settings-field-4"
                 type="number"
                 min={1}
                 value={settings.authMaxFailedLoginAttempts}
@@ -263,10 +271,11 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-[var(--muted-foreground)]">
+              <label htmlFor="settings-field-5" className="text-xs text-[var(--muted-foreground)]">
                 Lockout duration (minutes)
               </label>
               <input
+                id="settings-field-5"
                 type="number"
                 min={1}
                 value={settings.authLockoutDurationMinutes}
@@ -277,10 +286,11 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-[var(--muted-foreground)]">
+              <label htmlFor="settings-field-6" className="text-xs text-[var(--muted-foreground)]">
                 Session max age (minutes) — requires restart
               </label>
               <input
+                id="settings-field-6"
                 type="number"
                 min={1}
                 value={settings.authSessionMaxAgeMinutes}

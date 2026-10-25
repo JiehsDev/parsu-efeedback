@@ -95,10 +95,10 @@ export function FeedbackForm() {
           <CheckCircle2 className="h-4 w-4" />
         </span>
         <p className="mt-3 text-sm font-medium text-[var(--qa-success-strong)]">
-          Feedback sent to Quality Assurance
+          Feedback sent to OSAS
         </p>
         <p className="mt-1 text-sm text-[var(--qa-success-strong)]/80">
-          There is no ticket to track — QA reviews feedback in batches when looking for patterns.
+          Feedback does not create a complaint ticket. OSAS can review your suggestion.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
           <button
@@ -213,8 +213,8 @@ export function FeedbackForm() {
               either way — so the honest promise is about who sees it, not
               about the record not existing. */}
           <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
-            Your name will not be shown to Quality Assurance staff. The submission is still linked
-            to your account in the system&rsquo;s records.
+            Your name will not be shown in the OSAS feedback list. The submission is still linked to
+            your account in the system&rsquo;s records.
           </p>
         </div>
 

@@ -63,22 +63,28 @@ export async function userFilterForScope(scope: AdminScope): Promise<Record<stri
   return officeIds ? { officeRef: { $in: officeIds } } : {};
 }
 
-// VPAA/VPAF have global read-only oversight until a reliable category-domain
-// mapping is configured. Their office classification never grants processing rights.
+// Receiving-office visibility requires a formal forwarding marker as well as current ownership.
 export async function complaintFilterForScope(scope: AdminScope): Promise<Record<string, unknown>> {
-  if (scope.kind !== "student") return {};
-  const office = await getOperationalOffice();
-  return { $and: [office ? { assignedOfficeRef: office._id } : { _id: { $in: [] } }] };
+  if (scope.kind === "all") return {};
+  if (scope.kind === "student") {
+    const office = await getOperationalOffice();
+    return office ? { assignedOfficeRef: office._id } : { _id: { $in: [] } };
+  }
+  const role = scope.kind === "college_office" ? "vpaa" : "vpaf";
+  const office = await Office.findOne({
+    code: role === "vpaa" ? "OVPAA" : "OVPAF",
+    isActive: true,
+  }).lean();
+  return office
+    ? { assignedOfficeRef: office._id, forwardedToRole: role, forwardedAt: { $ne: null } }
+    : { _id: { $in: [] } };
 }
 
 /**
- * QA-style read access, folded into vpaa/vpaf/osas rather than kept as a
- * separate role: vpaa/vpaf may read (not mutate) any complaint sitting in
- * their office category — same "full detail, notes, attachments" access
- * administrator gets — while OSAS complaints are private to OSAS among
- * sub-admins. Used by the
- * shared /api/complaints/[id]/** routes (also hit by the admin complaint
- * detail page's NotesSection/AttachmentGallery), not just /admin/**.
+ * Read access follows current office ownership. VPAA/VPAF additionally
+ * require formal forwarding to their receiving office. Processing authority
+ * is checked separately against the assigned handler. Used by shared API
+ * routes and server-rendered complaint details.
  */
 export async function isComplaintInAdminScope(
   scope: AdminScope,

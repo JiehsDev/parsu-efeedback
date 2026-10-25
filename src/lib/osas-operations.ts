@@ -4,7 +4,7 @@ export function refId(value: any): string {
   return String(value?._id ?? value ?? "");
 }
 
-export function isOversightRole(role: string): boolean {
+export function isReceivingOfficeRole(role: string): boolean {
   return role === "vpaa" || role === "vpaf";
 }
 
@@ -27,6 +27,19 @@ export async function canProcessComplaint(session: any, complaint: any): Promise
   if (!session?.user || complaint.isArchived) return false;
   // Retain the pre-existing administrator emergency override at API level.
   if (session.user.role === "administrator") return true;
+  if (isReceivingOfficeRole(session.user.role)) {
+    const office = await Office.findOne({
+      code: session.user.role === "vpaa" ? "OVPAA" : "OVPAF",
+      isActive: true,
+    }).lean();
+    return Boolean(
+      office &&
+      complaint.forwardedToRole === session.user.role &&
+      complaint.forwardedAt &&
+      refId(complaint.assignedOfficeRef) === refId(office._id) &&
+      refId(complaint.assignedStaffRef) === session.user.id,
+    );
+  }
   if (!["osas", "office_staff"].includes(session.user.role)) return false;
   const office = await getOperationalOffice();
   return Boolean(

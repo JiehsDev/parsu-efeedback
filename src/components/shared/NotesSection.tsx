@@ -91,7 +91,11 @@ export function NotesSection({
               <span>{error}</span>
             </div>
           )}
+          <label htmlFor="internal-note" className="mb-1 block text-sm font-medium">
+            Internal note
+          </label>
           <textarea
+            id="internal-note"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Add an internal note…"

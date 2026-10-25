@@ -1,4 +1,4 @@
-import { staffComplaintFilter } from "@/lib/osas-operations";
+import { reportComplaintScope } from "@/lib/report-complaint-scope";
 // src/app/api/reports/export/route.ts — POST handler, fixed
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
@@ -13,7 +13,6 @@ import {
 } from "@/features/reports/services/report-file.service";
 import { uploadReportFile } from "@/features/reports/services/report-upload.service";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import { complaintFilterForScope, getAdminScope } from "@/lib/admin-scope";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -55,10 +54,7 @@ export async function POST(req: NextRequest) {
       status: "generating",
     });
 
-    const accessFilter =
-      role === "office_staff"
-        ? await staffComplaintFilter(session)
-        : await complaintFilterForScope(getAdminScope(role));
+    const accessFilter = await reportComplaintScope(session);
     const rows = await queryReportData(scopedFilters, accessFilter);
 
     let buffer: Buffer;

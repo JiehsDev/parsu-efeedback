@@ -102,11 +102,17 @@ export function FeedbackList({ feedback }: { feedback: FeedbackItem[] }) {
             <li key={item._id} className="px-4 py-3">
               {isEditing ? (
                 <div className="space-y-3">
+                  <label
+                    htmlFor={`feedback-category-${item._id}`}
+                    className="block text-sm font-medium"
+                  >
+                    Category
+                  </label>
                   <Select
                     value={draft.category}
                     onValueChange={(category) => setDraft((prev) => ({ ...prev, category }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id={`feedback-category-${item._id}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -117,7 +123,14 @@ export function FeedbackList({ feedback }: { feedback: FeedbackItem[] }) {
                       ))}
                     </SelectContent>
                   </Select>
+                  <label
+                    htmlFor={`feedback-message-${item._id}`}
+                    className="block text-sm font-medium"
+                  >
+                    Message
+                  </label>
                   <textarea
+                    id={`feedback-message-${item._id}`}
                     rows={4}
                     value={draft.message}
                     onChange={(event) =>

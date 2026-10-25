@@ -59,7 +59,11 @@ export function ReopenComplaintButton({ complaintId }: { complaintId: string }) 
           {error}
         </p>
       )}
+      <label htmlFor="reopen-reason" className="block text-sm font-medium text-[var(--foreground)]">
+        Reason for reopening
+      </label>
       <textarea
+        id="reopen-reason"
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         placeholder="Reason for reopening"
@@ -69,7 +73,7 @@ export function ReopenComplaintButton({ complaintId }: { complaintId: string }) 
       <button
         type="submit"
         disabled={submitting}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--qa-amber)] px-3 py-2 text-sm font-semibold text-[var(--foreground)] disabled:opacity-50"
+        className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-50"
       >
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
         {submitting ? "Reopening..." : "Reopen Complaint"}

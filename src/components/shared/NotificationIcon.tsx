@@ -3,9 +3,9 @@ const ICON_COLOR: Record<string, string> = {
   complaint_submitted: "text-[var(--secondary)]",
   complaint_assigned: "text-[var(--primary)]",
   status_updated: "text-[var(--secondary)]",
-  sla_warning: "text-amber-400",
+  sla_warning: "text-[var(--qa-amber-strong)]",
   escalation: "text-[var(--destructive)]",
-  complaint_resolved: "text-emerald-400",
+  complaint_resolved: "text-[var(--qa-success-strong)]",
   report_generated: "text-[var(--muted-foreground)]",
   system_announcement: "text-[var(--primary)]",
 };

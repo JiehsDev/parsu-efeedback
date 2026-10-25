@@ -109,6 +109,7 @@ export default function AdminAuditLogsPage() {
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
+            aria-label="Filter by action"
             placeholder="Filter by action (e.g. user.create)"
             value={actionFilter}
             onChange={(e) => {
@@ -121,6 +122,7 @@ export default function AdminAuditLogsPage() {
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
+            aria-label="Filter by actor"
             placeholder="Filter by actor name or email"
             value={actorFilter}
             onChange={(e) => {

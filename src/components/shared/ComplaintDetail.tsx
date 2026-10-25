@@ -20,6 +20,9 @@ import { NotesSection } from "@/components/shared/NotesSection";
 import { TimelineEvent } from "./TimelineEvent";
 import { AssignmentHistoryPanel } from "./AssignmentHistoryPanel";
 import { SlaDetails } from "./SlaDetails";
+import { ForwardingPanel } from "./ForwardingPanel";
+import { ForwardingRequest } from "@/models/ForwardingRequest";
+import { canProcessComplaint, isOsasComplaint } from "@/lib/osas-operations";
 import { ComplaintActions } from "./ComplaintActions";
 const plain = (value: any) => JSON.parse(JSON.stringify(value));
 export async function ComplaintDetail({ id, base }: { id: string; base: "admin" | "staff" }) {
@@ -59,8 +62,21 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
       .populate("requestedByRef", "firstName lastName role")
       .lean(),
   ]);
+  const forwarding = await ForwardingRequest.find({ complaintRef: id })
+    .sort({ requestedAt: -1 })
+    .populate("requestedByUserRef reviewedByUserRef", "firstName lastName")
+    .lean();
+  const forwardingHead = await canSuperviseComplaint(session, c);
+  const canRequestForwarding =
+    !c.isArchived &&
+    ["submitted", "assigned", "in_progress", "pending_information", "escalated"].includes(
+      c.status,
+    ) &&
+    (await isOsasComplaint(c)) &&
+    (forwardingHead || (await canProcessComplaint(session, c)));
   const readOnly = !(await canWriteInternalComplaintNotes(session, c));
-  const viewOnly = ["office_staff", "osas"].includes(session.user.role) &&
+  const viewOnly =
+    ["office_staff", "osas"].includes(session.user.role) &&
     refId(c.assignedStaffRef) !== session.user.id &&
     !(await canSuperviseComplaint(session, c));
   return (
@@ -81,11 +97,12 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
       </header>
       {viewOnly && (
         <p className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4 text-sm text-[var(--foreground)]">
-          View only. You can review this office complaint, but only its assigned handler can take action.
+          View only. You can review this office complaint, but only its assigned handler can take
+          action.
         </p>
       )}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
-        <main className="min-w-0 space-y-5">
+        <div className="min-w-0 space-y-5">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
             <h2 className="text-sm font-semibold">Description</h2>
             <p className="mt-2 text-sm break-words whitespace-pre-wrap">{c.description}</p>
@@ -110,7 +127,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
             ))}
           </section>
           <AssignmentHistoryPanel entries={history} />
-        </main>
+        </div>
         <aside className="space-y-5">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
             <h2 className="text-sm font-semibold">Details</h2>
@@ -132,6 +149,13 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
               ))}
             </dl>
           </section>
+          <ForwardingPanel
+            base={base}
+            complaintId={id}
+            head={forwardingHead}
+            canRequest={canRequestForwarding}
+            requests={plain(forwarding)}
+          />
           <ComplaintActions
             session={session}
             complaint={c}

@@ -35,11 +35,6 @@ interface Category {
   defaultPriority: string;
 }
 
-interface Office {
-  _id: string;
-  name: string;
-}
-
 const PRIORITIES = ["low", "medium", "high", "critical"];
 
 const EMPTY_FORM = {
@@ -55,7 +50,6 @@ export default function AdminSlaRulesPage() {
   const confirm = useConfirm();
   const [rules, setRules] = useState<SlaRuleRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [offices, setOffices] = useState<Office[]>([]);
   const [search, setSearch] = useState("");
   // "new" opens the modal in create mode; a SlaRuleRow opens it pre-filled to edit that rule.
   const [editingRule, setEditingRule] = useState<SlaRuleRow | "new" | null>(null);
@@ -76,19 +70,11 @@ export default function AdminSlaRulesPage() {
     clientFetch("/api/admin/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
-    clientFetch("/api/admin/offices")
-      .then((res) => res.json())
-      .then((data) => setOffices(data.offices ?? []));
   }, []);
 
   function categoryName(id: string | null) {
     if (!id) return "Institution-wide default";
     return categories.find((c) => c._id === id)?.name ?? id;
-  }
-
-  function officeName(id: string | null) {
-    if (!id) return null;
-    return offices.find((o) => o._id === id)?.name ?? id;
   }
 
   const visibleRules = useMemo(() => {
@@ -211,6 +197,7 @@ export default function AdminSlaRulesPage() {
       <div className="relative max-w-xs">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
         <input
+          aria-label="Search SLA rules"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by category or priority…"
@@ -248,15 +235,13 @@ export default function AdminSlaRulesPage() {
                   </span>
                   <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
                     Response {r.responseHours}h · Resolution {r.resolutionHours}h
-                    {r.escalateToOfficeRef &&
-                      ` · Escalates to ${officeName(r.escalateToOfficeRef)}`}
                   </span>
                 </span>
                 <div className="flex items-center gap-2 sm:shrink-0">
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                       r.isActive
-                        ? "bg-emerald-500/20 text-emerald-400"
+                        ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
                         : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                     }`}
                   >

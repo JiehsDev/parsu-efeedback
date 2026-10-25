@@ -47,7 +47,10 @@ import { Complaint, Office, User, Assignment, ComplaintTimeline, ArchiveRequest 
 import { POST as submit, GET as list } from "@/app/api/complaints/route";
 import { POST as assign } from "@/app/api/complaints/[id]/assign/route";
 import { GET as detail, PATCH as status } from "@/app/api/complaints/[id]/route";
-import { GET as readAttachments, POST as attach } from "@/app/api/complaints/[id]/attachments/route";
+import {
+  GET as readAttachments,
+  POST as attach,
+} from "@/app/api/complaints/[id]/attachments/route";
 import { canAttachToComplaint, canWriteInternalComplaintNotes } from "@/lib/complaint-access";
 import { POST as information } from "@/app/api/complaints/[id]/information-request/route";
 import { POST as note } from "@/app/api/complaints/[id]/notes/route";
@@ -136,51 +139,48 @@ describe("centralized OSAS architecture", () => {
     expect(data.complaint.assignedStaffRef).toBeNull();
     expect(data.complaint.status).toBe("submitted");
   });
-  it.each(["vpaa", "vpaf"])(
-    "makes %s oversight read-only at every processing API",
-    async (role) => {
-      const d = await setup();
-      d.login(d.student, role);
-      const ctx = context(d.complaint._id);
-      for (const [handler, body, method] of [
-        [assign, { action: "assign", assignedStaffRef: String(d.staff._id) }, "POST"],
-        [status, { status: "in_progress" }, "PATCH"],
-        [status, { status: "resolved" }, "PATCH"],
-        [information, { requestMessage: "Please explain" }, "POST"],
-        [note, { body: "Processing note" }, "POST"],
-        [escalate, { reason: "Supervisor review" }, "POST"],
-        [
-          transfer,
-          {
-            destinationOfficeRef: String(d.legacy._id),
-            reasonCode: "other",
-            reasonText: "Transfer",
-          },
-          "POST",
-        ],
-        [release, { reason: "Release" }, "POST"],
-        [archive, { isArchived: true, reason: "Archive" }, "PATCH"],
-        [requestArchive, { reasonCode: "other", reasonText: "Archive" }, "POST"],
-      ] as const) {
-        expect((await handler(request(body, method), ctx)).status).toBe(403);
-      }
-      const archiveRequest = await ArchiveRequest.create({
-        complaintRef: d.complaint._id,
-        officeRef: d.osas._id,
-        requestedByRef: d.staff._id,
-        reason: "Review",
-        reasonText: "Review",
-      });
-      expect(
-        (await approveArchive(request({ action: "approve" }, "PATCH"), context(archiveRequest._id)))
-          .status,
-      ).toBe(403);
-      expect((await analytics()).status).toBe(200);
-      expect((await report(request({ format: "csv", filters: {} }))).status).toBe(200);
-      expect((await list(new NextRequest("http://localhost/api/complaints"))).status).toBe(200);
-      expect((await Complaint.findById(d.complaint._id))!.status).toBe("submitted");
-    },
-  );
+  it.each(["vpaa", "vpaf"])("denies %s processing before formal forwarding", async (role) => {
+    const d = await setup();
+    d.login(d.student, role);
+    const ctx = context(d.complaint._id);
+    for (const [handler, body, method] of [
+      [assign, { action: "assign", assignedStaffRef: String(d.staff._id) }, "POST"],
+      [status, { status: "in_progress" }, "PATCH"],
+      [status, { status: "resolved" }, "PATCH"],
+      [information, { requestMessage: "Please explain" }, "POST"],
+      [note, { body: "Processing note" }, "POST"],
+      [escalate, { reason: "Supervisor review" }, "POST"],
+      [
+        transfer,
+        {
+          destinationOfficeRef: String(d.legacy._id),
+          reasonCode: "other",
+          reasonText: "Transfer",
+        },
+        "POST",
+      ],
+      [release, { reason: "Release" }, "POST"],
+      [archive, { isArchived: true, reason: "Archive" }, "PATCH"],
+      [requestArchive, { reasonCode: "other", reasonText: "Archive" }, "POST"],
+    ] as const) {
+      expect((await handler(request(body, method), ctx)).status).toBe(403);
+    }
+    const archiveRequest = await ArchiveRequest.create({
+      complaintRef: d.complaint._id,
+      officeRef: d.osas._id,
+      requestedByRef: d.staff._id,
+      reason: "Review",
+      reasonText: "Review",
+    });
+    expect(
+      (await approveArchive(request({ action: "approve" }, "PATCH"), context(archiveRequest._id)))
+        .status,
+    ).toBe(403);
+    expect((await analytics()).status).toBe(200);
+    expect((await report(request({ format: "csv", filters: {} }))).status).toBe(200);
+    expect((await list(new NextRequest("http://localhost/api/complaints"))).status).toBe(200);
+    expect((await Complaint.findById(d.complaint._id))!.status).toBe("submitted");
+  });
   it("lets the OSAS Head assign staff and change assignee with a reason, exclusively inside OSAS", async () => {
     const d = await setup();
     d.login(d.head);
@@ -256,7 +256,9 @@ describe("centralized OSAS architecture", () => {
       const getRequest = new NextRequest("http://localhost/api/test");
       expect((await detail(getRequest, ctx)).status).toBe(200);
       expect((await readAttachments(getRequest, ctx)).status).toBe(200);
-      expect(await (await list(new NextRequest("http://localhost/api/complaints"))).json()).toMatchObject({ total: 1 });
+      expect(
+        await (await list(new NextRequest("http://localhost/api/complaints"))).json(),
+      ).toMatchObject({ total: 1 });
       for (const [handler, body, method] of [
         [status, { status: "resolved", resolutionSummary: "Completed" }, "PATCH"],
         [note, { body: "Unauthorized colleague note" }, "POST"],
@@ -271,7 +273,9 @@ describe("centralized OSAS architecture", () => {
       expect(await canWriteInternalComplaintNotes(session, d.complaint)).toBe(false);
       d.login(d.outsider);
       expect((await detail(getRequest, ctx)).status).toBe(403);
-      expect(await (await list(new NextRequest("http://localhost/api/complaints"))).json()).toMatchObject({ total: 0 });
+      expect(
+        await (await list(new NextRequest("http://localhost/api/complaints"))).json(),
+      ).toMatchObject({ total: 0 });
     },
   );
   it("returns released assignments to the OSAS unassigned queue", async () => {

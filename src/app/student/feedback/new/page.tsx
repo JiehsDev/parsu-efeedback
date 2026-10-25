@@ -36,8 +36,7 @@ export default async function NewFeedbackPage() {
           Share Feedback
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Suggestions and observations for the Quality Assurance office. Got a specific problem that
-          needs fixing?{" "}
+          Send suggestions and observations to OSAS. Need help with a specific problem?{" "}
           <Link
             href="/student/complaints/new"
             className="text-[var(--primary)] underline underline-offset-2"

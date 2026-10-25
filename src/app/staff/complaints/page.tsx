@@ -294,15 +294,15 @@ export default async function StaffComplaintsPage({
   };
   const tabItems = [
     { value: "", label: "All", count: allComplaints.length },
-    { value: "assigned", label: "Assigned", count: statusCounts("assigned") },
     { value: "in_progress", label: "In Progress", count: statusCounts("in_progress") },
     {
       value: "pending_information",
       label: "Pending Info",
       count: statusCounts("pending_information"),
     },
-    { value: "escalated", label: "Escalated", count: statusCounts("escalated") },
     { value: "resolved", label: "Resolved", count: statusCounts("resolved") },
+    { value: "closed", label: "Closed", count: statusCounts("closed") },
+    { value: "withdrawn", label: "Withdrawn", count: statusCounts("withdrawn") },
   ];
   const hasFilters = Boolean(
     search || validStatus || params.priority || params.assignee || params.sla || params.sort,
@@ -390,7 +390,9 @@ export default async function StaffComplaintsPage({
             <Link
               key={tab.value || "all"}
               href={tab.value ? filterHref({ status: tab.value }) : "/staff/complaints"}
-              aria-current={(tab.value ? validStatus === tab.value : !hasFilters) ? "page" : undefined}
+              aria-current={
+                (tab.value ? validStatus === tab.value : !hasFilters) ? "page" : undefined
+              }
               className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3 ${(tab.value ? validStatus === tab.value : !hasFilters) ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
             >
               {tab.label} <span className="ml-1 tabular-nums opacity-65">{tab.count}</span>
@@ -488,7 +490,7 @@ export default async function StaffComplaintsPage({
             )}
             {!isHead && allComplaints.length === 0 && (
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                New complaints routed to OSAS will appear here for everyone in the office.
+                New complaints received by OSAS will appear here for everyone in the office.
               </p>
             )}
           </div>

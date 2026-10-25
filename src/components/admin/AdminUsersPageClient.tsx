@@ -163,9 +163,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
 
   const needsOffice = ["office_staff", "osas"].includes(form.role);
   const needsCollege = form.role === "student";
-  const scopedOfficeCode = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" }[
-    form.role as "vpaa" | "vpaf" | "osas"
-  ];
+  const scopedOfficeCode = ["office_staff", "osas"].includes(form.role) ? "OSAS" : undefined;
   const officeOptionsForSelectedRole = scopedOfficeCode
     ? officeOptionsForRole.filter((office) => office.code === scopedOfficeCode)
     : officeOptionsForRole;
@@ -318,7 +316,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
       </div>
 
       {totalUsers > users.length && (
-        <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+        <div className="flex items-start gap-2.5 rounded-2xl border border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] px-4 py-3 text-sm text-[var(--qa-amber-strong)]">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             Showing the {users.length.toLocaleString()} most recent of {totalUsers.toLocaleString()}{" "}
@@ -331,6 +329,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
         <div className="relative max-w-xs flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
+            aria-label="Search users"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, or ID…"
@@ -436,7 +435,7 @@ export function AdminUsersPageClient({ scopeKind }: { scopeKind: ScopeKind }) {
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                       u.isActive
-                        ? "bg-emerald-500/20 text-emerald-400"
+                        ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
                         : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                     }`}
                   >

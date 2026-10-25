@@ -128,7 +128,7 @@ export default function NewCategoryPage() {
         disabled={busy}
         className="rounded-full bg-[var(--primary)] px-4 py-2 text-[var(--primary-foreground)]"
       >
-        {busy ? "Saving?" : "Save category"}
+        {busy ? "Saving..." : "Save category"}
       </button>
     </form>
   );

@@ -60,7 +60,11 @@ export function ArchiveRequestButton({ complaintId }: { complaintId: string }) {
   return (
     <div className="space-y-2 rounded-xl border border-[var(--border)] p-3">
       <p className="text-sm font-semibold">Archive Request</p>
+      <label htmlFor="archive-request-category" className="block text-sm font-medium">
+        Archive reason
+      </label>
       <select
+        id="archive-request-category"
         value={reasonCode}
         onChange={(event) => setReasonCode(event.target.value)}
         className="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-2 text-sm"
@@ -71,7 +75,11 @@ export function ArchiveRequestButton({ complaintId }: { complaintId: string }) {
           </option>
         ))}
       </select>
+      <label htmlFor="archive-request-details" className="block text-sm font-medium">
+        Supporting details
+      </label>
       <textarea
+        id="archive-request-details"
         value={reasonText}
         onChange={(event) => setReasonText(event.target.value)}
         rows={3}

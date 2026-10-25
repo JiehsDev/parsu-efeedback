@@ -85,10 +85,8 @@ export default async function StaffArchivedComplaintsPage({
             <option value="">All original statuses</option>
             {[
               "submitted",
-              "assigned",
               "in_progress",
               "pending_information",
-              "escalated",
               "resolved",
               "closed",
               "withdrawn",

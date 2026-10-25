@@ -2,7 +2,7 @@
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-[var(--muted)] text-[var(--muted-foreground)]",
   generating: "bg-[var(--secondary)]/20 text-[var(--secondary)]",
-  ready: "bg-emerald-500/20 text-emerald-400",
+  ready: "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]",
   failed: "bg-[var(--destructive)]/20 text-[var(--destructive)]",
 };
 

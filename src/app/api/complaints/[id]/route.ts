@@ -149,7 +149,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (!(await canProcessComplaint(session, complaint)))
     return NextResponse.json(
-      { error: "Only the assigned OSAS handler may update this complaint." },
+      { error: "Only the assigned handler in the responsible office may update this complaint." },
       { status: 403 },
     );
 

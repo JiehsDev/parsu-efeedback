@@ -201,7 +201,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                       o.isActive
-                        ? "bg-emerald-500/20 text-emerald-400"
+                        ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
                         : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                     }`}
                   >

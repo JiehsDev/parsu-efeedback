@@ -84,7 +84,7 @@ export default function AdminCategoriesPage() {
         </Link>
       </div>
 
-      <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+      <div className="flex items-start gap-2.5 rounded-2xl border border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] px-4 py-3 text-sm text-[var(--qa-amber-strong)]">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
           New categories use OSAS as their handling office. "Add Category" configures classification
@@ -95,6 +95,7 @@ export default function AdminCategoriesPage() {
       <div className="relative max-w-xs">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
         <input
+          aria-label="Search categories"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search categories…"
@@ -139,7 +140,7 @@ export default function AdminCategoriesPage() {
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                       c.isActive
-                        ? "bg-emerald-500/20 text-emerald-400"
+                        ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
                         : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                     }`}
                   >
@@ -159,8 +160,7 @@ export default function AdminCategoriesPage() {
       )}
 
       <p className="text-sm text-[var(--muted-foreground)]">
-        All complaints are handled by OSAS. Institution-wide SLA defaults
-        live in{" "}
+        All complaints are handled by OSAS. Institution-wide SLA defaults live in{" "}
         <Link href="/admin/sla-rules" className="text-[var(--primary)] hover:underline">
           SLA Rules
         </Link>

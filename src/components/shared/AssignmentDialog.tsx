@@ -280,6 +280,7 @@ export function AssignmentDialog({
                   {reason === "Other" && (
                     <textarea
                       id="assignment-custom-reason"
+                      aria-label="Other reason"
                       rows={3}
                       value={customReason}
                       onChange={(event) => {

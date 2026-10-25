@@ -42,7 +42,14 @@ export function ArchiveApprovalPanel({ request }: { request: any }) {
         Requested by {request.requestedByRef?.firstName} {request.requestedByRef?.lastName}
       </p>
       <p className="mt-1 text-sm text-[var(--qa-amber-strong)]">{request.reason}</p>
+      <label
+        htmlFor="archive-rejection"
+        className="block text-sm font-medium text-[var(--foreground)]"
+      >
+        Reason for rejection
+      </label>
       <textarea
+        id="archive-rejection"
         value={rejectionReason}
         onChange={(e) => setRejectionReason(e.target.value)}
         rows={2}

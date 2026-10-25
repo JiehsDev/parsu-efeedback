@@ -4,11 +4,12 @@
 import { clientFetch } from "@/lib/client-fetch";
 
 import Link from "next/link";
+import { isNavigationItemActive } from "@/lib/navigation";
 import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import { BrandLogo } from "@/components/shared/BrandLogo";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { signOutWithCacheReset } from "@/lib/client-sign-out";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Bell,
   ClipboardList,
@@ -35,6 +36,8 @@ function getInitials(name: string): string {
 
 export function StudentNav({ userName }: { userName: string }) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const accountId = useId();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -53,16 +56,26 @@ export function StudentNav({ userName }: { userName: string }) {
         setMenuOpen(false);
       }
     }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuRef.current?.querySelector("button")?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [menuOpen]);
 
   const initials = getInitials(userName);
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/15 bg-[var(--navigation)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
-        <div className="flex items-center gap-6">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 lg:px-10">
+        <div className="flex items-center gap-2 sm:gap-6">
           <Link href="/student/dashboard" className="flex shrink-0 items-center gap-2">
             <BrandLogo />
             <span className="hidden text-sm font-semibold tracking-tight text-white sm:inline">
@@ -70,14 +83,25 @@ export function StudentNav({ userName }: { userName: string }) {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-0.5 rounded-full bg-white/10 p-1">
+          <nav
+            aria-label="Main navigation"
+            className="flex items-center gap-0.5 rounded-full bg-white/10 p-1"
+          >
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const active = isNavigationItemActive(
+                pathname,
+                search,
+                item.href,
+                NAV_ITEMS.map((entry) => entry.href),
+              );
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                  title={item.label}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium transition-all sm:px-3.5 sm:py-1.5 ${
                     active
                       ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
                       : "text-white hover:bg-black/10 hover:text-white"
@@ -95,6 +119,7 @@ export function StudentNav({ userName }: { userName: string }) {
           <ThemeSwitcher onPrimary />
           <Link
             href="/student/notifications"
+            aria-label="Notifications"
             className="relative flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-black/10 hover:text-white"
           >
             <Bell className="h-[18px] w-[18px]" />
@@ -108,7 +133,8 @@ export function StudentNav({ userName }: { userName: string }) {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              aria-haspopup="menu"
+              aria-label="Account options"
+              aria-controls={menuOpen ? accountId : undefined}
               aria-expanded={menuOpen}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-black/10 text-xs font-semibold text-white ring-1 ring-white/30 transition-transform hover:scale-105"
             >
@@ -117,7 +143,8 @@ export function StudentNav({ userName }: { userName: string }) {
 
             {menuOpen && (
               <div
-                role="menu"
+                id={accountId}
+                aria-label="Account options"
                 className="absolute top-full right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
@@ -129,7 +156,6 @@ export function StudentNav({ userName }: { userName: string }) {
                 <div className="p-1">
                   <Link
                     href="/student/profile"
-                    role="menuitem"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
                   >
@@ -137,7 +163,6 @@ export function StudentNav({ userName }: { userName: string }) {
                     Profile settings
                   </Link>
                   <button
-                    role="menuitem"
                     onClick={() => {
                       void signOutWithCacheReset();
                     }}

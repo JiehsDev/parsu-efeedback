@@ -126,7 +126,14 @@ export function InformationRequestPanel({
               {error}
             </div>
           )}
+          <label
+            htmlFor="information-request"
+            className="block text-sm font-medium text-[var(--foreground)]"
+          >
+            Information requested
+          </label>
           <textarea
+            id="information-request"
             value={requestMessage}
             onChange={(event) => setRequestMessage(event.target.value)}
             rows={4}
@@ -137,7 +144,14 @@ export function InformationRequestPanel({
           <p className="-mt-1 text-xs text-[var(--muted-foreground)]">
             Clearly explain what the student needs to provide so the complaint can continue.
           </p>
+          <label
+            htmlFor="information-context"
+            className="block text-sm font-medium text-[var(--foreground)]"
+          >
+            Additional instructions (optional)
+          </label>
           <textarea
+            id="information-context"
             value={context}
             onChange={(event) => setContext(event.target.value)}
             rows={2}

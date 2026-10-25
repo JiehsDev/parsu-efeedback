@@ -1,4 +1,4 @@
-import { staffComplaintFilter } from "@/lib/osas-operations";
+import { reportComplaintScope } from "@/lib/report-complaint-scope";
 // src/app/api/reports/[id]/download/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { r2Client, isR2Configured } from "@/lib/r2";
 import { env } from "@/lib/env";
 import { GeneratedReport } from "@/models/GeneratedReport";
-import { complaintFilterForScope, getAdminScope, isScopedAdminRole } from "@/lib/admin-scope";
+import { isScopedAdminRole } from "@/lib/admin-scope";
 import { queryReportData } from "@/features/reports/services/report-data.service";
 import {
   generateCsv,
@@ -50,9 +50,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (isScopedAdminRole(session.user.role) || session.user.role === "office_staff") {
     const rows = await queryReportData(
       (report as any).filters ?? {},
-      session.user.role === "office_staff"
-        ? await staffComplaintFilter(session)
-        : await complaintFilterForScope(getAdminScope(session.user.role)),
+      await reportComplaintScope(session),
     );
     const format = report.format;
     const buffer =

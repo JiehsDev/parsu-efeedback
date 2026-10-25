@@ -11,7 +11,11 @@ export function isR2Configured(): boolean {
 export const r2Client = isR2Configured()
   ? new S3Client({
       region: "auto",
-      endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint:
+        process.env.UI_AUDIT_ISOLATED === "1"
+          ? process.env.UI_AUDIT_STORAGE_URL
+          : `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      forcePathStyle: process.env.UI_AUDIT_ISOLATED === "1",
       credentials: {
         accessKeyId: env.R2_ACCESS_KEY_ID,
         secretAccessKey: env.R2_SECRET_ACCESS_KEY,

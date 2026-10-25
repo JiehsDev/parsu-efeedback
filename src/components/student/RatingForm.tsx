@@ -72,7 +72,7 @@ export function RatingForm({ complaintId }: { complaintId: string }) {
       <div
         className="mt-4 flex gap-1"
         onMouseLeave={() => setHoverRating(0)}
-        role="radiogroup"
+        role="group"
         aria-label="Rating"
       >
         {[1, 2, 3, 4, 5].map((star) => (
@@ -80,6 +80,7 @@ export function RatingForm({ complaintId }: { complaintId: string }) {
             key={star}
             type="button"
             onClick={() => setRating(star)}
+            aria-pressed={rating === star}
             onMouseEnter={() => setHoverRating(star)}
             aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
             className="transition-transform hover:scale-110"
@@ -95,7 +96,11 @@ export function RatingForm({ complaintId }: { complaintId: string }) {
         ))}
       </div>
 
+      <label htmlFor="rating-comment" className="mt-4 block text-sm font-medium">
+        Comment (optional)
+      </label>
       <textarea
+        id="rating-comment"
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="Optional comment"

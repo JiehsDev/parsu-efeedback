@@ -3,7 +3,7 @@ import { statusLabel } from "@/lib/display-labels";
 
 export interface AssignmentHistoryEntry {
   _id: string;
-  kind: "assignment" | "escalation" | "release";
+  kind: "assignment" | "escalation" | "release" | "forwarding";
   createdAt: string;
   sourceOfficeName?: string | null;
   destinationOfficeName?: string | null;
@@ -26,7 +26,7 @@ export function AssignmentHistoryPanel({
       <div className="flex items-center gap-2">
         <History className="h-4 w-4 text-[var(--muted-foreground)]" />
         <p className="text-sm font-semibold text-[var(--foreground)]">
-          Assignment &amp; Escalation History
+          Assignment, forwarding and review history
         </p>
       </div>
 
@@ -41,7 +41,7 @@ export function AssignmentHistoryPanel({
               <span
                 className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                   entry.kind === "escalation"
-                    ? "bg-amber-500/15 text-amber-400"
+                    ? "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]"
                     : entry.kind === "release"
                       ? "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]"
                       : "bg-[var(--primary)]/15 text-[var(--primary)]"
@@ -52,13 +52,15 @@ export function AssignmentHistoryPanel({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <p className="text-sm font-medium text-[var(--foreground)]">
-                    {entry.kind === "escalation"
-                      ? "Escalated"
-                      : entry.kind === "release"
-                        ? "Assignment Released"
-                        : entry.reason
-                          ? "Reassigned"
-                          : "Assigned"}
+                    {entry.kind === "forwarding"
+                      ? "Complaint forwarded"
+                      : entry.kind === "escalation"
+                        ? "OSAS Head review requested"
+                        : entry.kind === "release"
+                          ? "Assignment Released"
+                          : entry.reason
+                            ? "Reassigned"
+                            : "Assigned"}
                   </p>
                   <time className="text-xs text-[var(--muted-foreground)]">
                     {new Date(entry.createdAt).toLocaleString()}
@@ -66,11 +68,11 @@ export function AssignmentHistoryPanel({
                 </div>
                 <p className="mt-1 text-sm text-[var(--foreground)]/90">
                   {entry.sourceOfficeName
-                    ? `Reassigned from ${entry.sourceOfficeName} to `
+                    ? `${entry.kind === "forwarding" ? "Forwarded" : "Reassigned"} from ${entry.sourceOfficeName} to `
                     : "Assigned to "}
                   {entry.kind === "release"
                     ? "Complaint returned to office queue"
-                    : entry.destinationOfficeName ?? "unassigned office"}
+                    : (entry.destinationOfficeName ?? "unassigned office")}
                 </p>
                 {!simplified && (
                   <div className="mt-1 space-y-0.5 text-xs text-[var(--muted-foreground)]">

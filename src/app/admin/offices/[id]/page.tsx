@@ -49,7 +49,9 @@ export default async function AdminOfficeDetailPage({
 
   const [parentOffice, headUser, rawMembers] = await Promise.all([
     o.parentOffice ? Office.findById(o.parentOffice).select("name code").lean() : null,
-    o.headUserRef ? User.findById(o.headUserRef).select("firstName lastName email role isActive").lean() : null,
+    o.headUserRef
+      ? User.findById(o.headUserRef).select("firstName lastName email role isActive").lean()
+      : null,
     User.find({ officeRef: id, role: { $ne: "student" } })
       .select("firstName lastName email role isActive")
       .lean(),
@@ -96,7 +98,7 @@ export default async function AdminOfficeDetailPage({
               <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
                 {o.name}
               </h1>
-              <span className="shrink-0 rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+              <span className="shrink-0 rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
                 {o.type.replace("_", " ")}
               </span>
             </div>
@@ -105,7 +107,7 @@ export default async function AdminOfficeDetailPage({
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                   o.isActive
-                    ? "bg-emerald-500/20 text-emerald-400"
+                    ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
                     : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                 }`}
               >
@@ -180,7 +182,15 @@ export default async function AdminOfficeDetailPage({
               )}
               {headUser && (
                 <dd className="mt-1 text-xs font-medium text-[var(--primary)]">
-                  Role: {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[(headUser as any).role] ?? (headUser as any).role}
+                  Role:{" "}
+                  {(
+                    {
+                      office_staff: "Office Staff",
+                      vpaa: "VPAA",
+                      vpaf: "VPAF",
+                      osas: "OSAS",
+                    } as Record<string, string>
+                  )[(headUser as any).role] ?? (headUser as any).role}
                 </dd>
               )}
             </div>
@@ -226,11 +236,18 @@ export default async function AdminOfficeDetailPage({
                         <span className="truncate text-sm font-medium text-[var(--foreground)]">
                           {m.firstName} {m.lastName}
                         </span>
-                        <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-                          {({ office_staff: "Office Staff", vpaa: "VPAA", vpaf: "VPAF", osas: "OSAS" } as Record<string, string>)[m.role] ?? m.role}
+                        <span className="shrink-0 rounded-full bg-[var(--muted)] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase">
+                          {(
+                            {
+                              office_staff: "Office Staff",
+                              vpaa: "VPAA",
+                              vpaf: "VPAF",
+                              osas: "OSAS",
+                            } as Record<string, string>
+                          )[m.role] ?? m.role}
                         </span>
                         {String(m._id) === String(o.headUserRef) && (
-                          <span className="shrink-0 rounded-full bg-[var(--primary)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">
+                          <span className="shrink-0 rounded-full bg-[var(--primary)]/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--primary)] uppercase">
                             Head
                           </span>
                         )}
@@ -245,7 +262,7 @@ export default async function AdminOfficeDetailPage({
                       </span>
                     )}
                     {m.isActive && (
-                      <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                      <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-[var(--qa-success-strong)]">
                         Active
                       </span>
                     )}

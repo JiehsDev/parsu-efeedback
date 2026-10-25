@@ -28,7 +28,10 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
 
         {state?.success ? (
           <div className="mt-8 space-y-3">
-            <div className="flex items-start gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)]/40 p-4 text-sm text-[var(--foreground)]">
+            <div
+              role="status"
+              className="flex items-start gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)]/40 p-4 text-sm text-[var(--foreground)]"
+            >
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
               <span>{state.message}</span>
             </div>
@@ -57,7 +60,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 New password
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                 <input
                   id="password"
                   name="password"
@@ -70,9 +73,8 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                  className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -92,7 +94,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 Confirm new password
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
@@ -104,9 +106,8 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((v) => !v)}
-                  tabIndex={-1}
                   aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                  className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-4 w-4" />

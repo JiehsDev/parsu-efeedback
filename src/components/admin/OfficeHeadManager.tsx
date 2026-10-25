@@ -199,7 +199,7 @@ export function OfficeHeadManager({
         <Modal title="Create Head Account" onClose={() => setMode(null)}>
           <form onSubmit={createHead} className="space-y-4">
             {error && <ErrorMessage message={error} />}
-            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+            <p className="rounded-xl border border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] px-3 py-2 text-xs text-[var(--qa-amber-strong)]">
               Changing this assignment changes the organizational head only. The selected user keeps
               their existing software role and permissions.
             </p>

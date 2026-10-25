@@ -1,5 +1,7 @@
 # OSAS architecture update delivery
 
+> Historical record. The 25 October 2026 [controlled-forwarding architecture](controlled-forwarding.md) supersedes OSAS-only handling and global VPAA/VPAF oversight.
+
 ## 1. Files modified
 
 See [the complete file manifest](osas-centralization-files.md). The main modules are `src/lib/osas-operations.ts`, `src/lib/complaint-access.ts`, `src/lib/admin-scope.ts`, routing and assignment services/APIs, shared complaint detail/actions/dashboard components, reporting services, seed service, migration, and authorization tests.

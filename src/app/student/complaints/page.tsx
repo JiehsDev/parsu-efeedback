@@ -39,7 +39,7 @@ const SORT_ORDERS: Record<string, Record<string, 1 | -1>> = {
 // cannot be set to a contradictory pair that returns nothing.
 const VIEWS = [
   { value: "open", label: "Open" },
-  { value: "resolved", label: "Resolved" },
+  { value: "resolved", label: "Past complaints" },
   { value: "all", label: "All" },
 ] as const;
 
@@ -133,15 +133,16 @@ export default async function StudentComplaintsPage({
   const counts: Record<View, number> = {
     open: allComplaints.filter((c) => (OPEN_STATUSES as readonly string[]).includes(c.status))
       .length,
-    resolved: allComplaints.filter((c) =>
-      (DONE_STATUSES as readonly string[]).includes(c.status),
-    ).length,
+    resolved: allComplaints.filter((c) => (DONE_STATUSES as readonly string[]).includes(c.status))
+      .length,
     all: allComplaints.length,
   };
 
   const statusOptions = [
     { value: "", label: "Any status" },
-    ...viewStatuses.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+    ...viewStatuses
+      .filter((status) => !["assigned", "escalated"].includes(status))
+      .map((s) => ({ value: s, label: STATUS_LABELS[s] })),
   ];
 
   function hrefFor(next: Partial<Record<string, string>>) {
@@ -175,8 +176,8 @@ export default async function StudentComplaintsPage({
         <div className="flex items-start gap-2.5 rounded-lg border border-[var(--qa-success)]/30 bg-[var(--qa-success-soft)] px-4 py-3 text-sm text-[var(--qa-success-strong)]">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            Complaint <span className="qa-mono font-medium">{submitted}</span> submitted. You&rsquo;ll
-            get a notification when it&rsquo;s picked up.
+            Complaint <span className="qa-mono font-medium">{submitted}</span> submitted.
+            You&rsquo;ll get a notification when it&rsquo;s picked up.
           </span>
         </div>
       )}

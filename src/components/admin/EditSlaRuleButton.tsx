@@ -44,7 +44,7 @@ export function EditSlaRuleButton({
   const { show: showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [priority, setPriority] = useState(currentPriority);
-  const [responseHours, setResponseHours] = useState(rule?.responseHours ?? 24);
+  const [responseHours, setResponseHours] = useState(rule?.responseHours ?? 72);
   const [resolutionHours, setResolutionHours] = useState(rule?.resolutionHours ?? 72);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

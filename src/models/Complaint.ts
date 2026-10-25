@@ -47,6 +47,9 @@ const complaintSchema = new Schema(
 
     assignedOfficeRef: { type: Schema.Types.ObjectId, ref: "Office", default: null },
     assignedStaffRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    initialOfficeRef: { type: Schema.Types.ObjectId, ref: "Office", default: null },
+    forwardedToRole: { type: String, enum: ["vpaa", "vpaf", null], default: null },
+    forwardedAt: { type: Date, default: null },
 
     // BR-030 / BR-031: two separate SLA clocks, both computed at routing
     // time by the SLA service (Phase 10) from sla_rules
@@ -122,13 +125,14 @@ const complaintSchema = new Schema(
     restoredByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
     restoreReason: { type: String, default: "" },
   },
-  { timestamps: true },
+  { timestamps: true, optimisticConcurrency: true },
 );
 
 complaintSchema.plugin(refIntegrityPlugin); // BR-099
 
 complaintSchema.index({ studentRef: 1, createdAt: -1 });
 complaintSchema.index({ assignedOfficeRef: 1, status: 1 });
+complaintSchema.index({ forwardedToRole: 1, assignedOfficeRef: 1, status: 1 });
 complaintSchema.index({ assignedStaffRef: 1, status: 1 });
 // Used heavily by the hourly SLA cron (Phase 10)
 complaintSchema.index({ status: 1, slaResolutionDueAt: 1 });

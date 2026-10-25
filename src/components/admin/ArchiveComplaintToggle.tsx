@@ -3,7 +3,7 @@
 
 import { clientFetch } from "@/lib/client-fetch";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
 import { useToast } from "@/components/shared/Toast";
@@ -20,6 +20,7 @@ export function ArchiveComplaintToggle({
   isArchived: boolean;
   mode?: "admin" | "head";
 }) {
+  const reasonId = useId();
   const router = useRouter();
   const { show: showToast } = useToast();
   const confirm = useConfirm();
@@ -31,7 +32,10 @@ export function ArchiveComplaintToggle({
 
   async function handleToggle() {
     if (!selectedReason) {
-      showToast("Please provide an archive reason.", "error");
+      showToast(
+        isArchived ? "Please provide a reason for restoring." : "Please provide an archive reason.",
+        "error",
+      );
       return;
     }
     if (!isArchived && mode === "admin") {
@@ -70,10 +74,14 @@ export function ArchiveComplaintToggle({
 
   return (
     <div className="space-y-2">
+      <label htmlFor={reasonId} className="block text-sm font-medium text-[var(--foreground)]">
+        {isArchived ? "Reason for restoring" : "Reason for archiving"}
+      </label>
       <input
+        id={reasonId}
         value={reason}
         onChange={(event) => setReason(event.target.value)}
-        placeholder="Archive reason *"
+        placeholder={isArchived ? "Enter the reason for restoring" : "Enter the archive reason"}
         className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
       />
       <p className="text-[11px] text-[var(--muted-foreground)]">
@@ -82,6 +90,7 @@ export function ArchiveComplaintToggle({
       </p>
       {reason === "Other" && (
         <textarea
+          aria-label={isArchived ? "Other restoration reason" : "Other archive reason"}
           value={customReason}
           onChange={(event) => setCustomReason(event.target.value)}
           rows={2}

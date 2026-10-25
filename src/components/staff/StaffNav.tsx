@@ -4,17 +4,29 @@
 import { clientFetch } from "@/lib/client-fetch";
 
 import Link from "next/link";
+import { isNavigationItemActive } from "@/lib/navigation";
 import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import { BrandLogo } from "@/components/shared/BrandLogo";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { signOutWithCacheReset } from "@/lib/client-sign-out";
-import { useEffect, useRef, useState } from "react";
-import { Archive, Bell, Inbox, LayoutGrid, LogOut, Timer, UserRound } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import {
+  Archive,
+  Bell,
+  Inbox,
+  LayoutGrid,
+  LogOut,
+  FileBarChart,
+  Timer,
+  UserRound,
+} from "lucide-react";
 
 const NAV_ITEMS = [
+  { href: "/staff/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/staff/complaints", label: "Queue", icon: Inbox },
-  { href: "/staff/sla", label: "SLA", icon: Timer },
+  { href: "/staff/sla", label: "SLA deadlines", icon: Timer },
+  { href: "/staff/reports", label: "Reports", icon: FileBarChart },
   { href: "/staff/archive-requests", label: "Archive Requests", icon: Archive, requiresHead: true },
   { href: "/staff/complaints/archived", label: "Archived Complaints", icon: Archive },
 ];
@@ -34,6 +46,8 @@ export function StaffNav({
   isOfficeHead?: boolean;
 }) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const accountId = useId();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -52,8 +66,18 @@ export function StaffNav({
         setMenuOpen(false);
       }
     }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuRef.current?.querySelector("button")?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [menuOpen]);
 
   const initials = getInitials(userName);
@@ -67,14 +91,26 @@ export function StaffNav({
         </span>
       </Link>
 
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
-        {NAV_ITEMS.filter((item) => !(item as any).requiresHead || isOfficeHead).map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+      <nav
+        aria-label="Main navigation"
+        className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2"
+      >
+        {NAV_ITEMS.filter((item) => !item.requiresHead || isOfficeHead).map((item) => {
+          const active = isNavigationItemActive(
+            pathname,
+            search,
+            item.href,
+            NAV_ITEMS.filter((entry) => !entry.requiresHead || isOfficeHead).map(
+              (entry) => entry.href,
+            ),
+          );
           return (
             <Link
               key={item.href}
               href={item.href}
               title={item.label}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
               className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
                 active
                   ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
@@ -93,10 +129,11 @@ export function StaffNav({
       </div>
 
       <div className="shrink-0 border-t border-white/15 p-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
           <Link
             href="/staff/notifications"
             title="Notifications"
+            aria-label="Notifications"
             className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-black/10 hover:text-white"
           >
             <Bell className="h-[18px] w-[18px]" />
@@ -110,7 +147,8 @@ export function StaffNav({
           <div className="relative min-w-0 flex-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              aria-haspopup="menu"
+              aria-label="Account options"
+              aria-controls={menuOpen ? accountId : undefined}
               aria-expanded={menuOpen}
               className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-black/10"
             >
@@ -122,14 +160,15 @@ export function StaffNav({
                   {userName}
                 </span>
                 <span className="block truncate text-[10.5px] text-white">
-                  {isOfficeHead ? "Office Head Â· Office Staff" : "Office Staff"}
+                  {isOfficeHead ? "OSAS Head" : "OSAS Staff"}
                 </span>
               </span>
             </button>
 
             {menuOpen && (
               <div
-                role="menu"
+                id={accountId}
+                aria-label="Account options"
                 className="absolute bottom-full left-0 z-20 mb-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
@@ -137,13 +176,12 @@ export function StaffNav({
                     {userName}
                   </p>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    {isOfficeHead ? "Office Head Â· Office Staff" : "Office Staff"}
+                    {isOfficeHead ? "OSAS Head" : "OSAS Staff"}
                   </p>
                 </div>
                 <div className="p-1">
                   <Link
                     href="/staff/profile"
-                    role="menuitem"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
                   >
@@ -151,7 +189,6 @@ export function StaffNav({
                     Profile settings
                   </Link>
                   <button
-                    role="menuitem"
                     onClick={() => {
                       void signOutWithCacheReset();
                     }}

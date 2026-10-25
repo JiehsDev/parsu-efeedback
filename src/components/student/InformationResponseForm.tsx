@@ -117,7 +117,7 @@ export function InformationResponseForm({
           </div>
         )}
         <FieldLabel htmlFor="information-response-message" required>
-          Response message
+          Your response
         </FieldLabel>
         <textarea
           id="information-response-message"

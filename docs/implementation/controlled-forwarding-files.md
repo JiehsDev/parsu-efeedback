@@ -1,0 +1,61 @@
+# Controlled-forwarding changed files
+
+These files were added or updated for the 25 October architecture revision. Earlier uncommitted UI-audit changes remain alongside them.
+
+- `next.config.ts`
+- `scripts/centralize-osas.cjs`
+- `scripts/migrate-forwarding.cjs`
+- `scripts/run-ui-audit.cjs`
+- `scripts/seed-demo.cjs`
+- `src/app/admin/complaints/page.tsx`
+- `src/app/admin/forwarding-requests/page.tsx`
+- `src/app/api/complaints/[id]/assign/route.ts`
+- `src/app/api/complaints/[id]/attachments/route.ts`
+- `src/app/api/complaints/[id]/attachments/upload/route.ts`
+- `src/app/api/complaints/[id]/forwarding/route.ts`
+- `src/app/api/complaints/[id]/reassign-office/route.ts`
+- `src/app/api/complaints/[id]/reopen/route.ts`
+- `src/app/api/complaints/[id]/route.ts`
+- `src/app/api/complaints/route.ts`
+- `src/app/api/forwarding-requests/[id]/route.ts`
+- `src/app/api/forwarding-requests/route.ts`
+- `src/app/api/reports/[id]/download/route.ts`
+- `src/app/api/reports/[id]/print/route.ts`
+- `src/app/api/reports/export/route.ts`
+- `src/app/api/uploads/presign/route.ts`
+- `src/app/staff/forwarding-requests/page.tsx`
+- `src/components/admin/AdminNav.tsx`
+- `src/components/shared/AssignmentHistoryPanel.tsx`
+- `src/components/shared/ComplaintActions.tsx`
+- `src/components/shared/ComplaintDashboard.tsx`
+- `src/components/shared/ComplaintDetail.tsx`
+- `src/components/shared/ForwardingPanel.tsx`
+- `src/components/shared/ForwardingRequestsPage.tsx`
+- `src/components/shared/TimelineEvent.tsx`
+- `src/components/staff/StaffNav.tsx`
+- `src/components/student/ResolutionActions.tsx`
+- `src/features/complaints/centralized-osas.integration.test.ts`
+- `src/features/dashboard/services/dashboard-data.service.ts`
+- `src/features/forwarding/forwarding.integration.test.ts`
+- `src/features/forwarding/forwarding.service.ts`
+- `src/features/notifications/services/notification.service.ts`
+- `src/features/reports/services/report-data.service.ts`
+- `src/features/reports/services/report-file.service.ts`
+- `src/features/reports/services/report-file.service.test.ts`
+- `src/features/seed/categories.ts`
+- `src/features/seed/demo-seed.integration.test.ts`
+- `src/features/seed/seed.service.ts`
+- `src/lib/admin-scope.ts`
+- `src/lib/admin-scope.integration.test.ts`
+- `src/lib/assignment-history.ts`
+- `src/lib/complaint-access.ts`
+- `src/lib/constants.ts`
+- `src/lib/osas-operations.ts`
+- `src/lib/report-complaint-scope.ts`
+- `src/models/Assignment.ts`
+- `src/models/Complaint.ts`
+- `src/models/ForwardingRequest.ts`
+- `src/models/index.ts`
+- `tests/ui-audit/role-flows.spec.ts`
+
+Documentation: [delivery and verification](controlled-forwarding.md). Earlier OSAS-only implementation notes are marked as historical.

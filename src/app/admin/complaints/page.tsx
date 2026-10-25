@@ -22,11 +22,11 @@ const SORT_OPTIONS = [
 const STATUS_FILTERS = [
   { value: "", label: "All Statuses" },
   { value: "submitted", label: "Submitted" },
-  { value: "assigned", label: "Assigned" },
   { value: "in_progress", label: "In Progress" },
-  { value: "escalated", label: "Escalated" },
+  { value: "pending_information", label: "Pending Information" },
   { value: "resolved", label: "Resolved" },
   { value: "closed", label: "Closed" },
+  { value: "withdrawn", label: "Withdrawn" },
 ];
 
 const PRIORITY_DOT: Record<string, string> = {
@@ -39,7 +39,17 @@ const PRIORITY_DOT: Record<string, string> = {
 export default async function AdminComplaintsPage({
   searchParams,
 }: {
-    searchParams: Promise<{ status?: string; priority?: string; q?: string; sort?: string; archived?: string; office?: string; reason?: string; from?: string; to?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    priority?: string;
+    q?: string;
+    sort?: string;
+    archived?: string;
+    office?: string;
+    reason?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   await connectToDatabase();
   const session = await auth();
@@ -51,7 +61,7 @@ export default async function AdminComplaintsPage({
 
   const filter: Record<string, unknown> = {
     isArchived: showArchived,
-    ...(await complaintFilterForScope(scope)),
+    $and: [await complaintFilterForScope(scope)],
   };
   if (status) filter.status = status;
   if (priority) filter.priority = priority;
@@ -62,10 +72,21 @@ export default async function AdminComplaintsPage({
     ];
   }
   if (showArchived && office) filter.assignedOfficeRef = office;
-  if (showArchived && reason) filter.archiveReason = { $regex: escapeRegExp(reason), $options: "i" };
-  if (showArchived && (from || to)) filter.archivedAt = { ...(from ? { $gte: new Date(`${from}T00:00:00`) } : {}), ...(to ? { $lte: new Date(`${to}T23:59:59.999`) } : {}) };
+  if (showArchived && reason)
+    filter.archiveReason = { $regex: escapeRegExp(reason), $options: "i" };
+  if (showArchived && (from || to))
+    filter.archivedAt = {
+      ...(from ? { $gte: new Date(`${from}T00:00:00`) } : {}),
+      ...(to ? { $lte: new Date(`${to}T23:59:59.999`) } : {}),
+    };
 
-  const archiveOffices = showArchived ? await Office.find({ isActive: true, ...officeFilterForScope(scope) }).select("_id name").sort({ name: 1 }).lean() : [];
+  const archiveOffices =
+    showArchived && session!.user.role === "administrator"
+      ? await Office.find({ isActive: true, ...officeFilterForScope(scope) })
+          .select("_id name")
+          .sort({ name: 1 })
+          .lean()
+      : [];
 
   const complaints = await Complaint.find(filter)
     .populate("assignedOfficeRef", "name")
@@ -118,11 +139,7 @@ export default async function AdminComplaintsPage({
           </p>
         </div>
         <Link
-          href={
-            showArchived
-              ? withParam("archived", undefined)
-              : `/admin/complaints?archived=1`
-          }
+          href={showArchived ? withParam("archived", undefined) : `/admin/complaints?archived=1`}
           className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
             showArchived
               ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
@@ -143,7 +160,64 @@ export default async function AdminComplaintsPage({
         </Suspense>
       </div>
 
-      {showArchived && <form method="get" className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:grid-cols-4 lg:grid-cols-6"><input type="hidden" name="archived" value="1" /><select name="office" defaultValue={office ?? ""} aria-label="Filter by office" className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"><option value="">All offices</option>{archiveOffices.map((item: any) => <option key={String(item._id)} value={String(item._id)}>{item.name}</option>)}</select><select name="reason" defaultValue={reason ?? ""} aria-label="Filter by archive reason" className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"><option value="">All archive reasons</option><option value="duplicate">Duplicate</option><option value="invalid">Invalid</option><option value="irrelevant">Outside scope</option><option value="spam">Spam / nonsense</option><option value="no action">No action required</option><option value="addressed">Addressed elsewhere</option></select><input type="date" name="from" defaultValue={from ?? ""} aria-label="Archived from" className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs" /><input type="date" name="to" defaultValue={to ?? ""} aria-label="Archived to" className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs" /><button className="rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-semibold text-[var(--card)]">Apply filters</button><Link href="/admin/complaints?archived=1" className="rounded-lg border border-[var(--border)] px-3 py-2 text-center text-xs font-semibold text-[var(--foreground)]">Clear</Link></form>}
+      {showArchived && (
+        <form
+          method="get"
+          className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:grid-cols-4 lg:grid-cols-6"
+        >
+          <input type="hidden" name="archived" value="1" />
+          <select
+            name="office"
+            defaultValue={office ?? ""}
+            aria-label="Filter by office"
+            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+          >
+            <option value="">All offices</option>
+            {archiveOffices.map((item: any) => (
+              <option key={String(item._id)} value={String(item._id)}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <select
+            name="reason"
+            defaultValue={reason ?? ""}
+            aria-label="Filter by archive reason"
+            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+          >
+            <option value="">All archive reasons</option>
+            <option value="duplicate">Duplicate</option>
+            <option value="invalid">Invalid</option>
+            <option value="irrelevant">Outside scope</option>
+            <option value="spam">Spam / nonsense</option>
+            <option value="no action">No action required</option>
+            <option value="addressed">Addressed elsewhere</option>
+          </select>
+          <input
+            type="date"
+            name="from"
+            defaultValue={from ?? ""}
+            aria-label="Archived from"
+            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+          />
+          <input
+            type="date"
+            name="to"
+            defaultValue={to ?? ""}
+            aria-label="Archived to"
+            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+          />
+          <button className="rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-semibold text-[var(--card)]">
+            Apply filters
+          </button>
+          <Link
+            href="/admin/complaints?archived=1"
+            className="rounded-lg border border-[var(--border)] px-3 py-2 text-center text-xs font-semibold text-[var(--foreground)]"
+          >
+            Clear
+          </Link>
+        </form>
+      )}
 
       {!showArchived && (
         <div className="flex flex-wrap items-center gap-0.5 rounded-full bg-[var(--muted)]/50 p-1">
@@ -214,7 +288,16 @@ export default async function AdminComplaintsPage({
                       {c.studentRef?.employeeOrStudentId ?? "—"}
                       {c.studentRef?.collegeRef?.name ? ` · ${c.studentRef.collegeRef.name}` : ""}
                     </span>
-                    {showArchived && <span className="mt-1 block truncate text-xs text-[var(--muted-foreground)]">Archived {c.archivedAt ? new Date(c.archivedAt).toLocaleDateString() : "—"} by {c.archivedByRef ? `${c.archivedByRef.firstName} ${c.archivedByRef.lastName}` : "—"} · {c.archiveReason || "No reason recorded"}</span>}
+                    {showArchived && (
+                      <span className="mt-1 block truncate text-xs text-[var(--muted-foreground)]">
+                        Archived {c.archivedAt ? new Date(c.archivedAt).toLocaleDateString() : "—"}{" "}
+                        by{" "}
+                        {c.archivedByRef
+                          ? `${c.archivedByRef.firstName} ${c.archivedByRef.lastName}`
+                          : "—"}{" "}
+                        · {c.archiveReason || "No reason recorded"}
+                      </span>
+                    )}
                   </span>
                   <StatusBadge status={c.status as ComplaintStatus} />
                 </Link>

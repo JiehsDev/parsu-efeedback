@@ -21,11 +21,13 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const VARIANT_STYLES: Record<ToastVariant, { icon: typeof CheckCircle2; className: string }> = {
   success: {
     icon: CheckCircle2,
-    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    className:
+      "border-[var(--qa-success-strong)]/30 bg-[var(--card)] text-[var(--qa-success-strong)]",
   },
   error: {
     icon: AlertCircle,
-    className: "border-[var(--destructive)]/40 bg-[var(--destructive)]/10 text-[var(--destructive)]",
+    className:
+      "border-[var(--destructive)]/40 bg-[var(--destructive)]/10 text-[var(--destructive)]",
   },
   info: {
     icon: Info,

@@ -39,16 +39,15 @@ export default async function PublicLayout({ children }: { children: React.React
 
         <div className="relative mt-auto">
           <h2 className="max-w-sm text-3xl leading-tight font-semibold text-white xl:text-4xl">
-            Heard. Handled. Resolved.
+            Student complaints and feedback
           </h2>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white">
-            One place for Partido State University students to raise concerns, track every update,
-            and see them through to resolution.
+            Submit a concern to OSAS, follow its progress, and review the response.
           </p>
         </div>
 
         <p className="relative mt-12 text-xs text-white">
-          Â© {new Date().getFullYear()} Partido State University
+          &copy; {new Date().getFullYear()} Partido State University
         </p>
       </div>
 

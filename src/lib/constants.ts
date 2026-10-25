@@ -85,6 +85,10 @@ export const TIMELINE_EVENT_TYPES = [
   "archive_rejected",
   "archived",
   "restored",
+  "forwarding_requested",
+  "forwarding_approved",
+  "forwarding_rejected",
+  "complaint_forwarded",
 ] as const;
 export type TimelineEventType = (typeof TIMELINE_EVENT_TYPES)[number];
 
@@ -102,6 +106,8 @@ export const NOTIFICATION_TYPES = [
   "archive_request",
   "archive_decision",
   "complaint_restored",
+  "forwarding_request",
+  "forwarding_decision",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

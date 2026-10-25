@@ -112,8 +112,14 @@ export function StatusUpdateForm({
           }}
           disabled={isSubmitting}
         >
-          <FieldLabel required>Status</FieldLabel>
-          <SelectTrigger aria-invalid={!!statusError} aria-describedby="status-update-status-error">
+          <FieldLabel htmlFor="status-update-status" required>
+            Status
+          </FieldLabel>
+          <SelectTrigger
+            id="status-update-status"
+            aria-invalid={!!statusError}
+            aria-describedby="status-update-status-error"
+          >
             <SelectValue placeholder="Change to…" />
           </SelectTrigger>
           <SelectContent>

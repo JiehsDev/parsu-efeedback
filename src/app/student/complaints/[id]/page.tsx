@@ -63,8 +63,11 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
       .sort({ requestedAt: -1 })
       .lean(),
   ]);
-  const firstResponseAt = assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
-  const resolutionEvent = [...(timeline as any[])].reverse().find((event) => event.toValue === "resolved");
+  const firstResponseAt =
+    assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
+  const resolutionEvent = [...(timeline as any[])]
+    .reverse()
+    .find((event) => event.toValue === "resolved");
   const resolver = c.resolvedByRef ?? resolutionEvent?.actorRef ?? null;
   const resolverName = resolver
     ? `${resolver.firstName ?? ""} ${resolver.lastName ?? ""}`.trim()
@@ -154,7 +157,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
             </div>
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
               {timeline.map((event: any) => (
-              <TimelineEvent key={event._id} event={event} viewerRole="student" />
+                <TimelineEvent key={event._id} event={event} viewerRole="student" />
               ))}
             </div>
           </div>
@@ -220,7 +223,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
               {c.resolvedAt && (
                 <div>
                   <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[var(--qa-success-strong)]" />
                     Resolved
                   </dt>
                   <dd className="mt-1.5 text-[var(--foreground)]">
@@ -231,7 +234,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
               {(c.status === "resolved" || c.status === "closed") && (
                 <div>
                   <dt className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[var(--qa-success-strong)]" />
                     Resolved By
                   </dt>
                   <dd className="mt-1.5 text-[var(--foreground)]">{resolverName}</dd>

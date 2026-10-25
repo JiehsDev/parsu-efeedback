@@ -76,7 +76,7 @@ export default async function AdminCategoryDetailPage({
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                   c.isActive
-                    ? "bg-emerald-500/20 text-emerald-400"
+                    ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
                     : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                 }`}
               >
@@ -139,7 +139,7 @@ export default async function AdminCategoryDetailPage({
 
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]">
               <AlertTriangle className="h-[18px] w-[18px]" />
             </span>
             <p className="text-sm font-semibold text-[var(--foreground)]">Configuration Status</p>
@@ -157,7 +157,7 @@ export default async function AdminCategoryDetailPage({
 
             <div className="flex items-start gap-2.5">
               {slaRule ? (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--qa-success-strong)]" />
               ) : (
                 <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--destructive)]" />
               )}
@@ -187,11 +187,7 @@ export default async function AdminCategoryDetailPage({
                 </div>
                 <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                   {slaRule
-                    ? `Response ${(slaRule as any).responseHours}h · Resolution ${(slaRule as any).resolutionHours}h${
-                        (slaRule as any).escalateToOfficeRef
-                          ? ` · Escalates to ${(slaRule as any).escalateToOfficeRef.name}`
-                          : ""
-                      }`
+                    ? `Response ${(slaRule as any).responseHours}h / Resolution ${(slaRule as any).resolutionHours}h. Overdue complaints require OSAS Head review.`
                     : "No SLA rule of its own yet — falls back to the institution-wide default, if one exists for this priority."}
                 </p>
               </div>

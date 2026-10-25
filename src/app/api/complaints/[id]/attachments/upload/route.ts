@@ -1,4 +1,3 @@
-import { isOversightRole } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { connectToDatabase } from "@/lib/db";
@@ -32,8 +31,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   }
 
-  if (isOversightRole(session.user.role))
-    return NextResponse.json({ error: "Oversight access is read-only." }, { status: 403 });
   await connectToDatabase();
   const { id } = await params;
   const complaint = await Complaint.findById(id).lean();

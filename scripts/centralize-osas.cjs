@@ -16,6 +16,7 @@ async function centralizeOsas(db, { apply = false, backupDirectory } = {}) {
     .collection("complaints")
     .find({
       isArchived: false,
+      forwardedAt: null,
       status: { $in: ["submitted", "assigned", "in_progress", "pending_information", "escalated"] },
     })
     .toArray();
@@ -106,7 +107,14 @@ async function centralizeOsas(db, { apply = false, backupDirectory } = {}) {
         status: complaint.status,
       },
       {
-        $set: { assignedOfficeRef: office._id, assignedStaffRef: target, status, updatedAt: now },
+        $set: {
+          initialOfficeRef: office._id,
+          assignedOfficeRef: office._id,
+          assignedStaffRef: target,
+          status,
+          updatedAt: now,
+        },
+        $inc: { __v: 1 },
       },
     );
     if (!result.modifiedCount) {

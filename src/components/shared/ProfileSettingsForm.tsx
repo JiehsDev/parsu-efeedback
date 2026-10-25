@@ -137,7 +137,10 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
               </div>
             )}
             {success && (
-              <div className="flex items-start gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-400">
+              <div
+                role="status"
+                className="flex items-start gap-2 rounded-2xl border border-[var(--qa-success-strong)]/30 bg-[var(--card)] px-3 py-2.5 text-sm text-[var(--qa-success-strong)]"
+              >
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{success}</span>
               </div>
@@ -147,10 +150,16 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
               <p className="text-sm font-semibold text-[var(--foreground)]">Personal details</p>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[var(--muted-foreground)]">First name</label>
+                  <label
+                    htmlFor="profile-firstName"
+                    className="text-xs text-[var(--muted-foreground)]"
+                  >
+                    First name
+                  </label>
                   <div className="relative">
                     <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                     <input
+                      id="profile-firstName"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       className={inputClass}
@@ -158,10 +167,16 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[var(--muted-foreground)]">Last name</label>
+                  <label
+                    htmlFor="profile-lastName"
+                    className="text-xs text-[var(--muted-foreground)]"
+                  >
+                    Last name
+                  </label>
                   <div className="relative">
                     <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                     <input
+                      id="profile-lastName"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       className={inputClass}
@@ -180,7 +195,11 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
               <div className="mt-3 space-y-3">
                 <div className="relative">
                   <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                  <label htmlFor="profile-CurrentPassword" className="sr-only">
+                    Current password
+                  </label>
                   <input
+                    id="profile-CurrentPassword"
                     type={showCurrentPassword ? "text" : "password"}
                     autoComplete="current-password"
                     placeholder="Current password"
@@ -191,7 +210,6 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword((v) => !v)}
-                    tabIndex={-1}
                     aria-label={showCurrentPassword ? "Hide password" : "Show password"}
                     className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                   >
@@ -204,7 +222,11 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                 </div>
                 <div className="relative">
                   <KeyRound className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                  <label htmlFor="profile-NewPassword" className="sr-only">
+                    New password
+                  </label>
                   <input
+                    id="profile-NewPassword"
                     type={showNewPassword ? "text" : "password"}
                     autoComplete="new-password"
                     placeholder="New password"
@@ -215,7 +237,6 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                   <button
                     type="button"
                     onClick={() => setShowNewPassword((v) => !v)}
-                    tabIndex={-1}
                     aria-label={showNewPassword ? "Hide password" : "Show password"}
                     className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                   >
@@ -272,7 +293,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
 
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]">
                 <ShieldCheck className="h-[18px] w-[18px]" />
               </span>
               <p className="text-sm font-semibold text-[var(--foreground)]">Account security</p>

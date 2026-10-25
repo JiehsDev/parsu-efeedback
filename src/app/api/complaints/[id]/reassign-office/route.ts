@@ -5,7 +5,7 @@ export async function POST() {
   return NextResponse.json(
     {
       error: session?.user
-        ? "Office reassignment is disabled. OSAS is the only handling office."
+        ? "Use controlled forwarding. Only the OSAS Head may forward to VPAA or VPAF."
         : "Unauthorized",
     },
     { status: session?.user ? 403 : 401 },

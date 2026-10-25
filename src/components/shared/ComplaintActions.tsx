@@ -24,7 +24,7 @@ export async function ComplaintActions({
   requests: any[];
   archives: any[];
 }) {
-  if (["vpaa", "vpaf"].includes(session.user.role)) return null;
+  const receiving = ["vpaa", "vpaf"].includes(session.user.role);
   const head = await canSuperviseComplaint(session, c);
   const mine = await canProcessComplaint(session, c);
   const admin = session.user.role === "administrator";
@@ -46,7 +46,7 @@ export async function ComplaintActions({
   return (
     <section className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
       <h2 className="text-sm font-semibold">
-        {admin ? "Archive administration" : "OSAS complaint actions"}
+        {admin ? "Archive administration" : "Complaint actions"}
       </h2>
       {c.isArchived ? (
         <>
@@ -84,8 +84,8 @@ export async function ComplaintActions({
             <>
               <StatusUpdateForm complaintId={id} currentStatus={c.status} />
               <InformationRequestPanel complaintId={id} status={c.status} requests={requests} />
-              <ReleaseAssignmentButton complaintId={id} />
-              {!head && !pending && <ArchiveRequestButton complaintId={id} />}
+              {!receiving && <ReleaseAssignmentButton complaintId={id} />}
+              {!receiving && !head && !pending && <ArchiveRequestButton complaintId={id} />}
             </>
           )}
           {target && (

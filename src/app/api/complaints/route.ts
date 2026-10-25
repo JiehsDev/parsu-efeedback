@@ -1,3 +1,4 @@
+import { escapeRegExp } from "@/lib/utils";
 import { staffComplaintFilter } from "@/lib/osas-operations";
 // src/app/api/complaints/route.ts
 import { NextRequest, NextResponse } from "next/server";
@@ -99,6 +100,7 @@ export async function POST(req: NextRequest) {
     priority: category.defaultPriority,
     status: "submitted",
     assignedOfficeRef: resolvedOfficeRef,
+    initialOfficeRef: resolvedOfficeRef,
     slaResponseDueAt,
     slaResolutionDueAt,
     slaPolicy,
@@ -177,6 +179,12 @@ export async function GET(req: NextRequest) {
   }
 
   if (status) filter.status = status;
+  const search = searchParams.get("q")?.trim();
+  if (search)
+    filter.$or = [
+      { title: { $regex: escapeRegExp(search), $options: "i" } },
+      { ticketNumber: { $regex: escapeRegExp(search), $options: "i" } },
+    ];
 
   const [complaints, total] = await Promise.all([
     Complaint.find(filter)

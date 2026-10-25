@@ -1,7 +1,8 @@
+import { ForwardingRequest } from "@/models/ForwardingRequest";
 import type { Session } from "next-auth";
 import { Complaint } from "@/models/Complaint";
 import { getAdminScope, complaintFilterForScope } from "@/lib/admin-scope";
-import { staffComplaintFilter, isOversightRole } from "@/lib/osas-operations";
+import { staffComplaintFilter, isOsasHead, getOperationalOffice } from "@/lib/osas-operations";
 import {
   getAnalyticsSummary,
   getMonthlyTrends,
@@ -64,7 +65,32 @@ export async function getDashboardData(session: Session) {
     getPriorityBreakdown({ ...filter, isArchived: false }),
     getDomainBreakdown(filter),
   ]);
+  const osas = await getOperationalOffice();
+  const head = await isOsasHead(session);
+  const showForwarding = session.user.role === "osas" || session.user.role === "office_staff";
+  const forwardingStats =
+    showForwarding && osas
+      ? {
+          pending: await ForwardingRequest.countDocuments({
+            fromOfficeRef: osas._id,
+            status: "pending",
+            ...(!head ? { requestedByUserRef: session.user.id } : {}),
+          }),
+          vpaa: await ForwardingRequest.countDocuments({
+            fromOfficeRef: osas._id,
+            status: "approved",
+            requestedDestination: "vpaa",
+          }),
+          vpaf: await ForwardingRequest.countDocuments({
+            fromOfficeRef: osas._id,
+            status: "approved",
+            requestedDestination: "vpaf",
+          }),
+        }
+      : null;
   return {
+    forwardingStats,
+    receivingOffice: ["vpaa", "vpaf"].includes(session.user.role),
     summary,
     trends,
     openCount,
@@ -74,7 +100,7 @@ export async function getDashboardData(session: Session) {
     categories,
     priorities,
     domains,
-    oversight: isOversightRole(session.user.role),
+    oversight: false,
     role: session.user.role,
     queue: queue.map((complaint) => ({
       _id: String(complaint._id),

@@ -32,18 +32,18 @@ import {
 const HOW_IT_WORKS = [
   {
     icon: Zap,
-    title: "Routed Instantly",
-    body: "Sent to the right office the moment you submit — no manual triage.",
+    title: "Submit to OSAS",
+    body: "OSAS reviews your complaint and assigns a handler.",
   },
   {
     icon: Timer,
-    title: "Tracked Against a Deadline",
-    body: "Escalated automatically if the office is at risk of missing it.",
+    title: "Response and resolution deadlines",
+    body: "Both deadlines are three eligible days. Weekends and configured holidays are excluded.",
   },
   {
     icon: Bell,
-    title: "You Get Notified",
-    body: "When it is assigned, when it is updated, and when it is resolved.",
+    title: "Follow your complaint",
+    body: "Check updates, provide requested information, and review the resolution.",
   },
 ];
 
@@ -173,14 +173,22 @@ export default async function StudentDashboardPage() {
               href={s.href}
               className="group flex min-h-[84px] items-center gap-2.5 bg-[var(--card)] px-3.5 py-3 transition-colors hover:bg-[var(--muted)]/50 sm:px-4"
             >
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.iconClass}`}>
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.iconClass}`}
+              >
                 <s.icon className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-medium text-[var(--foreground)]">{s.label}</span>
-                <span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">{s.description}</span>
+                <span className="block truncate text-xs font-medium text-[var(--foreground)]">
+                  {s.label}
+                </span>
+                <span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">
+                  {s.description}
+                </span>
               </span>
-              <span className={`qa-tabular shrink-0 text-2xl leading-none font-semibold tracking-tight ${s.emphasis || (s.value === 0 ? "text-[var(--muted-foreground)]" : "text-[var(--foreground)]")}`}>
+              <span
+                className={`qa-tabular shrink-0 text-2xl leading-none font-semibold tracking-tight ${s.emphasis || (s.value === 0 ? "text-[var(--muted-foreground)]" : "text-[var(--foreground)]")}`}
+              >
                 {s.value}
               </span>
             </Link>
@@ -224,7 +232,7 @@ export default async function StudentDashboardPage() {
       ) : (
         <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
-              <h2 className="text-sm font-semibold text-[var(--foreground)]">Recent Activity</h2>
+            <h2 className="text-sm font-semibold text-[var(--foreground)]">Recent Activity</h2>
             <Link
               href="/student/complaints"
               className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline"

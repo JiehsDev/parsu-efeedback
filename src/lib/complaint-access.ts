@@ -26,7 +26,7 @@ export async function canAccessInternalComplaintNotes(
 }
 export async function canAttachToComplaint(session: any, complaint: any): Promise<boolean> {
   if (!(await canAccessComplaint(session, complaint))) return false;
-  if (["osas", "office_staff"].includes(session.user.role))
+  if (["osas", "office_staff", "vpaa", "vpaf"].includes(session.user.role))
     return canProcessComplaint(session, complaint);
   return session.user.role === "student" || session.user.role === "administrator";
 }

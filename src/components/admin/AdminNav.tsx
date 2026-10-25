@@ -4,11 +4,12 @@
 import { clientFetch } from "@/lib/client-fetch";
 
 import Link from "next/link";
+import { isNavigationItemActive } from "@/lib/navigation";
 import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import { BrandLogo } from "@/components/shared/BrandLogo";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { signOutWithCacheReset } from "@/lib/client-sign-out";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Archive,
   Bell,
@@ -38,6 +39,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 const PRIMARY_NAV_ITEMS = [
+  { href: "/admin/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/admin/complaints", label: "Complaints", icon: Inbox },
   { href: "/admin/archive-requests", label: "Archive Requests", icon: Archive },
@@ -81,13 +83,20 @@ function getInitials(name: string) {
 
 export function AdminNav({ userName, role }: { userName: string; role: UserRole }) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const accountId = useId();
   const isScopedSubAdmin = role === "vpaa" || role === "vpaf" || role === "osas";
   const roleLabel = ROLE_LABELS[role] ?? "Administrator";
   const workspaceLabel = isScopedSubAdmin ? `ParSU ${roleLabel}` : "ParSU Admin";
   const primaryItems = PRIMARY_NAV_ITEMS.filter((item) => !item.hideFor?.includes(role)).filter(
     (item) => {
       if (["vpaa", "vpaf"].includes(role))
-        return ["/admin/dashboard", "/admin/complaints", "/admin/reports"].includes(item.href);
+        return [
+          "/admin/dashboard",
+          "/admin/complaints",
+          "/admin/complaints?archived=1",
+          "/admin/reports",
+        ].includes(item.href);
       if (role === "osas") return !["/admin/users", "/admin/offices"].includes(item.href);
       return true;
     },
@@ -105,13 +114,14 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   }, []);
 
   useEffect(() => {
+    if (["vpaa", "vpaf"].includes(role)) return;
     clientFetch("/api/archive-requests")
       .then((res) => (res.ok ? res.json() : { requests: [] }))
       .then((data) =>
         setArchiveRequestCount(Array.isArray(data.requests) ? data.requests.length : 0),
       )
       .catch(() => setArchiveRequestCount(0));
-  }, []);
+  }, [role]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -120,19 +130,36 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
         setMenuOpen(false);
       }
     }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuRef.current?.querySelector("button")?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [menuOpen]);
 
   const initials = getInitials(userName);
 
   function renderItem(item: (typeof PRIMARY_NAV_ITEMS)[number]) {
-    const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+    const active = isNavigationItemActive(
+      pathname,
+      search,
+      item.href,
+      [...primaryItems, ...(!isScopedSubAdmin ? CONFIG_NAV_ITEMS : [])].map((entry) => entry.href),
+    );
     return (
       <Link
         key={item.href}
         href={item.href}
         title={item.label}
+        aria-label={item.label}
+        aria-current={active ? "page" : undefined}
         className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
           active
             ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
@@ -154,7 +181,10 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
         </span>
       </Link>
 
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
+      <nav
+        aria-label="Main navigation"
+        className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2"
+      >
         {primaryItems.map((item) => {
           const rendered = renderItem(item);
           if (item.href !== "/admin/archive-requests" || archiveRequestCount === 0) return rendered;
@@ -174,7 +204,9 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
           <>
             <p className="mt-3 mb-1 px-3 text-[10px] font-semibold tracking-wide text-white uppercase">
               <span className="hidden lg:inline">Configuration</span>
-              <span className="lg:hidden">Â·Â·Â·</span>
+              <span className="lg:hidden" aria-hidden="true">
+                ...
+              </span>
             </p>
             {CONFIG_NAV_ITEMS.map(renderItem)}
           </>
@@ -186,10 +218,11 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
       </div>
 
       <div className="shrink-0 border-t border-white/15 p-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
           <Link
             href="/admin/notifications"
             title="Notifications"
+            aria-label="Notifications"
             className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-black/10 hover:text-white"
           >
             <Bell className="h-[18px] w-[18px]" />
@@ -203,7 +236,8 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
           <div className="relative min-w-0 flex-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              aria-haspopup="menu"
+              aria-label="Account options"
+              aria-controls={menuOpen ? accountId : undefined}
               aria-expanded={menuOpen}
               className="flex w-full items-center gap-2 rounded-full py-0.5 pr-1 transition-colors hover:bg-black/10"
             >
@@ -220,7 +254,8 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
 
             {menuOpen && (
               <div
-                role="menu"
+                id={accountId}
+                aria-label="Account options"
                 className="absolute bottom-full left-0 z-20 mb-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
@@ -232,7 +267,6 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
                 <div className="p-1">
                   <Link
                     href="/admin/profile"
-                    role="menuitem"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
                   >
@@ -240,7 +274,6 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
                     Profile settings
                   </Link>
                   <button
-                    role="menuitem"
                     onClick={() => {
                       void signOutWithCacheReset();
                     }}

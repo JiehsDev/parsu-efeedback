@@ -17,3 +17,5 @@ export { Assignment } from "./Assignment";
 export { GeneratedReport } from "./GeneratedReport";
 export { PasswordResetToken } from "./PasswordResetToken"; // added Phase 6 (Authentication)
 export { InformationRequest } from "./InformationRequest";
+
+export { ForwardingRequest } from "./ForwardingRequest";

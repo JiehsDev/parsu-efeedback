@@ -1,4 +1,4 @@
-import { staffComplaintFilter } from "@/lib/osas-operations";
+import { reportComplaintScope } from "@/lib/report-complaint-scope";
 // src/app/api/reports/[id]/print/route.ts
 //
 // A print-friendly HTML rendering of a generated report's data, opened in a
@@ -13,7 +13,6 @@ import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { GeneratedReport } from "@/models/GeneratedReport";
 import { queryReportData, type ReportRow } from "@/features/reports/services/report-data.service";
-import { complaintFilterForScope, getAdminScope } from "@/lib/admin-scope";
 
 function escapeHtml(value: string): string {
   return value
@@ -63,10 +62,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const accessFilter =
-    session.user.role === "office_staff"
-      ? await staffComplaintFilter(session)
-      : await complaintFilterForScope(getAdminScope(session.user.role));
+  const accessFilter = await reportComplaintScope(session);
   const rows = await queryReportData((report as any).filters ?? {}, accessFilter);
   const title = `${String((report as any).reportType).replace(/-/g, " ")} report`;
   const generatedAt = new Date((report as any).createdAt).toLocaleString();

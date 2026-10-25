@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { ForwardingRequest } from "@/models/ForwardingRequest";
 import {
   Office,
   User,
@@ -20,6 +21,7 @@ import { SEED_CATEGORIES } from "./categories";
 // Explicit development reset of tickets only. Configuration and account IDs are stable.
 export async function seedDevelopmentData() {
   for (const model of [
+    ForwardingRequest,
     InformationRequest,
     ArchiveRequest,
     Assignment,
@@ -33,6 +35,7 @@ export async function seedDevelopmentData() {
   await AuditLog.deleteMany({
     entityType: {
       $in: [
+        "ForwardingRequest",
         "Complaint",
         "Assignment",
         "ArchiveRequest",
@@ -69,6 +72,8 @@ export async function seedDevelopmentData() {
       { $setOnInsert: { code, name, type, isActive: true } },
       { upsert: true },
     );
+  const vpaaOffice = await Office.findOne({ code: "OVPAA" });
+  const vpafOffice = await Office.findOne({ code: "OVPAF" });
   const passwordHash = await bcrypt.hash("ParSU_test2026", 10);
   const users = [
     {
@@ -83,17 +88,17 @@ export async function seedDevelopmentData() {
       email: "vpaa@parsu.edu.ph",
       role: "vpaa",
       firstName: "VPAA",
-      lastName: "Oversight",
+      lastName: "Handler",
       employeeOrStudentId: "EMP-VPAA",
-      officeRef: null,
+      officeRef: vpaaOffice!._id,
     },
     {
       email: "vpaf@parsu.edu.ph",
       role: "vpaf",
       firstName: "VPAF",
-      lastName: "Oversight",
+      lastName: "Handler",
       employeeOrStudentId: "EMP-VPAF",
-      officeRef: null,
+      officeRef: vpafOffice!._id,
     },
     {
       email: "osasdirector@parsu.edu.ph",
@@ -146,6 +151,16 @@ export async function seedDevelopmentData() {
         $setOnInsert: { email, employeeOrStudentId, passwordHash, isActive: true, tokenVersion: 0 },
       },
       { upsert: true },
+    );
+  }
+  for (const [role, receivingOffice] of [
+    ["vpaa", vpaaOffice],
+    ["vpaf", vpafOffice],
+  ] as const) {
+    const receiver = await User.findOne({ role, email: `${role}@parsu.edu.ph` });
+    await Office.updateOne(
+      { _id: receivingOffice!._id },
+      { $set: { headUserRef: receiver!._id, isActive: true } },
     );
   }
   const head = await User.findOne({ email: "osasdirector@parsu.edu.ph" });

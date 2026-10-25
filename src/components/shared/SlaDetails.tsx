@@ -20,10 +20,16 @@ type SlaDetailsProps = {
 };
 
 function dateLabel(value?: Date | string | null) {
-  return value ? new Date(value).toLocaleString("en-PH", { timeZone: SLA_TIME_ZONE }) : "Not available";
+  return value
+    ? new Date(value).toLocaleString("en-PH", { timeZone: SLA_TIME_ZONE })
+    : "Not available";
 }
 
-function durationLabel(start?: Date | string | null, end?: Date | string | null, policy?: SlaPolicy | null) {
+function durationLabel(
+  start?: Date | string | null,
+  end?: Date | string | null,
+  policy?: SlaPolicy | null,
+) {
   if (!start || !end) return "Not available";
   const minutes = Math.max(0, Math.round(elapsedSlaMs(start, end, policy) / 60000));
   if (minutes < 60) return `${minutes}m`;
@@ -32,45 +38,83 @@ function durationLabel(start?: Date | string | null, end?: Date | string | null,
   return `${hours}h${remainder ? ` ${remainder}m` : ""}`;
 }
 
-export function SlaDetails({ complaint, firstResponseAt, events = [], simplified = false }: SlaDetailsProps) {
+export function SlaDetails({
+  complaint,
+  firstResponseAt,
+  events = [],
+  simplified = false,
+}: SlaDetailsProps) {
   const now = Date.now();
   const active = !["resolved", "closed", "withdrawn"].includes(complaint.status);
-  const resolutionDue = complaint.slaResolutionDueAt ? new Date(complaint.slaResolutionDueAt) : null;
-  const overdue = Boolean(complaint.isOverdue) || Boolean(active && resolutionDue && resolutionDue.getTime() < now);
-  const warningReached = Boolean(complaint.lastWarningNotifiedAt || complaint.lastResponseWarningNotifiedAt);
+  const resolutionDue = complaint.slaResolutionDueAt
+    ? new Date(complaint.slaResolutionDueAt)
+    : null;
+  const overdue =
+    Boolean(complaint.isOverdue) ||
+    Boolean(active && resolutionDue && resolutionDue.getTime() < now);
+  const warningReached = Boolean(
+    complaint.lastWarningNotifiedAt || complaint.lastResponseWarningNotifiedAt,
+  );
   const resolved = Boolean(complaint.resolvedAt);
-  const resolutionMet = resolved && resolutionDue ? new Date(complaint.resolvedAt as string).getTime() <= resolutionDue.getTime() : null;
-  const state = overdue ? "Overdue" : warningReached ? "Warning" : resolved ? (resolutionMet ? "Met" : "Breached") : "On Track";
+  const resolutionMet =
+    resolved && resolutionDue
+      ? new Date(complaint.resolvedAt as string).getTime() <= resolutionDue.getTime()
+      : null;
+  const state = overdue
+    ? "Overdue"
+    : warningReached
+      ? "Warning"
+      : resolved
+        ? resolutionMet
+          ? "Met"
+          : "Breached"
+        : "On Track";
   const escalationEvent = events.find((event) => event.eventType === "escalated" && event.message);
   const stateTone = overdue
     ? "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"
     : state === "Warning"
-      ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+      ? "border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]"
       : state === "Met"
-        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+        ? "border-[var(--qa-success-strong)]/30 bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
         : "border-[var(--primary)]/25 bg-[var(--primary)]/10 text-[var(--primary)]";
 
   const rows = simplified
-    ? [["Current SLA state", state], ["Resolution due", dateLabel(complaint.slaResolutionDueAt)]]
+    ? [
+        ["Current SLA state", state],
+        ["Resolution due", dateLabel(complaint.slaResolutionDueAt)],
+      ]
     : [
         ["Current SLA state", state],
         ["Response due", dateLabel(complaint.slaResponseDueAt)],
         ["Resolution due", dateLabel(complaint.slaResolutionDueAt)],
         ["Warning threshold reached", warningReached ? "Yes" : "No"],
         ["Overdue", overdue ? "Yes" : "No"],
-        ["First response time", durationLabel(complaint.submittedAt, firstResponseAt, complaint.slaPolicy)],
-        ["Resolution time", durationLabel(complaint.submittedAt, complaint.resolvedAt, complaint.slaPolicy)],
+        [
+          "First response time",
+          durationLabel(complaint.submittedAt, firstResponseAt, complaint.slaPolicy),
+        ],
+        [
+          "Resolution time",
+          durationLabel(complaint.submittedAt, complaint.resolvedAt, complaint.slaPolicy),
+        ],
         ["SLA compliance", resolved ? (resolutionMet ? "Met" : "Breached") : "Pending result"],
       ];
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5" aria-labelledby="sla-details-heading">
+    <section
+      className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"
+      aria-labelledby="sla-details-heading"
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-        <Timer className="h-4 w-4 text-[var(--muted-foreground)]" />
-        <h2 id="sla-details-heading" className="text-sm font-semibold text-[var(--foreground)]">SLA details</h2>
+          <Timer className="h-4 w-4 text-[var(--muted-foreground)]" />
+          <h2 id="sla-details-heading" className="text-sm font-semibold text-[var(--foreground)]">
+            SLA details
+          </h2>
         </div>
-        <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${stateTone}`}>{state}</span>
+        <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${stateTone}`}>
+          {state}
+        </span>
       </div>
       <p className="mt-2 text-xs text-[var(--muted-foreground)]">
         {complaint.slaPolicy?.version === 1
@@ -87,7 +131,8 @@ export function SlaDetails({ complaint, firstResponseAt, events = [], simplified
       </div>
       {escalationEvent && !simplified && (
         <p className="mt-4 border-t border-[var(--border)] pt-3 text-xs text-[var(--muted-foreground)]">
-          Escalation trigger: {escalationEvent.message || formatEnumLabel(escalationEvent.eventType)}
+          OSAS Head review reason:{" "}
+          {escalationEvent.message || formatEnumLabel(escalationEvent.eventType)}
         </p>
       )}
     </section>

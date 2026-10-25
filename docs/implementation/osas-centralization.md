@@ -1,5 +1,7 @@
 # Centralized OSAS handling
 
+> Historical record. The 25 October 2026 [controlled-forwarding architecture](controlled-forwarding.md) supersedes OSAS-only handling and global VPAA/VPAF oversight.
+
 This implementation note describes the application change. Thesis/research documents are unchanged.
 
 ## Roles and access

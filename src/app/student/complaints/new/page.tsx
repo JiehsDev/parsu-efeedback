@@ -51,13 +51,13 @@ const PROCESS_STEPS = [
   },
   {
     icon: Building2,
-    title: "Routed",
-    description: "Automatically sent to the office responsible for this category.",
+    title: "OSAS review",
+    description: "OSAS reviews your complaint and assigns a staff member.",
   },
   {
     icon: UserCheck,
     title: "In progress",
-    description: "A staff member picks it up and works your case.",
+    description: "Your assigned OSAS staff member works on the complaint.",
   },
   {
     icon: CheckCircle2,
@@ -255,7 +255,7 @@ export default function NewComplaintPage() {
             Submit a Complaint
           </h1>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Describe the issue clearly — this helps route it to the right office faster.
+            Describe what happened and what help you need from OSAS.
           </p>
         </div>
       </div>
@@ -422,7 +422,7 @@ export default function NewComplaintPage() {
         <div className="space-y-5">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 shrink-0 text-amber-400" />
+              <Lightbulb className="h-4 w-4 shrink-0 text-[var(--qa-amber-strong)]" />
               <p className="text-sm font-medium text-[var(--foreground)]">
                 Tips for a faster resolution
               </p>

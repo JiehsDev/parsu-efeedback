@@ -6,14 +6,19 @@ import { User } from "@/models/User";
 import { Assignment } from "@/models/Assignment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { assignComplaintSchema } from "@/features/complaints/schemas/assign.schema";
-import { getOperationalOffice, isOsasHead, refId, isOversightRole } from "@/lib/osas-operations";
+import {
+  getOperationalOffice,
+  isOsasHead,
+  refId,
+  isReceivingOfficeRole,
+} from "@/lib/osas-operations";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { notifyComplaintAssigned } from "@/features/notifications/services/notification.service";
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (
-    isOversightRole(session.user.role) ||
+    isReceivingOfficeRole(session.user.role) ||
     !["osas", "office_staff", "administrator"].includes(session.user.role)
   )
     return NextResponse.json(

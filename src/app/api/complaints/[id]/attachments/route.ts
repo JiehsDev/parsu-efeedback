@@ -1,4 +1,3 @@
-import { isOversightRole } from "@/lib/osas-operations";
 import { canAccessComplaint, canAttachToComplaint } from "@/lib/complaint-access";
 // src/app/api/complaints/[id]/attachments/route.ts
 import { NextRequest, NextResponse } from "next/server";
@@ -17,8 +16,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (isOversightRole(session.user.role))
-    return NextResponse.json({ error: "Oversight access is read-only." }, { status: 403 });
   await connectToDatabase();
   const { id } = await params;
 

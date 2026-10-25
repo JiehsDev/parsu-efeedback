@@ -34,7 +34,7 @@ export function ResolutionActions({ complaintId }: { complaintId: string }) {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      showToast(data.error ?? "Could not close complaint.");
+      showToast(data.error ?? "Could not close complaint.", "error");
       return;
     }
 
@@ -48,18 +48,18 @@ export function ResolutionActions({ complaintId }: { complaintId: string }) {
 
   return (
     <section
-      className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5"
+      className="rounded-2xl border border-[var(--qa-success-strong)]/30 bg-[var(--card)] p-5"
       aria-labelledby="resolution-completed-heading"
     >
       <h2
         id="resolution-completed-heading"
-        className="text-base font-semibold text-emerald-700 dark:text-emerald-300"
+        className="text-base font-semibold text-[var(--qa-success-strong)]"
       >
         Resolution Completed
       </h2>
-      <p className="mt-1 text-sm text-emerald-800/80 dark:text-emerald-200/80">
-        The responsible office has marked your complaint as resolved. You may rate the resolution,
-        or close the complaint without submitting a rating.
+      <p className="mt-1 text-sm text-[var(--foreground)]">
+        Your complaint has been marked as resolved. You may rate the resolution, or close the
+        complaint without submitting a rating.
       </p>
       <div className="mt-4 flex flex-wrap gap-2.5">
         <button

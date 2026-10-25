@@ -4,6 +4,7 @@
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown } from "lucide-react";
+import { FormFieldContext } from "./form-field-context";
 import { cn } from "@/lib/utils";
 
 export const SelectGroup = SelectPrimitive.Group;
@@ -45,13 +46,27 @@ export function SelectTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
+  const field = React.useContext(FormFieldContext);
+  const value = React.Children.toArray(children).find(
+    (child) => React.isValidElement<{ placeholder?: string }>(child) && child.props.placeholder,
+  ) as React.ReactElement<{ placeholder?: string }> | undefined;
   return (
     <SelectPrimitive.Trigger
+      {...props}
+      aria-label={
+        props["aria-label"] ?? (!field && !props.id ? value?.props.placeholder : undefined)
+      }
+      id={props.id ?? field?.id}
+      aria-labelledby={props["aria-labelledby"] ?? field?.labelId}
+      aria-describedby={
+        [field?.describedBy, props["aria-describedby"]].filter(Boolean).join(" ") || undefined
+      }
+      aria-required={props["aria-required"] ?? (field?.required || undefined)}
+      aria-invalid={props["aria-invalid"] ?? (field?.invalid || undefined)}
       className={cn(
         "flex w-full items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-[var(--destructive)] aria-[invalid=true]:focus:border-[var(--destructive)] aria-[invalid=true]:focus:ring-[var(--destructive)] data-[placeholder]:text-[var(--muted-foreground)]",
         className,
       )}
-      {...props}
     >
       {children}
       <SelectPrimitive.Icon asChild>

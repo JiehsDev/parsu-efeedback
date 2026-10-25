@@ -2,7 +2,13 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function ListSortSelect({
   options,
@@ -28,7 +34,10 @@ export function ListSortSelect({
 
   return (
     <Select value={current} onValueChange={handleChange}>
-      <SelectTrigger className="w-auto min-w-40 bg-[var(--card)]">
+      <SelectTrigger
+        aria-label={paramName === "sort" ? "Sort complaints" : `Filter by ${paramName}`}
+        className="w-auto min-w-40 bg-[var(--card)]"
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

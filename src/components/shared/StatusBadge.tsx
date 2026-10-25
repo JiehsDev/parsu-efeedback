@@ -2,11 +2,7 @@
 import type { ComplaintStatus } from "@/lib/constants";
 import { statusLabel } from "@/lib/display-labels";
 
-// The app runs a fixed LIGHT theme (see globals.css). These styles used to
-// reach for Tailwind's *-400 shades (emerald-400, amber-400) as badge text,
-// which is a dark-theme habit — emerald-400 on a near-white fill measures
-// ~1.8:1 and fails WCAG AA badly. Every pair below is a --qa-*-strong text
-// colour on its matching --qa-*-soft fill, all >= 4.9:1.
+// Status colors follow the selected palette and light/dark mode.
 const STATUS_STYLES: Record<
   ComplaintStatus,
   { label: string; className: string; dotClassName: string }

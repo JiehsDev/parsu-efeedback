@@ -5,13 +5,17 @@ import { getActorDisplayName } from "@/lib/actor-display";
 
 const EVENT_LABELS: Record<string, string> = {
   submitted: "Complaint submitted",
-  assigned: "Assigned to office",
+  assigned: "Handler assigned",
   reassigned: "Reassigned",
   assignment_released: "Assignment released",
   status_changed: "Status changed",
   note_added: "Internal note added",
   attachment_added: "Attachment added",
-  escalated: "Escalated",
+  escalated: "OSAS Head review requested",
+  forwarding_requested: "Forwarding requested",
+  forwarding_approved: "Forwarding approved",
+  forwarding_rejected: "Forwarding rejected",
+  complaint_forwarded: "Complaint forwarded",
   resolved: "Marked resolved",
   reopened: "Reopened",
   closed: "Closed",
@@ -22,40 +26,72 @@ const EVENT_LABELS: Record<string, string> = {
   information_submitted: "Additional information submitted",
 };
 
-export function TimelineEvent({ event, viewerRole = "handler" }: { event: any; viewerRole?: string }) {
+export function TimelineEvent({
+  event,
+  viewerRole = "handler",
+}: {
+  event: any;
+  viewerRole?: string;
+}) {
   const actor = event.actorRef;
   const actorName = getActorDisplayName(actor, viewerRole);
   const eventLabel =
     event.eventType === "assigned" && event.toValue === "in_progress"
-      ? "Complaint picked up"
+      ? "Handler assigned"
       : event.eventType === "closed" && !event.actorRef
         ? "Complaint closed automatically"
-        : EVENT_LABELS[event.eventType] ?? formatEnumLabel(event.eventType);
-  const isStatusValue = ["submitted", "assigned", "in_progress", "pending_information", "escalated", "resolved", "closed", "withdrawn"].includes(event.fromValue) ||
-    ["submitted", "assigned", "in_progress", "pending_information", "escalated", "resolved", "closed", "withdrawn"].includes(event.toValue);
+        : (EVENT_LABELS[event.eventType] ?? formatEnumLabel(event.eventType));
+  const isStatusValue =
+    [
+      "submitted",
+      "assigned",
+      "in_progress",
+      "pending_information",
+      "escalated",
+      "resolved",
+      "closed",
+      "withdrawn",
+    ].includes(event.fromValue) ||
+    [
+      "submitted",
+      "assigned",
+      "in_progress",
+      "pending_information",
+      "escalated",
+      "resolved",
+      "closed",
+      "withdrawn",
+    ].includes(event.toValue);
   return (
     <div className="relative pb-6 pl-6 last:pb-0">
       <div className="absolute top-1 left-0 h-2 w-2 rounded-full bg-[var(--primary)]" />
       <div className="absolute top-3 left-[3px] h-full w-px bg-[var(--border)]" />
       <p className="text-sm font-medium text-[var(--foreground)]">
-        {event.eventType === "status_changed" && event.fromValue === "closed" && event.toValue === "in_progress"
+        {event.eventType === "status_changed" &&
+        event.fromValue === "closed" &&
+        event.toValue === "in_progress"
           ? "Complaint reopened"
           : eventLabel}
       </p>
       <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-        {actorName}{actor?.role ? ` · ${roleLabel(actor.role)}` : ""}
+        {actorName}
+        {actor?.role ? ` · ${roleLabel(actor.role)}` : ""}
       </p>
       {event.resolutionSummary && (
-        <p className="mt-1 text-sm whitespace-pre-wrap break-words text-[var(--foreground)]">
-          <span className="font-medium">Resolution details: </span>{event.resolutionSummary}
+        <p className="mt-1 text-sm break-words whitespace-pre-wrap text-[var(--foreground)]">
+          <span className="font-medium">Resolution details: </span>
+          {event.resolutionSummary}
         </p>
       )}
       {event.message && (
-        <p className="mt-0.5 text-sm whitespace-pre-wrap break-words text-[var(--muted-foreground)]">{event.message}</p>
+        <p className="mt-0.5 text-sm break-words whitespace-pre-wrap text-[var(--muted-foreground)]">
+          {event.message}
+        </p>
       )}
       {isStatusValue && (event.fromValue || event.toValue) && (
         <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-          {event.fromValue ? statusLabel(event.fromValue) : "-"} → {event.toValue ? statusLabel(event.toValue) : "-"}
+          {event.fromValue ? statusLabel(event.fromValue) : "-"} →{" "}
+          {event.toValue ? statusLabel(event.toValue) : "-"}
         </p>
       )}
       <RelativeTime

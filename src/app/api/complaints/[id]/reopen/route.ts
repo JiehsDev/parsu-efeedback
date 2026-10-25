@@ -1,5 +1,4 @@
 import { User } from "@/models/User";
-import { getOperationalOffice } from "@/lib/osas-operations";
 import { canSuperviseComplaint } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -43,17 +42,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const beforeStatus = complaint.status;
-  const osas = await getOperationalOffice();
-  if (!osas) return NextResponse.json({ error: "OSAS is unavailable" }, { status: 409 });
+  const officeId = complaint.assignedOfficeRef;
   const handler = complaint.assignedStaffRef
     ? await User.findOne({
         _id: complaint.assignedStaffRef,
-        officeRef: osas._id,
         isActive: true,
-        role: { $in: ["office_staff", "osas"] },
+        role: { $in: ["office_staff", "osas", "vpaa", "vpaf"] },
       })
     : null;
-  complaint.assignedOfficeRef = osas._id;
+  // Reopening never sends a forwarded complaint back to OSAS.
+  complaint.assignedOfficeRef = officeId;
   if (!handler) complaint.assignedStaffRef = null;
   complaint.status = handler ? "in_progress" : "submitted";
   complaint.reopenCount += 1;
