@@ -39,7 +39,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
         <div className="relative mt-auto">
           <h2 className="max-w-sm text-3xl leading-tight font-semibold text-white xl:text-4xl">
-            Student complaints and feedback
+            Heard. Handle. Resolved
           </h2>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white">
             Submit a concern to OSAS, follow its progress, and review the response.
