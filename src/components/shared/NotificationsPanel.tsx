@@ -2,6 +2,7 @@
 "use client";
 
 import { clientFetch } from "@/lib/client-fetch";
+import { notificationCopy } from "@/lib/notification-copy";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -120,6 +121,7 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
       ) : (
         <ul className="space-y-2">
           {notifications.map((n) => {
+            const copy = notificationCopy(n, complaintBasePath === "/student/complaints");
             const content = (
               <div
                 className={`flex gap-3 rounded-[var(--radius)] border border-[var(--border)] p-4 transition-colors ${
@@ -129,13 +131,13 @@ export function NotificationsPanel({ complaintBasePath }: { complaintBasePath: s
                 <NotificationDot type={n.type} />
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium text-[var(--foreground)]">{n.title}</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">{copy.title}</p>
                     <RelativeTime
                       date={n.createdAt}
                       className="shrink-0 text-xs text-[var(--muted-foreground)]"
                     />
                   </div>
-                  <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">{n.body}</p>
+                  <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">{copy.body}</p>
                 </div>
               </div>
             );

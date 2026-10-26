@@ -91,7 +91,7 @@ export default function RegisterPage() {
 
       router.push("/login?registered=true");
     } catch {
-      setError("An unexpected system error occurred.");
+      setError("Could not create your account. Please try again.");
       setIsSubmitting(false);
     }
   }

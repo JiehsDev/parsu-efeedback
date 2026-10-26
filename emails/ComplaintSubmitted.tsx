@@ -14,8 +14,8 @@ export default function ComplaintSubmitted({ recipientName, ticketNumber, compla
     <EmailLayout previewTitle="Complaint Submitted">
       <Text>Hi {recipientName},</Text>
       <Text>
-        Your complaint <strong>{ticketNumber}</strong> has been submitted and is being routed to the
-        appropriate office.
+        Your complaint <strong>{ticketNumber}</strong> has been received. You can check its progress
+        and updates using the link below.
       </Text>
       <Button
         href={complaintUrl}

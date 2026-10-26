@@ -79,7 +79,7 @@ export async function notifyComplaintSubmitted(params: {
     userRef: params.studentId,
     type: "complaint_submitted",
     title: "Complaint submitted",
-    body: `Your complaint ${params.ticketNumber} has been submitted and is being routed.`,
+    body: `Your complaint ${params.ticketNumber} has been received. You can check its progress in My Complaints.`,
     relatedComplaintRef: params.complaintId,
   });
 
@@ -103,8 +103,8 @@ export async function notifyComplaintAssigned(params: {
   await createNotification({
     userRef: params.studentId,
     type: "complaint_assigned",
-    title: "Complaint assigned",
-    body: `Your complaint ${params.ticketNumber} has been assigned to an office for handling.`,
+    title: "Complaint under review",
+    body: `Your complaint ${params.ticketNumber} is now under review.`,
     relatedComplaintRef: params.complaintId,
   });
 
@@ -406,8 +406,8 @@ export async function notifyManualEscalation(params: {
   await createNotification({
     userRef: params.studentId,
     type: "status_updated",
-    title: "Complaint escalated",
-    body: `Complaint ${params.ticketNumber} was referred to the OSAS Head for supervisory review.`,
+    title: "Complaint update",
+    body: `Your complaint ${params.ticketNumber} is being reviewed. Check your complaint for updates.`,
     relatedComplaintRef: params.complaintId,
   });
   const student = await getRecipient(params.studentId, params.complaintId);
@@ -455,8 +455,8 @@ export async function notifyOfficeReassignment(params: {
   await createNotification({
     userRef: params.studentId,
     type: "status_updated",
-    title: "Complaint routed to another office",
-    body: `Your complaint ${params.ticketNumber} has been routed to the office responsible for handling your concern.`,
+    title: "Complaint update",
+    body: `Review of your complaint ${params.ticketNumber} is continuing. Check your complaint for updates.`,
     relatedComplaintRef: params.complaintId,
   });
 }

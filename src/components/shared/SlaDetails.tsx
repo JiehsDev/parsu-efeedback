@@ -80,7 +80,7 @@ export function SlaDetails({
 
   const rows = simplified
     ? [
-        ["Current SLA state", state],
+        ["Response due", dateLabel(complaint.slaResponseDueAt)],
         ["Resolution due", dateLabel(complaint.slaResolutionDueAt)],
       ]
     : [
@@ -109,17 +109,29 @@ export function SlaDetails({
         <div className="flex items-center gap-2">
           <Timer className="h-4 w-4 text-[var(--muted-foreground)]" />
           <h2 id="sla-details-heading" className="text-sm font-semibold text-[var(--foreground)]">
-            SLA details
+            {simplified ? "Response dates" : "SLA details"}
           </h2>
         </div>
         <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${stateTone}`}>
-          {state}
+          {simplified
+            ? ({
+                Overdue: "Past due",
+                Warning: "Due soon",
+                Met: "Completed on time",
+                Breached: "Completed after due date",
+                "On Track": "On track",
+              }[state] ?? state)
+            : state}
         </span>
       </div>
       <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-        {complaint.slaPolicy?.version === 1
-          ? "24 hours per weekday. Saturdays, Sundays and configured holidays are excluded. Times are Philippine time."
-          : "Calendar hours, including weekends and holidays (original SLA). Times are Philippine time."}
+        {simplified
+          ? complaint.slaPolicy?.version === 1
+            ? "Dates exclude weekends and holidays. All times are Philippine time."
+            : "All times are Philippine time."
+          : complaint.slaPolicy?.version === 1
+            ? "Deadlines exclude weekends and holidays. All times are Philippine time."
+            : "Deadlines include weekends and holidays. All times are Philippine time."}
       </p>
       <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
         {rows.map(([label, value]) => (

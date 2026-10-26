@@ -66,7 +66,7 @@ export default function NewCategoryPage() {
     >
       <h1 className="text-2xl font-semibold">Add category</h1>
       <p className="text-sm text-[var(--muted-foreground)]">
-        All categories are handled by OSAS. New categories receive the current 3-day SLA default.
+        Add a name and description to help students classify their concerns.
       </p>
       {error && (
         <p role="alert" className="text-[var(--destructive)]">

@@ -310,8 +310,8 @@ export async function changeForwarding(
           notifications.push({
             userRef: complaint.studentRef,
             type: "status_updated",
-            title: "Complaint forwarded",
-            body: `OSAS forwarded your complaint to ${request.requestedDestination.toUpperCase()}.`,
+            title: "Complaint update",
+            body: `Review of your complaint ${complaint.ticketNumber} is continuing. Check your complaint for updates.`,
             relatedComplaintRef: complaint._id,
           });
         }

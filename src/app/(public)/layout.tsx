@@ -16,10 +16,10 @@ export default async function PublicLayout({ children }: { children: React.React
     <div className="flex min-h-full flex-1 flex-col lg:flex-row">
       {/* Brand panel â€” hidden on small screens so mobile goes straight to the form */}
       <div
-        className="relative hidden overflow-hidden bg-gradient-to-br from-[#04121f] via-[#0a1f3d] to-[#0a50d8] lg:flex lg:w-[44%] lg:flex-col lg:justify-between lg:p-12 xl:p-16"
+        className="relative hidden overflow-hidden bg-[var(--navigation)] lg:flex lg:w-[44%] lg:flex-col lg:justify-between lg:p-12 xl:p-16"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0), linear-gradient(to bottom right, #04121f, #0a1f3d, #0a50d8)",
+            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0), linear-gradient(to bottom right, color-mix(in srgb, var(--navigation) 30%, black), color-mix(in srgb, var(--navigation) 65%, black), var(--navigation))",
           backgroundSize: "28px 28px, 100% 100%",
         }}
       >
@@ -42,7 +42,7 @@ export default async function PublicLayout({ children }: { children: React.React
             Heard. Handle. Resolved
           </h2>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white">
-            Submit a concern to OSAS, follow its progress, and review the response.
+            Submit a concern, follow its progress, and review the response.
           </p>
         </div>
         <p className="relative mt-12 text-xs text-white">

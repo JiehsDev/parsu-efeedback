@@ -162,7 +162,7 @@ export function EditSlaRuleButton({
             </div>
 
             <p className="text-xs text-[var(--muted-foreground)]">
-              SLA escalation requests OSAS Head review. The handling office remains OSAS.
+              Set the time allowed for a first response and resolution.
             </p>
 
             <button

@@ -144,8 +144,8 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {data.receivingOffice
-              ? "Handle complaints formally forwarded to your office by OSAS."
-              : "Review OSAS complaints, deadlines, and assigned work."}
+              ? "Review your complaints, deadlines, and assigned work."
+              : "Review complaints, deadlines, and assigned work."}
           </p>
         </div>
         <Link

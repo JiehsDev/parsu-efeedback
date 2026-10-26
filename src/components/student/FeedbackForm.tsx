@@ -83,7 +83,7 @@ export function FeedbackForm() {
       // list below picks up the row that was just created.
       router.refresh();
     } catch {
-      setError("Could not reach the server. Please try again.");
+      setError("Could not send your feedback. Please try again.");
       setIsSubmitting(false);
     }
   }
@@ -94,11 +94,9 @@ export function FeedbackForm() {
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--card)] text-[var(--qa-success-strong)]">
           <CheckCircle2 className="h-4 w-4" />
         </span>
-        <p className="mt-3 text-sm font-medium text-[var(--qa-success-strong)]">
-          Feedback sent to OSAS
-        </p>
+        <p className="mt-3 text-sm font-medium text-[var(--qa-success-strong)]">Feedback sent</p>
         <p className="mt-1 text-sm text-[var(--qa-success-strong)]/80">
-          Feedback does not create a complaint ticket. OSAS can review your suggestion.
+          Thank you for sharing your suggestion. To track a concern, submit a complaint.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
           <button
@@ -213,8 +211,8 @@ export function FeedbackForm() {
               either way — so the honest promise is about who sees it, not
               about the record not existing. */}
           <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
-            Your name will not be shown in the OSAS feedback list. The submission is still linked to
-            your account in the system&rsquo;s records.
+            Your name is hidden from reviewers. This does not make your feedback fully anonymous: it
+            remains linked to your account.
           </p>
         </div>
 

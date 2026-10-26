@@ -32,13 +32,13 @@ import {
 const HOW_IT_WORKS = [
   {
     icon: Zap,
-    title: "Submit to OSAS",
-    body: "OSAS reviews your complaint and assigns a handler.",
+    title: "Submit a complaint",
+    body: "Describe your concern and the help you need.",
   },
   {
     icon: Timer,
-    title: "Response and resolution deadlines",
-    body: "Both deadlines are three eligible days. Weekends and configured holidays are excluded.",
+    title: "Check your progress",
+    body: "View updates and response dates in your complaint details.",
   },
   {
     icon: Bell,

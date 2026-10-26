@@ -35,7 +35,7 @@ export function HandlePersonallyButton({
       }
       router.refresh();
     } catch {
-      setError("Could not reach the server.");
+      setError("Could not save your changes. Please try again.");
     } finally {
       setBusy(false);
     }

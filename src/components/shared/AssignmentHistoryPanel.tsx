@@ -26,13 +26,13 @@ export function AssignmentHistoryPanel({
       <div className="flex items-center gap-2">
         <History className="h-4 w-4 text-[var(--muted-foreground)]" />
         <p className="text-sm font-semibold text-[var(--foreground)]">
-          Assignment, forwarding and review history
+          {simplified ? "Review updates" : "Assignment, forwarding and review history"}
         </p>
       </div>
 
       {entries.length === 0 ? (
         <p className="mt-4 text-sm text-[var(--muted-foreground)]">
-          No assignment changes have been recorded yet.
+          {simplified ? "No review updates yet." : "No assignment changes have been recorded yet."}
         </p>
       ) : (
         <ol className="mt-4 space-y-3">
@@ -52,28 +52,32 @@ export function AssignmentHistoryPanel({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <p className="text-sm font-medium text-[var(--foreground)]">
-                    {entry.kind === "forwarding"
-                      ? "Complaint forwarded"
-                      : entry.kind === "escalation"
-                        ? "OSAS Head review requested"
-                        : entry.kind === "release"
-                          ? "Assignment Released"
-                          : entry.reason
-                            ? "Reassigned"
-                            : "Assigned"}
+                    {simplified
+                      ? "Review updated"
+                      : entry.kind === "forwarding"
+                        ? "Complaint forwarded"
+                        : entry.kind === "escalation"
+                          ? "OSAS Head review requested"
+                          : entry.kind === "release"
+                            ? "Assignment Released"
+                            : entry.reason
+                              ? "Reassigned"
+                              : "Assigned"}
                   </p>
                   <time className="text-xs text-[var(--muted-foreground)]">
                     {new Date(entry.createdAt).toLocaleString()}
                   </time>
                 </div>
-                <p className="mt-1 text-sm text-[var(--foreground)]/90">
-                  {entry.sourceOfficeName
-                    ? `${entry.kind === "forwarding" ? "Forwarded" : "Reassigned"} from ${entry.sourceOfficeName} to `
-                    : "Assigned to "}
-                  {entry.kind === "release"
-                    ? "Complaint returned to office queue"
-                    : (entry.destinationOfficeName ?? "unassigned office")}
-                </p>
+                {!simplified && (
+                  <p className="mt-1 text-sm text-[var(--foreground)]/90">
+                    {entry.sourceOfficeName
+                      ? `${entry.kind === "forwarding" ? "Forwarded" : "Reassigned"} from ${entry.sourceOfficeName} to `
+                      : "Assigned to "}
+                    {entry.kind === "release"
+                      ? "Complaint returned to office queue"
+                      : (entry.destinationOfficeName ?? "unassigned office")}
+                  </p>
+                )}
                 {!simplified && (
                   <div className="mt-1 space-y-0.5 text-xs text-[var(--muted-foreground)]">
                     <p>Staff: {entry.assignedStaffName ?? "Office level"}</p>
@@ -81,7 +85,7 @@ export function AssignmentHistoryPanel({
                     {entry.resultingStatus && <p>Status: {statusLabel(entry.resultingStatus)}</p>}
                   </div>
                 )}
-                {(entry.message || entry.reason) && (
+                {!simplified && (entry.message || entry.reason) && (
                   <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
                     {entry.reason ? `Reason: ${entry.reason}` : entry.message}
                   </p>

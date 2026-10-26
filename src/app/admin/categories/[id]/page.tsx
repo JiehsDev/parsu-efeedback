@@ -150,7 +150,7 @@ export default async function AdminCategoryDetailPage({
               <div>
                 <p className="font-medium text-[var(--foreground)]">Handling office</p>
                 <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                  All complaints are handled by OSAS.
+                  Use the category name and description to identify related concerns.
                 </p>
               </div>
             </div>

@@ -76,7 +76,7 @@ export function InformationRequestPanel({
       setContext("");
       router.refresh();
     } catch {
-      setError("Could not reach the server. Please try again.");
+      setError("Could not send your request. Please try again.");
     } finally {
       setSubmitting(false);
     }

@@ -87,8 +87,7 @@ export default function AdminCategoriesPage() {
       <div className="flex items-start gap-2.5 rounded-2xl border border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] px-4 py-3 text-sm text-[var(--qa-amber-strong)]">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          New categories use OSAS as their handling office. "Add Category" configures classification
-          and the default SLA.
+          Use categories to help students describe their concerns. Add or update a category below.
         </span>
       </div>
 
@@ -160,7 +159,7 @@ export default function AdminCategoriesPage() {
       )}
 
       <p className="text-sm text-[var(--muted-foreground)]">
-        All complaints are handled by OSAS. Institution-wide SLA defaults live in{" "}
+        Manage response and resolution deadlines in{" "}
         <Link href="/admin/sla-rules" className="text-[var(--primary)] hover:underline">
           SLA Rules
         </Link>

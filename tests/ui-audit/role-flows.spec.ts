@@ -292,7 +292,7 @@ test("shared settings, feedback, announcements, admin account creation and head 
     .fill("UI audit suggestion: publish the student assistance schedule.");
   await student.getByRole("checkbox", { name: /Submit anonymously/ }).check();
   await student.getByRole("button", { name: "Send Feedback", exact: true }).click();
-  await expect(student.getByText("Feedback sent to OSAS", { exact: true })).toBeVisible();
+  await expect(student.getByText("Feedback sent", { exact: true })).toBeVisible();
   await head.goto("/admin/feedback");
   await expect(
     head.getByText("UI audit suggestion: publish the student assistance schedule.", {
@@ -722,7 +722,9 @@ test("admin form labels, modal keyboard behavior, category creation and report f
   await admin.waitForURL(/\/admin\/categories$/);
   await admin.getByRole("link", { name: /UI audit student service/ }).click();
   await expect(
-    admin.getByText("All complaints are handled by OSAS.", { exact: true }),
+    admin.getByText("Use the category name and description to identify related concerns.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(admin.getByText("Routing rule", { exact: true })).toHaveCount(0);
   for (const format of ["CSV", "Excel", "PDF"]) {

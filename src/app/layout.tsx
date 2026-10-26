@@ -18,7 +18,7 @@ const appMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "ParSU e-Feedback",
-  description: "Student complaints and feedback for Partido State University, handled by OSAS.",
+  description: "Submit and track complaints and share feedback at Partido State University.",
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",

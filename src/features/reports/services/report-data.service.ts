@@ -203,7 +203,7 @@ export async function queryReportData(
       slaCalendar:
         c.slaPolicy?.version === 1
           ? "24h weekdays; weekends and configured holidays excluded (Philippine time)"
-          : "Calendar hours (original SLA)",
+          : "Calendar days, including weekends and holidays",
       slaCompliant,
     };
   });

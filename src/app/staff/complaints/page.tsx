@@ -317,7 +317,7 @@ export default async function StaffComplaintsPage({
         : hasFilters
           ? "No complaints match the selected filters."
           : isHead
-            ? "No complaints currently in the OSAS queue."
+            ? "No complaints to review."
             : "No complaints currently in your office.";
   const totalFiltered = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
@@ -339,8 +339,8 @@ export default async function StaffComplaintsPage({
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {isHead
-              ? "Review the OSAS queue and assign complaints to a handler."
-              : "View all OSAS complaints. You can take action only on complaints assigned to you."}
+              ? "Review complaints and assign work."
+              : "View office complaints and work on those assigned to you."}
           </p>
         </div>
         <p className="text-xs text-[var(--muted-foreground)]">
@@ -490,7 +490,7 @@ export default async function StaffComplaintsPage({
             )}
             {!isHead && allComplaints.length === 0 && (
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                New complaints received by OSAS will appear here for everyone in the office.
+                New complaints will appear here when available.
               </p>
             )}
           </div>

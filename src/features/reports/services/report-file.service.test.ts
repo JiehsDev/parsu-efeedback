@@ -34,7 +34,7 @@ const rows: ReportRow[] = [
     submittedAt: "1/2/2026",
     resolvedAt: "—",
     resolutionSummary: "",
-    slaCalendar: "Calendar hours (original SLA)",
+    slaCalendar: "Calendar days, including weekends and holidays",
     slaCompliant: "N/A",
   },
 ];

@@ -27,7 +27,7 @@ export async function ForwardingRequestsPage({ base }: { base: "admin" | "staff"
       <header>
         <h1 className="text-2xl font-semibold">Forwarding Requests</h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          OSAS keeps responsibility until the head approves forwarding to VPAA or VPAF.
+          Review requests and track their decisions.
         </p>
       </header>
       {!requests.length && (

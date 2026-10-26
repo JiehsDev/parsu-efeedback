@@ -249,9 +249,8 @@ export default function AdminSettingsPage() {
           <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[var(--qa-amber-soft)] px-3 py-2.5 text-xs text-[var(--qa-amber-strong)]">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>
-              Session timeout is set at server startup (Auth.js config) — changing it here does not
-              take effect until the server restarts. Lockout settings apply to new login attempts
-              immediately.
+              Login limits apply to new sign-in attempts. Contact technical support to change the
+              session timeout.
             </span>
           </div>
           <div className="mt-4 space-y-3">
@@ -299,8 +298,7 @@ export default function AdminSettingsPage() {
                 className={`${inputClass} cursor-not-allowed opacity-70`}
               />
               <p id="session-age-help" className="text-xs text-[var(--muted-foreground)]">
-                Controlled by AUTH_SESSION_MAX_AGE_MINUTES at server startup. This value is
-                reference-only here.
+                View only. Contact technical support to change this setting.
               </p>
             </div>
           </div>

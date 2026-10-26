@@ -47,17 +47,17 @@ const PROCESS_STEPS = [
   {
     icon: Send,
     title: "Submitted",
-    description: "Logged instantly and given a ticket number you can track.",
+    description: "Receive a reference number to track your complaint.",
   },
   {
     icon: Building2,
-    title: "OSAS review",
-    description: "OSAS reviews your complaint and assigns a staff member.",
+    title: "Under review",
+    description: "Your concern is being reviewed.",
   },
   {
     icon: UserCheck,
     title: "In progress",
-    description: "Your assigned OSAS staff member works on the complaint.",
+    description: "Check for updates and reply if more information is needed.",
   },
   {
     icon: CheckCircle2,
@@ -227,7 +227,7 @@ export default function NewComplaintPage() {
 
       router.push(`/student/complaints?submitted=${data.complaint.ticketNumber}`);
     } catch {
-      setError("An unexpected system error occurred.");
+      setError("Could not submit your complaint. Please try again.");
       setIsSubmitting(false);
       setUploadProgress(null);
     }
@@ -255,7 +255,7 @@ export default function NewComplaintPage() {
             Submit a Complaint
           </h1>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Describe what happened and what help you need from OSAS.
+            Describe what happened and what help you need.
           </p>
         </div>
       </div>

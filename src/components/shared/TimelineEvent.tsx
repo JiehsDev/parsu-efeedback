@@ -33,6 +33,18 @@ export function TimelineEvent({
   event: any;
   viewerRole?: string;
 }) {
+  const studentReviewEvent =
+    viewerRole === "student" &&
+    [
+      "assigned",
+      "reassigned",
+      "assignment_released",
+      "escalated",
+      "forwarding_requested",
+      "forwarding_approved",
+      "forwarding_rejected",
+      "complaint_forwarded",
+    ].includes(event.eventType);
   const actor = event.actorRef;
   const actorName = getActorDisplayName(actor, viewerRole);
   const eventLabel =
@@ -71,11 +83,13 @@ export function TimelineEvent({
         event.fromValue === "closed" &&
         event.toValue === "in_progress"
           ? "Complaint reopened"
-          : eventLabel}
+          : studentReviewEvent
+            ? "Review updated"
+            : eventLabel}
       </p>
       <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-        {actorName}
-        {actor?.role ? ` · ${roleLabel(actor.role)}` : ""}
+        {studentReviewEvent ? "Complaint review" : actorName}
+        {actor?.role && viewerRole !== "student" ? ` · ${roleLabel(actor.role)}` : ""}
       </p>
       {event.resolutionSummary && (
         <p className="mt-1 text-sm break-words whitespace-pre-wrap text-[var(--foreground)]">
@@ -83,12 +97,12 @@ export function TimelineEvent({
           {event.resolutionSummary}
         </p>
       )}
-      {event.message && (
+      {event.message && !studentReviewEvent && (
         <p className="mt-0.5 text-sm break-words whitespace-pre-wrap text-[var(--muted-foreground)]">
           {event.message}
         </p>
       )}
-      {isStatusValue && (event.fromValue || event.toValue) && (
+      {isStatusValue && !studentReviewEvent && (event.fromValue || event.toValue) && (
         <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
           {event.fromValue ? statusLabel(event.fromValue) : "-"} →{" "}
           {event.toValue ? statusLabel(event.toValue) : "-"}

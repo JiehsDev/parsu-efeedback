@@ -82,7 +82,7 @@ function LoginForm() {
       // Safe client-side redirect fallback to let middleware pick up token placement cleanly
       window.location.href = callbackUrl;
     } catch {
-      setError("An unexpected system error occurred.");
+      setError("Could not sign you in. Please try again.");
       setIsSubmitting(false);
     }
   }

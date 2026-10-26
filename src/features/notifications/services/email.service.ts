@@ -93,7 +93,7 @@ export async function sendComplaintAssignedEmail(params: {
 }) {
   await sendEmail(
     params.to,
-    `Complaint ${params.ticketNumber} assigned`,
+    `Complaint ${params.ticketNumber} ${params.isStaffRecipient ? "assigned" : "under review"}`,
     ComplaintAssigned({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,

@@ -38,7 +38,7 @@ export function ForwardingPanel({
       (action === "approve" || (!action && head)) &&
       !(await confirm({
         title: "Forward this complaint?",
-        message: `Responsibility will move from OSAS to ${(pending?.requestedDestination ?? destination).toUpperCase()}. The receiving office will gain access. SLA deadlines will stay unchanged.`,
+        message: `Send this complaint to ${(pending?.requestedDestination ?? destination).toUpperCase()} for review? You will no longer be able to work on it here.`,
         confirmLabel: "Approve Forwarding",
       }))
     )
@@ -77,7 +77,7 @@ export function ForwardingPanel({
       if (head && action !== "reject") router.push(`/${base}/forwarding-requests`);
       else router.refresh();
     } catch {
-      setError("Could not reach the server. Please try again.");
+      setError("Could not save your changes. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -103,9 +103,7 @@ export function ForwardingPanel({
           <p className="text-xs text-[var(--muted-foreground)]">
             {new Date(pending.requestedAt).toLocaleString()}
           </p>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            OSAS remains responsible until the head approves forwarding.
-          </p>
+          <p className="text-xs text-[var(--muted-foreground)]">Awaiting the head’s decision.</p>
           {head && (
             <>
               <label className="block font-medium" htmlFor={`forward-decision-${complaintId}`}>
@@ -185,8 +183,8 @@ export function ForwardingPanel({
                 />
                 <p className="text-xs text-[var(--muted-foreground)]">
                   {head
-                    ? "Forwarding transfers responsibility to the selected office."
-                    : "Only the OSAS Head can approve forwarding. Submitting this request does not change ownership."}
+                    ? "Choose an office and explain why its review is needed."
+                    : "Add a reason for the head to review."}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
