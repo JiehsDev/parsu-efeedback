@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/staff/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { href: "/staff/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
   { href: "/staff/complaints", label: "Queue", icon: Inbox },
   { href: "/staff/sla", label: "SLA deadlines", icon: Timer },
   { href: "/staff/reports", label: "Reports", icon: FileBarChart },

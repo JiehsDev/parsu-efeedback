@@ -45,7 +45,6 @@ export default async function PublicLayout({ children }: { children: React.React
             Submit a concern to OSAS, follow its progress, and review the response.
           </p>
         </div>
-
         <p className="relative mt-12 text-xs text-white">
           &copy; {new Date().getFullYear()} Partido State University
         </p>

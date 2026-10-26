@@ -39,8 +39,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 const PRIMARY_NAV_ITEMS = [
-  { href: "/admin/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { href: "/admin/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
   { href: "/admin/complaints", label: "Complaints", icon: Inbox },
   { href: "/admin/archive-requests", label: "Archive Requests", icon: Archive },
   { href: "/admin/complaints?archived=1", label: "Archived Complaints", icon: Archive },
