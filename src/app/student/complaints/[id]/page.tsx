@@ -74,7 +74,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
     : "Not recorded";
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="workspace-page space-y-6">
       <Link
         href="/student/complaints"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -83,26 +83,26 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
         Back to my complaints
       </Link>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1 font-mono text-xs text-[var(--muted-foreground)]">
             {c.ticketNumber}
             <CopyButton value={c.ticketNumber} />
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--foreground)]">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight break-words text-[var(--foreground)]">
             {c.title}
           </h1>
         </div>
-        <div className="shrink-0 lg:hidden">
+        <div className="shrink-0 xl:hidden">
           <StatusBadge status={c.status as ComplaintStatus} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
+      <div className="reading-layout">
         <div className="space-y-5">
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
             <p className="text-sm font-medium text-[var(--foreground)]">Description</p>
-            <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-[var(--foreground)]/90">
+            <p className="mt-2 text-sm leading-relaxed break-words whitespace-pre-line text-[var(--foreground)]/90">
               {c.description}
             </p>
           </div>
@@ -155,7 +155,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
                 Timeline
               </h2>
             </div>
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
               {timeline.map((event: any) => (
                 <TimelineEvent key={event._id} event={event} viewerRole="student" />
               ))}
@@ -170,7 +170,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
             events={timeline as any}
             simplified
           />
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
             <p className="text-sm font-medium text-[var(--foreground)]">Details</p>
             <dl className="mt-4 space-y-4 text-sm">
               <div className="hidden lg:block">
@@ -244,7 +244,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
           </div>
 
           {c.studentRating !== null && c.studentRating !== undefined && (
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
               <p className="text-sm font-medium text-[var(--foreground)]">Your rating</p>
               <div className="mt-2 flex gap-0.5">
                 {[1, 2, 3, 4, 5].map((star) => (

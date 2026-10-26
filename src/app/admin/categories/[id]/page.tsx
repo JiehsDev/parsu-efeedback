@@ -53,7 +53,7 @@ export default async function AdminCategoryDetailPage({
   const officeOptions = allOffices.map((o: any) => ({ _id: String(o._id), name: o.name }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="workspace-page space-y-6">
       <Link
         href="/admin/categories"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -64,7 +64,7 @@ export default async function AdminCategoryDetailPage({
 
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)]">
             <Tag className="h-6 w-6" />
           </span>
           <div>
@@ -104,7 +104,7 @@ export default async function AdminCategoryDetailPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
               <Flag className="h-[18px] w-[18px]" />
@@ -137,7 +137,7 @@ export default async function AdminCategoryDetailPage({
           </dl>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]">
               <AlertTriangle className="h-[18px] w-[18px]" />

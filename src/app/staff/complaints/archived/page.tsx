@@ -41,7 +41,7 @@ export default async function StaffArchivedComplaintsPage({
     .lean();
   const isHead = String(office?.headUserRef ?? "") === session.user.id;
   return (
-    <div className="mx-auto max-w-[1440px] space-y-5">
+    <div className="workspace-page space-y-5">
       <Link
         href="/staff/complaints"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -61,8 +61,11 @@ export default async function StaffArchivedComplaintsPage({
           active processing queue.
         </p>
       </header>
-      <section className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <form method="get" className="flex min-w-0 flex-1 gap-2">
+      <section className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <form
+          method="get"
+          className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+        >
           <label className="sr-only" htmlFor="archived-search">
             Search archived complaints
           </label>
@@ -105,13 +108,13 @@ export default async function StaffArchivedComplaintsPage({
         </p>
       </section>
       {complaints.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-14 text-center">
+        <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-14 text-center">
           <Archive className="mx-auto h-8 w-8 text-[var(--muted-foreground)]" />
           <p className="mt-3 text-sm font-medium">No archived complaints match this view.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">
-          <div className="hidden grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_9rem_minmax(12rem,1fr)_auto] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase lg:grid">
+        <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
+          <div className="hidden grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_9rem_minmax(12rem,1fr)_auto] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase 2xl:grid">
             <span>Ticket</span>
             <span>Complaint</span>
             <span>Assigned staff</span>
@@ -123,7 +126,7 @@ export default async function StaffArchivedComplaintsPage({
             {complaints.map((c: any) => (
               <li
                 key={String(c._id)}
-                className="flex flex-col gap-3 px-4 py-4 lg:grid lg:grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_9rem_minmax(12rem,1fr)_auto] lg:items-center lg:gap-3"
+                className="flex flex-col gap-3 px-4 py-4 2xl:grid 2xl:grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_9rem_minmax(12rem,1fr)_auto] 2xl:items-center 2xl:gap-3"
               >
                 <Link
                   href={`/staff/complaints/${c._id}`}

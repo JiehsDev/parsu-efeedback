@@ -16,6 +16,7 @@ import { QaTrendChart } from "@/components/analytics/QaTrendChart";
 import { CategoryBarChart } from "@/components/analytics/CategoryBarChart";
 import { PriorityPieChart } from "@/components/analytics/PriorityPieChart";
 import { StatusBadge } from "./StatusBadge";
+import { ComplaintDashboardSkeleton } from "./WorkspaceSkeletons";
 import { clientFetch, CLIENT_DATA_REFRESH_EVENT } from "@/lib/client-fetch";
 import type { DashboardPayload } from "@/features/dashboard/services/dashboard-data.service";
 
@@ -45,6 +46,7 @@ export function ComplaintDashboard({ base }: { base: "admin" | "staff" }) {
       window.removeEventListener(CLIENT_DATA_REFRESH_EVENT, reload);
     };
   }, [retry, reload]);
+  if (!data && !error) return <ComplaintDashboardSkeleton />;
   if (!data)
     return (
       <div
@@ -97,7 +99,7 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
     role,
   } = data;
   const now = new Date();
-  const panel = "min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4";
+  const panel = "dashboard-panel";
   const metrics = [
     { label: "Overdue", value: overdue, icon: AlertCircle, urgent: overdue > 0 },
     { label: "Unassigned", value: unassigned, icon: Users, urgent: false },
@@ -132,10 +134,10 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4">
+    <div className="workspace-page space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {data.receivingOffice
               ? `${role.toUpperCase()} dashboard`
               : role === "administrator"
@@ -156,26 +158,8 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         </Link>
       </header>
 
-      {data.forwardingStats && (
-        <section aria-label="Forwarding summary" className="grid gap-3 sm:grid-cols-3">
-          {[
-            ["Pending Forwarding Requests", data.forwardingStats.pending],
-            ["Forwarded to VPAA", data.forwardingStats.vpaa],
-            ["Forwarded to VPAF", data.forwardingStats.vpaf],
-          ].map(([label, count]) => (
-            <Link
-              key={label}
-              href={`/${base}/forwarding-requests`}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
-            >
-              <h2 className="text-xs text-[var(--muted-foreground)]">{label}</h2>
-              <p className="mt-2 text-2xl font-semibold">{count}</p>
-            </Link>
-          ))}
-        </section>
-      )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-12">
-        <section className="col-span-2 flex flex-col justify-between rounded-2xl bg-[var(--primary)] p-4 text-[var(--primary-foreground)] lg:col-span-3 lg:row-span-2">
+      <div className="dashboard-grid">
+        <section className="col-span-2 flex flex-col justify-between rounded-lg bg-[var(--primary)] p-4 text-[var(--primary-foreground)] xl:col-span-3 xl:row-span-2">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-xs font-medium opacity-90">Open complaints</h2>
             <Inbox className="h-4 w-4 opacity-75" aria-hidden="true" />
@@ -190,7 +174,7 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         </section>
 
         <section
-          className={`${panel} col-span-2 flex flex-col justify-between lg:col-span-3 lg:row-span-2`}
+          className={`${panel} col-span-2 flex flex-col justify-between xl:col-span-3 xl:row-span-2`}
         >
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-xs text-[var(--muted-foreground)]">SLA compliance</h2>
@@ -220,7 +204,7 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
                 style={{ width: `${Math.min(100, Math.max(0, summary.slaComplianceRate))}%` }}
               />
             </div>
-            <p className="mt-2 text-[10px] text-[var(--muted-foreground)]">
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
               Resolved within the service deadline
             </p>
           </div>
@@ -229,17 +213,17 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         {metrics.map(({ label, value, icon: Icon, urgent }) => (
           <section
             key={label}
-            className={`${panel} flex min-h-[76px] flex-col justify-between lg:col-span-2`}
+            className={`dashboard-metric flex min-h-[76px] flex-col justify-between xl:col-span-2`}
           >
             <div className="flex items-center justify-between gap-1">
-              <h2 className="text-[11px] text-[var(--muted-foreground)]">{label}</h2>
+              <h2 className="text-xs text-[var(--muted-foreground)]">{label}</h2>
               <Icon
                 className={`h-3.5 w-3.5 shrink-0 ${urgent ? "text-[var(--qa-rose-strong)]" : "text-[var(--muted-foreground)]"}`}
                 aria-hidden="true"
               />
             </div>
             <p
-              className={`mt-1 text-xl font-semibold tracking-tight tabular-nums ${urgent ? "text-[var(--qa-rose-strong)]" : ""}`}
+              className={`mt-1 text-2xl font-semibold tracking-tight tabular-nums ${urgent ? "text-[var(--qa-rose-strong)]" : ""}`}
             >
               {value}
             </p>
@@ -247,13 +231,13 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         ))}
 
         <section
-          className={`${panel} col-span-2 flex h-[260px] flex-col sm:col-span-4 lg:col-span-7`}
+          className={`${panel} col-span-2 flex min-h-[320px] flex-col md:col-span-4 xl:col-span-7`}
         >
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Complaint trends</h2>
-            <span className="text-[10px] text-[var(--muted-foreground)]">Monthly activity</span>
+            <span className="text-xs text-[var(--muted-foreground)]">Monthly activity</span>
           </div>
-          <div className="min-h-0 flex-1">
+          <div className="h-64 min-h-64 flex-1">
             {trends.length ? (
               <QaTrendChart data={trends} />
             ) : (
@@ -265,7 +249,7 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         </section>
 
         <section
-          className={`${panel} col-span-2 flex h-[260px] flex-col sm:col-span-4 lg:col-span-5`}
+          className={`${panel} col-span-2 flex min-h-[320px] flex-col md:col-span-4 xl:col-span-5`}
           aria-labelledby="dashboard-queue-title"
         >
           <div className="mb-2 flex items-start justify-between gap-2">
@@ -273,19 +257,19 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
               <h2 id="dashboard-queue-title" className="text-sm font-semibold">
                 {oversight ? "Open complaints" : "Action queue"}
               </h2>
-              <p className="mt-0.5 text-[10px] text-[var(--muted-foreground)]">
+              <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                 {unassigned > 0 ? `${unassigned} awaiting assignment. ` : ""}Earliest deadlines
                 first.
               </p>
             </div>
             <Link
               href={`/${base}/complaints`}
-              className="shrink-0 text-[11px] font-medium text-[var(--primary)] hover:underline"
+              className="shrink-0 text-xs font-medium text-[var(--primary)] hover:underline"
             >
               View all
             </Link>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <div className="max-h-[28rem] min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
             {queue.length ? (
               <ul className="divide-y divide-[var(--border)]">
                 {queue.map((complaint) => {
@@ -300,17 +284,17 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
                         className="group flex items-center justify-between gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-[var(--accent)]/50 focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
                       >
                         <span className="min-w-0">
-                          <span className="block text-[10px] text-[var(--muted-foreground)]">
+                          <span className="block text-xs text-[var(--muted-foreground)]">
                             {complaint.ticketNumber}
                           </span>
                           <span
-                            className="mt-0.5 block truncate text-xs font-medium group-hover:text-[var(--primary)]"
+                            className="mt-0.5 block truncate text-sm font-medium group-hover:text-[var(--primary)]"
                             title={complaint.title}
                           >
                             {complaint.title}
                           </span>
                           <span
-                            className={`mt-0.5 block text-[10px] ${late ? "text-[var(--qa-rose-strong)]" : "text-[var(--muted-foreground)]"}`}
+                            className={`mt-0.5 block text-xs ${late ? "text-[var(--qa-rose-strong)]" : "text-[var(--muted-foreground)]"}`}
                           >
                             {late ? "Overdue" : "Due"}
                             {deadline
@@ -335,10 +319,10 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           </div>
         </section>
 
-        <section className={`${panel} col-span-2 sm:col-span-4 lg:col-span-5`}>
+        <section className={`${panel} col-span-2 md:col-span-4 xl:col-span-5`}>
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Top categories</h2>
-            <span className="text-[10px] text-[var(--muted-foreground)]">
+            <span className="text-xs text-[var(--muted-foreground)]">
               {Math.min(5, categories.length)} of {categories.length}
             </span>
           </div>
@@ -349,12 +333,12 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           )}
         </section>
 
-        <section className={`${panel} col-span-2 lg:col-span-4`}>
+        <section className={`${panel} col-span-2 xl:col-span-4`}>
           <h2 className="mb-3 text-sm font-semibold">Service domains</h2>
           <div className="h-[160px] space-y-3 overflow-y-auto overscroll-contain pr-1">
             {domains.map((row) => (
               <div key={row.domain}>
-                <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
+                <div className="mb-1 flex items-center justify-between gap-2 text-xs">
                   <span className="truncate capitalize">{row.domain.replaceAll("_", " ")}</span>
                   <span className="font-semibold tabular-nums">{row.volume}</span>
                 </div>
@@ -370,7 +354,7 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           </div>
         </section>
 
-        <section className={`${panel} col-span-2 lg:col-span-3`}>
+        <section className={`${panel} col-span-2 xl:col-span-3`}>
           <h2 className="mb-2 text-sm font-semibold">Priority mix</h2>
           {priorities.length ? (
             <PriorityPieChart data={priorities} heightClassName="h-[164px]" />
@@ -379,6 +363,27 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           )}
         </section>
       </div>
+      {data.forwardingStats && (
+        <section
+          aria-label="Forwarding summary"
+          className="grid gap-px border-y border-[var(--border)] bg-[var(--border)] sm:grid-cols-3"
+        >
+          {[
+            ["Pending Forwarding Requests", data.forwardingStats.pending],
+            ["Forwarded to VPAA", data.forwardingStats.vpaa],
+            ["Forwarded to VPAF", data.forwardingStats.vpaf],
+          ].map(([label, count]) => (
+            <Link
+              key={label}
+              href={`/${base}/forwarding-requests`}
+              className="bg-[var(--card)] px-4 py-3"
+            >
+              <h2 className="text-xs text-[var(--muted-foreground)]">{label}</h2>
+              <p className="mt-2 text-2xl font-semibold">{count}</p>
+            </Link>
+          ))}
+        </section>
+      )}
     </div>
   );
 }

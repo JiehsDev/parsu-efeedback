@@ -22,7 +22,7 @@ export function AssignmentHistoryPanel({
   simplified?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
       <div className="flex items-center gap-2">
         <History className="h-4 w-4 text-[var(--muted-foreground)]" />
         <p className="text-sm font-semibold text-[var(--foreground)]">

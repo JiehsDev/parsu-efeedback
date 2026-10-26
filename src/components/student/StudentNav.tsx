@@ -74,7 +74,7 @@ export function StudentNav({ userName }: { userName: string }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/15 bg-[var(--navigation)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 lg:px-10">
+      <div className="flex w-full min-w-0 items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-6">
           <Link href="/student/dashboard" className="flex shrink-0 items-center gap-2">
             <BrandLogo />
@@ -83,10 +83,7 @@ export function StudentNav({ userName }: { userName: string }) {
             </span>
           </Link>
 
-          <nav
-            aria-label="Main navigation"
-            className="flex items-center gap-0.5 rounded-full bg-white/10 p-1"
-          >
+          <nav aria-label="Main navigation" className="flex items-center gap-0.5 p-1">
             {NAV_ITEMS.map((item) => {
               const active = isNavigationItemActive(
                 pathname,
@@ -101,13 +98,13 @@ export function StudentNav({ userName }: { userName: string }) {
                   title={item.label}
                   aria-label={item.label}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium transition-all sm:px-3.5 sm:py-1.5 ${
+                  className={`flex items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium transition-all sm:px-3.5 sm:py-2 ${
                     active
                       ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
                       : "text-white hover:bg-black/10 hover:text-white"
                   }`}
                 >
-                  <item.icon className="h-3.5 w-3.5" />
+                  <item.icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{item.label}</span>
                 </Link>
               );
@@ -145,7 +142,7 @@ export function StudentNav({ userName }: { userName: string }) {
               <div
                 id={accountId}
                 aria-label="Account options"
-                className="absolute top-full right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
+                className="motion-popover absolute top-full right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">

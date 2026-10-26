@@ -83,7 +83,7 @@ export function ForwardingPanel({
     }
   }
   return (
-    <section className="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
       <h2 className="text-sm font-semibold">Forwarding</h2>
       {error && (
         <p role="alert" className="text-sm text-[var(--destructive)]">

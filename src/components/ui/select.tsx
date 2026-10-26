@@ -64,7 +64,7 @@ export function SelectTrigger({
       aria-required={props["aria-required"] ?? (field?.required || undefined)}
       aria-invalid={props["aria-invalid"] ?? (field?.invalid || undefined)}
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-[var(--destructive)] aria-[invalid=true]:focus:border-[var(--destructive)] aria-[invalid=true]:focus:ring-[var(--destructive)] data-[placeholder]:text-[var(--muted-foreground)]",
+        "flex w-full items-center justify-between gap-2 rounded-md border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-[var(--destructive)] aria-[invalid=true]:focus:border-[var(--destructive)] aria-[invalid=true]:focus:ring-[var(--destructive)] data-[placeholder]:text-[var(--muted-foreground)]",
         className,
       )}
     >
@@ -88,7 +88,7 @@ export function SelectContent({
         position={position}
         sideOffset={6}
         className={cn(
-          "z-50 max-h-72 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] shadow-xl shadow-black/30",
+          "motion-popover z-50 max-h-72 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] shadow-xl shadow-black/30",
           className,
         )}
         {...props}
@@ -109,7 +109,7 @@ export function SelectItem({
     <SelectPrimitive.Item
       value={value === "" ? EMPTY_VALUE : value}
       className={cn(
-        "relative flex w-full cursor-pointer items-center rounded-xl py-2 pr-3 pl-8 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-[var(--muted)]",
+        "relative flex w-full cursor-pointer items-center rounded-md py-2 pr-3 pl-8 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-[var(--muted)]",
         className,
       )}
       {...props}

@@ -80,7 +80,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="workspace-page space-y-6">
       <Link
         href="/admin/users"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -91,7 +91,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
 
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--muted)] text-lg font-semibold text-[var(--muted-foreground)]">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[var(--muted)] text-lg font-semibold text-[var(--muted-foreground)]">
             {getInitials(u.firstName, u.lastName)}
           </span>
           <div>
@@ -134,7 +134,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
               <UserRound className="h-[18px] w-[18px]" />
@@ -168,7 +168,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
           </dl>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
               <ShieldAlert className="h-[18px] w-[18px]" />

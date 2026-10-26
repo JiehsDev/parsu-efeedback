@@ -81,7 +81,7 @@ export default function AdminAuditLogsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)]">
           <ScrollText className="h-5 w-5" />
         </span>
         <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Audit Logs</h1>
@@ -116,7 +116,7 @@ export default function AdminAuditLogsPage() {
               setActionFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
         </div>
         <div className="relative">
@@ -129,7 +129,7 @@ export default function AdminAuditLogsPage() {
               setActorFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function AdminAuditLogsPage() {
               setDateFrom(e.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
           <span className="text-sm text-[var(--muted-foreground)]">to</span>
           <input
@@ -152,7 +152,7 @@ export default function AdminAuditLogsPage() {
               setDateTo(e.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
           />
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function AdminAuditLogsPage() {
       {isLoading ? (
         <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
       ) : error ? (
-        <div className="rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
+        <div className="rounded-lg border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
           <AlertCircle className="mx-auto h-5 w-5" />
           <p className="mt-2">{error}</p>
           <button
@@ -172,8 +172,8 @@ export default function AdminAuditLogsPage() {
           </button>
         </div>
       ) : logs.length === 0 ? (
-        <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+        <div className="flex flex-col items-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
             <ScrollText className="h-6 w-6" />
           </span>
           <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
@@ -182,7 +182,7 @@ export default function AdminAuditLogsPage() {
         </div>
       ) : (
         <>
-          <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+          <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
             <ul className="divide-y divide-[var(--border)]">
               {logs.map((log) => (
                 <li key={log._id}>

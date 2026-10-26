@@ -123,8 +123,8 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
 
   if (scopeKind === "student") {
     return (
-      <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+      <div className="flex flex-col items-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
           <Building2 className="h-6 w-6" />
         </span>
         <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
@@ -138,7 +138,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)]">
             <Building2 className="h-5 w-5" />
           </span>
           <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Offices</h1>
@@ -155,7 +155,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
       {isLoading ? (
         <ListRowsSkeleton />
       ) : loadError ? (
-        <div className="rounded-3xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
+        <div className="rounded-lg border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
           <p>{loadError}</p>
           <button
             type="button"
@@ -166,7 +166,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
           </button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+        <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
           <ul className="divide-y divide-[var(--border)]">
             {offices.map((o) => (
               <li
@@ -224,7 +224,7 @@ export function AdminOfficesPageClient({ scopeKind }: { scopeKind: ScopeKind }) 
         <Modal title="Add Office" onClose={() => setShowCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             {error && (
-              <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
+              <div className="flex items-start gap-2 rounded-lg border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>

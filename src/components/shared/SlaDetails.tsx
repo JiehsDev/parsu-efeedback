@@ -102,7 +102,7 @@ export function SlaDetails({
 
   return (
     <section
-      className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"
+      className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5"
       aria-labelledby="sla-details-heading"
     >
       <div className="flex items-center justify-between gap-2">

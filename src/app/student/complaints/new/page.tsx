@@ -237,7 +237,7 @@ export default function NewComplaintPage() {
     "w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="workspace-page">
       <Link
         href="/student/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -260,13 +260,13 @@ export default function NewComplaintPage() {
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+      <div className="reading-layout mt-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             {error && (
               <div
                 role="alert"
-                className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
+                className="flex items-start gap-2 rounded-lg border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
               >
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
@@ -364,7 +364,7 @@ export default function NewComplaintPage() {
               </label>
               <label
                 htmlFor="attachments"
-                className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background)]/40 px-3 py-4 text-sm text-[var(--muted-foreground)] transition-colors hover:border-[var(--ring)] hover:text-[var(--foreground)]"
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] bg-[var(--background)]/40 px-3 py-4 text-sm text-[var(--muted-foreground)] transition-colors hover:border-[var(--ring)] hover:text-[var(--foreground)]"
               >
                 <Paperclip className="h-4 w-4" />
                 Click to attach files, or drag them here
@@ -407,7 +407,7 @@ export default function NewComplaintPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -420,7 +420,7 @@ export default function NewComplaintPage() {
         </div>
 
         <div className="space-y-5">
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
             <div className="flex items-center gap-2">
               <Lightbulb className="h-4 w-4 shrink-0 text-[var(--qa-amber-strong)]" />
               <p className="text-sm font-medium text-[var(--foreground)]">
@@ -440,7 +440,7 @@ export default function NewComplaintPage() {
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
             <p className="text-sm font-medium text-[var(--foreground)]">What happens next</p>
             <div className="mt-3">
               {PROCESS_STEPS.map((step, i) => (

@@ -99,7 +99,7 @@ export default function AdminSettingsPage() {
   }
 
   const inputClass =
-    "w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
+    "w-full rounded-lg border border-[var(--border)] bg-[var(--background)]/40 px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
   if (isLoading) {
     return (
@@ -112,7 +112,7 @@ export default function AdminSettingsPage() {
 
   if (!settings) {
     return (
-      <div className="rounded-2xl border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
+      <div className="rounded-lg border border-[var(--destructive)]/35 bg-[var(--destructive)]/10 p-6 text-center text-sm text-[var(--destructive)]">
         <p>{error ?? "Could not load settings."}</p>
         <button
           type="button"
@@ -126,9 +126,9 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="w-full max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)]">
           <SettingsIcon className="h-5 w-5" />
         </span>
         <div>
@@ -143,19 +143,19 @@ export default function AdminSettingsPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]">
+          <div className="flex items-start gap-2 rounded-lg border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
         {success && (
-          <div className="flex items-start gap-2 rounded-2xl border border-[var(--qa-success-strong)]/30 bg-[var(--qa-success-soft)] px-3 py-2.5 text-sm text-[var(--qa-success-strong)]">
+          <div className="flex items-start gap-2 rounded-lg border border-[var(--qa-success-strong)]/30 bg-[var(--qa-success-soft)] px-3 py-2.5 text-sm text-[var(--qa-success-strong)]">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{success}</span>
           </div>
         )}
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
           <h2 className="text-sm font-semibold text-[var(--foreground)]">SLA calendar</h2>
           <p id="sla-calendar-help" className="mt-2 text-xs text-[var(--muted-foreground)]">
             Response and resolution clocks count 24 hours on weekdays in Philippine time. Saturdays,
@@ -179,7 +179,7 @@ export default function AdminSettingsPage() {
           />
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
               <Hash className="h-[18px] w-[18px]" />
@@ -202,7 +202,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
               <Upload className="h-[18px] w-[18px]" />
@@ -239,14 +239,14 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]">
               <ShieldAlert className="h-[18px] w-[18px]" />
             </span>
             <p className="text-sm font-semibold text-[var(--foreground)]">Authentication</p>
           </div>
-          <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[var(--qa-amber-soft)] px-3 py-2.5 text-xs text-[var(--qa-amber-strong)]">
+          <div className="mt-3 flex items-start gap-2 rounded-lg bg-[var(--qa-amber-soft)] px-3 py-2.5 text-xs text-[var(--qa-amber-strong)]">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>
               Login limits apply to new sign-in attempts. Contact technical support to change the

@@ -91,7 +91,7 @@ export function slaClock(complaint: {
 export function ComplaintRowHeader({ showTicket = true }: { showTicket?: boolean }) {
   return (
     <div className="hidden items-center gap-4 border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2 text-[11px] font-medium tracking-wide text-[var(--muted-foreground)] uppercase sm:flex">
-      {showTicket && <span className="w-[8.75rem] shrink-0">Ticket</span>}
+      {showTicket && <span className="w-[10.5rem] shrink-0">Ticket</span>}
       <span className="min-w-0 flex-1">Complaint</span>
       <span className="w-24 shrink-0 text-right">Due</span>
       <span className="w-[7.5rem] shrink-0">Status</span>
@@ -125,7 +125,7 @@ export function ComplaintListRow({
       />
       <div className="pointer-events-none relative flex items-center gap-4 px-4 py-2.5 transition-colors group-hover/row:bg-[var(--muted)]/40">
         {showTicket && (
-          <span className="qa-mono pointer-events-auto hidden w-[8.75rem] shrink-0 items-center gap-1 text-xs text-[var(--muted-foreground)] sm:inline-flex">
+          <span className="qa-mono pointer-events-auto hidden w-[10.5rem] shrink-0 items-center gap-1 text-xs text-[var(--muted-foreground)] sm:inline-flex">
             <span className="truncate">{complaint.ticketNumber}</span>
             <CopyButton
               value={complaint.ticketNumber}

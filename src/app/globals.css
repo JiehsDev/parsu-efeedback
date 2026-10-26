@@ -34,7 +34,10 @@
   --input: #7c8594;
   --ring: #06345c;
 
-  --radius: 0.75rem;
+  --radius: 0.5rem;
+  --motion-fast: 140ms;
+  --motion-standard: 220ms;
+  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   /* Extra chart/status accents with no shadcn slot â€” first added for the
      QA portal's analytics, kept global since any portal's charts can use
@@ -230,6 +233,211 @@ body {
   color: var(--foreground);
 }
 
+/* Workspace geometry belongs to the shell, not to nested page containers. */
+.app-shell {
+  height: 100dvh;
+  min-height: 100dvh;
+}
+
+.workspace {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(1rem, 2vw, 2rem);
+  padding-bottom: 3rem;
+  scrollbar-gutter: stable;
+}
+
+.workspace-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.reading-layout {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* A readable primary column and a bounded rail, even on large monitors. */
+@media (min-width: 1280px) {
+  .reading-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+    gap: 2rem;
+  }
+}
+
+.reading-layout > * {
+  min-width: 0;
+}
+
+.reading-layout p {
+  max-width: 75ch;
+  line-height: 1.7;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 0;
+}
+
+.dashboard-metric {
+  min-width: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+}
+
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 1.5rem;
+  }
+}
+
+:where(a, button, input, textarea, select, [role="combobox"]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Opacity, translate and scale animate without changing document flow.
+   Page roots only fade so fixed descendants keep their viewport positioning. */
+@keyframes content-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes surface-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes popover-out {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .workspace > :not(script):not(style):not([hidden]):not([data-loading]) {
+    animation: content-in var(--motion-standard) var(--motion-ease) backwards;
+  }
+
+  .dashboard-grid > section,
+  .reading-layout > * {
+    animation: surface-in var(--motion-standard) var(--motion-ease) backwards;
+  }
+
+  .dashboard-grid > section:nth-child(2),
+  .reading-layout > :nth-child(2) {
+    animation-delay: 35ms;
+  }
+  .dashboard-grid > section:nth-child(3) {
+    animation-delay: 70ms;
+  }
+  .dashboard-grid > section:nth-child(n + 4) {
+    animation-delay: 105ms;
+  }
+
+  /* Loading layouts are already in place; reserve entrance motion for content. */
+  [data-loading] :is(.dashboard-grid, .reading-layout) > * {
+    animation: none;
+  }
+
+  .motion-popover {
+    transform-origin: var(--radix-select-content-transform-origin, top right);
+    animation: popover-in var(--motion-fast) var(--motion-ease) backwards;
+  }
+
+  .motion-popover-up {
+    transform-origin: bottom left;
+  }
+
+  .motion-popover[data-state="closed"] {
+    animation: popover-out 100ms ease-in;
+  }
+
+  .motion-overlay {
+    animation: content-in var(--motion-fast) ease-out backwards;
+  }
+
+  .motion-dialog {
+    animation: popover-in var(--motion-standard) var(--motion-ease) backwards;
+  }
+
+  .workspace button[type="submit"] {
+    transition-property: background-color, border-color, opacity, translate, scale;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease);
+  }
+
+  .workspace button[type="submit"]:not(:disabled):active {
+    translate: 0 0;
+    scale: 0.98;
+  }
+
+  .dashboard-grid [role="meter"] > div {
+    transition: width 400ms var(--motion-ease);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .workspace button[type="submit"]:not(:disabled):hover:not(:active) {
+    translate: 0 -1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Any custom form control can opt into the same accessible error treatment by
    setting aria-invalid. This keeps hand-built forms consistent with selects
    and native inputs without changing untouched-field appearance. */
@@ -258,7 +466,7 @@ select[aria-invalid="true"]:focus {
 }
 
 .animate-toast-in {
-  animation: toast-in 0.18s ease-out;
+  animation: toast-in var(--motion-standard) var(--motion-ease);
 }
 
 /* iOS Safari auto-zooms the page on focus for any form control rendering

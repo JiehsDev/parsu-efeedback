@@ -132,7 +132,7 @@ export default async function StudentDashboardPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
           Welcome back, {firstName}
         </h1>
         <Link
@@ -166,23 +166,18 @@ export default async function StudentDashboardPage() {
       {totalCount > 0 && (
         // gap-px over a border-coloured background draws the hairlines, which
         // survives the 2-col → 4-col reflow without divide-x/divide-y fighting.
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px overflow-hidden border-y border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
           {SUMMARY.map((s) => (
             <Link
               key={s.label}
               href={s.href}
-              className="group flex min-h-[84px] items-center gap-2.5 bg-[var(--card)] px-3.5 py-3 transition-colors hover:bg-[var(--muted)]/50 sm:px-4"
+              className="group flex min-h-[100px] items-center gap-2.5 bg-[var(--card)] px-3.5 py-4 transition-colors hover:bg-[var(--muted)]/50 sm:px-4"
             >
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.iconClass}`}
-              >
-                <s.icon className="h-4 w-4" />
-              </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-medium text-[var(--foreground)]">
+                <span className="block text-sm font-medium text-[var(--foreground)]">
                   {s.label}
                 </span>
-                <span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">
+                <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
                   {s.description}
                 </span>
               </span>
@@ -197,8 +192,8 @@ export default async function StudentDashboardPage() {
       )}
 
       {complaints.length === 0 ? (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-6 py-10">
-          <div className="text-center">
+        <div className="grid gap-8 border-y border-[var(--border)] py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="max-w-2xl">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
               <ClipboardList className="h-4 w-4" />
             </span>
@@ -215,7 +210,7 @@ export default async function StudentDashboardPage() {
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-5 border-t border-[var(--border)] pt-6 sm:grid-cols-3">
+          <div className="grid gap-5 border-t border-[var(--border)] pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
             {HOW_IT_WORKS.map((step) => (
               <div key={step.title} className="flex items-start gap-2.5">
                 <step.icon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
@@ -230,7 +225,7 @@ export default async function StudentDashboardPage() {
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
+        <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
             <h2 className="text-sm font-semibold text-[var(--foreground)]">Recent Activity</h2>
             <Link

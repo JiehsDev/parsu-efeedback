@@ -94,11 +94,11 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
   }
 
   const inputClass =
-    "w-full rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
+    "w-full rounded-lg border border-[var(--border)] bg-[var(--background)]/40 py-2.5 pl-10 pr-3 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]";
 
   if (!profile) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div className="workspace-page">
         <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading profile…
@@ -111,9 +111,9 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
   const affiliationLabel = profile.officeRef ? "Office" : "College";
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="workspace-page">
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)]">
           <UserRound className="h-5 w-5" />
         </span>
         <div>
@@ -124,13 +124,13 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
+      <div className="reading-layout mt-8">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div
                 role="alert"
-                className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
+                className="flex items-start gap-2 rounded-lg border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
               >
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
@@ -139,7 +139,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
             {success && (
               <div
                 role="status"
-                className="flex items-start gap-2 rounded-2xl border border-[var(--qa-success-strong)]/30 bg-[var(--card)] px-3 py-2.5 text-sm text-[var(--qa-success-strong)]"
+                className="flex items-start gap-2 rounded-lg border border-[var(--qa-success-strong)]/30 bg-[var(--card)] px-3 py-2.5 text-sm text-[var(--qa-success-strong)]"
               >
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{success}</span>
@@ -249,7 +249,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -262,7 +262,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
             <p className="text-sm font-semibold text-[var(--foreground)]">Account</p>
             <dl className="mt-4 space-y-4 text-sm">
               <div>
@@ -291,7 +291,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
             </dl>
           </div>
 
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]">
                 <ShieldCheck className="h-[18px] w-[18px]" />

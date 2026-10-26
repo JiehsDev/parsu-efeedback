@@ -24,7 +24,7 @@ export function Modal({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+        <Dialog.Overlay className="motion-overlay fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content
           aria-describedby={undefined}
           onPointerDownOutside={(event) => event.preventDefault()}
@@ -32,7 +32,7 @@ export function Modal({
             event.preventDefault();
             opener.current?.focus();
           }}
-          className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl shadow-black/40 sm:p-7"
+          className="motion-dialog fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl shadow-black/40 sm:p-7"
         >
           <div className="flex items-center justify-between gap-3">
             <Dialog.Title className="text-lg font-bold tracking-tight text-[var(--foreground)]">

@@ -21,12 +21,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <ClientDataBoundary key={cacheScope} scope={cacheScope}>
-      <div className="flex h-screen bg-[var(--background)]">
+      <div className="app-shell flex bg-[var(--background)]">
         <AdminNav
           userName={session?.user?.name ?? "Admin"}
           role={session?.user?.role ?? "administrator"}
         />
-        <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-10 sm:px-6 sm:py-5 sm:pb-12 lg:px-8">
+        <main id="main-content" className="workspace">
           {children}
         </main>
       </div>

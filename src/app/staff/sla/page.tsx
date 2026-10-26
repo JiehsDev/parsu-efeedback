@@ -122,7 +122,7 @@ function SlaRow({ item }: { item: SlaItem }) {
         aria-label={`View ${item.ticketNumber}: ${item.title}`}
         className="group block px-4 py-3.5 transition-colors outline-none hover:bg-[var(--muted)]/45 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
       >
-        <div className="grid items-center gap-3 lg:grid-cols-[8.5rem_minmax(14rem,1fr)_5.5rem_7.5rem_8rem_8.5rem_5rem]">
+        <div className="grid items-center gap-3 2xl:grid-cols-[8.5rem_minmax(14rem,1fr)_5.5rem_7.5rem_8rem_8.5rem_5rem]">
           <div className="flex items-center gap-1 font-mono text-xs text-[var(--muted-foreground)]">
             <span className="truncate">{item.ticketNumber}</span>
             <CopyButton
@@ -141,21 +141,21 @@ function SlaRow({ item }: { item: SlaItem }) {
           >
             {item.priority}
           </span>
-          <span className="hidden lg:block">
+          <span className="hidden 2xl:block">
             <StatusBadge status={item.status as ComplaintStatus} />
           </span>
-          <span className={`hidden text-xs font-semibold lg:block ${stateTone}`}>
+          <span className={`hidden text-xs font-semibold 2xl:block ${stateTone}`}>
             <span className="block">{stateLabel}</span>
             <span className="mt-0.5 block text-[11px] font-normal opacity-80">
               {item.urgencyText}
             </span>
           </span>
           <span className={`text-xs font-semibold tabular-nums ${stateTone}`}>{item.dueText}</span>
-          <span className="hidden items-center justify-end gap-1 text-xs font-semibold text-[var(--primary)] lg:flex">
+          <span className="hidden items-center justify-end gap-1 text-xs font-semibold text-[var(--primary)] 2xl:flex">
             View <ArrowUpRight className="h-3.5 w-3.5" />
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-2 lg:hidden">
+        <div className="mt-2 flex items-center gap-2 2xl:hidden">
           <StatusBadge status={item.status as ComplaintStatus} />
           <span className={`text-xs font-semibold ${stateTone}`}>
             {stateLabel} · {item.urgencyText}
@@ -175,7 +175,7 @@ function EmptyQueue({ view }: { view: View }) {
         ? "No complaints are due within the next 24 SLA hours."
         : "No open complaints currently under SLA monitoring.";
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] px-5 py-8">
+    <div className="flex items-center gap-3 rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-5 py-8">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]">
         <CheckCircle2 className="h-5 w-5" />
       </span>
@@ -264,7 +264,7 @@ export default async function StaffSlaPage({
     sort: params.sort,
   };
   return (
-    <div className="mx-auto max-w-[1440px] space-y-5">
+    <div className="workspace-page space-y-5">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-wide text-[var(--primary)] uppercase">
@@ -281,7 +281,7 @@ export default async function StaffSlaPage({
           {items.length} open complaint{items.length === 1 ? "" : "s"} under monitoring
         </p>
       </header>
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
         <SummaryCard
           label="Total Open"
           value={items.length}
@@ -311,8 +311,8 @@ export default async function StaffSlaPage({
           icon={CheckCircle2}
         />
       </section>
-      <section className="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4">
+        <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
           <nav
             aria-label="SLA quick views"
             className="flex flex-wrap gap-1 rounded-xl bg-[var(--muted)]/55 p-1"
@@ -377,7 +377,7 @@ export default async function StaffSlaPage({
         <EmptyQueue view={view} />
       ) : (
         <section
-          className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]"
+          className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]"
           aria-labelledby="sla-queue-heading"
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
@@ -391,7 +391,7 @@ export default async function StaffSlaPage({
             </div>
             <Clock3 className="h-4 w-4 text-[var(--muted-foreground)]" />
           </div>
-          <div className="hidden grid-cols-[8.5rem_minmax(14rem,1fr)_5.5rem_7.5rem_8rem_8.5rem_5rem] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/35 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase lg:grid">
+          <div className="hidden grid-cols-[8.5rem_minmax(14rem,1fr)_5.5rem_7.5rem_8rem_8.5rem_5rem] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/35 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase 2xl:grid">
             <span>Ticket</span>
             <span>Complaint</span>
             <span>Priority</span>

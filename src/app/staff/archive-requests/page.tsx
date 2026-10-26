@@ -28,7 +28,7 @@ export default async function ArchiveRequestsPage() {
     .populate("requestedByRef", "firstName lastName role")
     .lean();
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="workspace-page space-y-6">
       <div>
         <p className="text-xs font-semibold tracking-wide text-[var(--primary)] uppercase">
           Office Head Review
@@ -41,7 +41,7 @@ export default async function ArchiveRequestsPage() {
         </p>
       </div>
       {requests.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-14 text-center">
+        <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-14 text-center">
           <Archive className="mx-auto h-8 w-8 text-[var(--muted-foreground)]" />
           <p className="mt-3 text-sm font-medium">No pending archive requests</p>
         </div>
@@ -50,7 +50,7 @@ export default async function ArchiveRequestsPage() {
           {requests.map((request: any) => (
             <div
               key={String(request._id)}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
+              className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4"
             >
               <Link
                 href={`/staff/complaints/${request.complaintRef?._id}`}

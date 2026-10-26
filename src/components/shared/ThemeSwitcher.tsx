@@ -85,7 +85,7 @@ export function ThemeSwitcher({
       {open && (
         <div
           id={panelId}
-          className={`absolute z-50 w-52 rounded-xl border border-[var(--border)] bg-[var(--popover)] p-3 text-[var(--popover-foreground)] shadow-xl ${sidebar ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2"}`}
+          className={`motion-popover ${sidebar ? "motion-popover-up" : ""} absolute z-50 w-52 rounded-xl border border-[var(--border)] bg-[var(--popover)] p-3 text-[var(--popover-foreground)] shadow-xl ${sidebar ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2"}`}
         >
           <fieldset>
             <legend className="mb-2 text-xs font-semibold">Color theme</legend>

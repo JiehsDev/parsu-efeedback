@@ -23,7 +23,7 @@ export async function ForwardingRequestsPage({ base }: { base: "admin" | "staff"
     .populate("requestedByUserRef reviewedByUserRef", "firstName lastName")
     .lean();
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="workspace-page space-y-5">
       <header>
         <h1 className="text-2xl font-semibold">Forwarding Requests</h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
@@ -31,7 +31,7 @@ export async function ForwardingRequestsPage({ base }: { base: "admin" | "staff"
         </p>
       </header>
       {!requests.length && (
-        <p className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <p className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
           No forwarding requests yet.
         </p>
       )}
@@ -44,7 +44,7 @@ export async function ForwardingRequestsPage({ base }: { base: "admin" | "staff"
           return (
             <article
               key={String(request._id)}
-              className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"
+              className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5"
             >
               <p className="font-mono text-xs">
                 {request.complaintRef?.ticketNumber ?? "Historical complaint"}

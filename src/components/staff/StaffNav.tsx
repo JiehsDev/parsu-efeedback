@@ -83,7 +83,7 @@ export function StaffNav({
   const initials = getInitials(userName);
 
   return (
-    <aside className="sticky top-0 flex h-screen w-16 shrink-0 flex-col border-r border-white/15 bg-[var(--navigation)] lg:w-56">
+    <aside className="sticky top-0 flex h-dvh w-16 shrink-0 flex-col border-r border-white/15 bg-[var(--navigation)] lg:w-56">
       <Link href="/staff/dashboard" className="flex shrink-0 items-center gap-2.5 px-4 py-5">
         <BrandLogo />
         <span className="hidden text-[13px] font-bold tracking-tight text-white lg:inline">
@@ -111,7 +111,7 @@ export function StaffNav({
               title={item.label}
               aria-label={item.label}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-all ${
                 active
                   ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
                   : "font-medium text-white hover:bg-black/10 hover:text-white"
@@ -169,7 +169,7 @@ export function StaffNav({
               <div
                 id={accountId}
                 aria-label="Account options"
-                className="absolute bottom-full left-0 z-20 mb-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
+                className="motion-popover motion-popover-up absolute bottom-full left-0 z-20 mb-2 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-xl shadow-black/20"
               >
                 <div className="border-b border-[var(--border)] px-3.5 py-3">
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">

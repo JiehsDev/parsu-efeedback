@@ -22,7 +22,7 @@ export default async function NewFeedbackPage() {
     .lean();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="w-full max-w-3xl space-y-5">
       <Link
         href="/student/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"

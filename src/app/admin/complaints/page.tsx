@@ -122,7 +122,7 @@ export default async function AdminComplaintsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
             {showArchived ? "Archived Complaints" : "All Complaints"}
@@ -140,7 +140,7 @@ export default async function AdminComplaintsPage({
         </div>
         <Link
           href={showArchived ? withParam("archived", undefined) : `/admin/complaints?archived=1`}
-          className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+          className={`flex shrink-0 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors ${
             showArchived
               ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
               : "border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -163,14 +163,14 @@ export default async function AdminComplaintsPage({
       {showArchived && (
         <form
           method="get"
-          className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:grid-cols-4 lg:grid-cols-6"
+          className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:grid-cols-4 lg:grid-cols-6"
         >
           <input type="hidden" name="archived" value="1" />
           <select
             name="office"
             defaultValue={office ?? ""}
             aria-label="Filter by office"
-            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+            className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
           >
             <option value="">All offices</option>
             {archiveOffices.map((item: any) => (
@@ -183,7 +183,7 @@ export default async function AdminComplaintsPage({
             name="reason"
             defaultValue={reason ?? ""}
             aria-label="Filter by archive reason"
-            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+            className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
           >
             <option value="">All archive reasons</option>
             <option value="duplicate">Duplicate</option>
@@ -198,14 +198,14 @@ export default async function AdminComplaintsPage({
             name="from"
             defaultValue={from ?? ""}
             aria-label="Archived from"
-            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+            className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
           />
           <input
             type="date"
             name="to"
             defaultValue={to ?? ""}
             aria-label="Archived to"
-            className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
+            className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 text-xs"
           />
           <button className="rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-semibold text-[var(--card)]">
             Apply filters
@@ -220,12 +220,12 @@ export default async function AdminComplaintsPage({
       )}
 
       {!showArchived && (
-        <div className="flex flex-wrap items-center gap-0.5 rounded-full bg-[var(--muted)]/50 p-1">
+        <div className="flex flex-wrap items-center gap-0.5 rounded-lg bg-[var(--muted)]/50 p-1">
           {STATUS_FILTERS.map((f) => (
             <Link
               key={f.value}
               href={withParam("status", f.value || undefined)}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
                 (status ?? "") === f.value
                   ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -238,8 +238,8 @@ export default async function AdminComplaintsPage({
       )}
 
       {scopedComplaints.length === 0 ? (
-        <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+        <div className="flex flex-col items-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
             <Inbox className="h-6 w-6" />
           </span>
           <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
@@ -247,15 +247,15 @@ export default async function AdminComplaintsPage({
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+        <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
           <ul className="divide-y divide-[var(--border)]">
             {scopedComplaints.map((c: any) => (
               <li key={c._id}>
                 <Link
                   href={`/admin/complaints/${c._id}`}
-                  className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[var(--muted)]/40"
+                  className="flex flex-col items-start gap-3 px-4 py-4 transition-colors hover:bg-[var(--muted)]/40 sm:flex-row sm:items-center sm:gap-4"
                 >
-                  <span className="min-w-0 flex-1">
+                  <span className="w-full min-w-0 flex-1 sm:w-auto">
                     <span className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium text-[var(--foreground)]">
                         {c.title}
@@ -266,8 +266,8 @@ export default async function AdminComplaintsPage({
                         </span>
                       )}
                     </span>
-                    <span className="mt-0.5 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-                      <span className="inline-flex items-center gap-1 font-mono">
+                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted-foreground)]">
+                      <span className="inline-flex shrink-0 items-center gap-1 font-mono">
                         {c.ticketNumber}
                         <CopyButton value={c.ticketNumber} />
                       </span>

@@ -39,13 +39,21 @@ function actionTone(action: string): { label: string; bg: string; text: string }
     return { label: "Create", bg: "var(--qa-success-soft)", text: "var(--qa-success)" };
   }
   if (/^(delete|deactivate)$/.test(verb)) {
-    return { label: "Remove", bg: "color-mix(in oklab, var(--destructive) 12%, var(--card))", text: "var(--destructive)" };
+    return {
+      label: "Remove",
+      bg: "color-mix(in oklab, var(--destructive) 12%, var(--card))",
+      text: "var(--destructive)",
+    };
   }
   if (/escalate/.test(verb)) {
     return { label: "Escalate", bg: "var(--qa-amber-soft)", text: "var(--qa-amber)" };
   }
   if (/^(update|status_change)$/.test(verb)) {
-    return { label: "Update", bg: "color-mix(in oklab, var(--primary) 12%, var(--card))", text: "var(--primary)" };
+    return {
+      label: "Update",
+      bg: "color-mix(in oklab, var(--primary) 12%, var(--card))",
+      text: "var(--primary)",
+    };
   }
   return { label: "Event", bg: "var(--muted)", text: "var(--muted-foreground)" };
 }
@@ -98,11 +106,7 @@ function isPlainRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-export default async function AuditLogDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function AuditLogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!Types.ObjectId.isValid(id)) notFound();
 
@@ -128,7 +132,7 @@ export default async function AuditLogDetailPage({
   const diffRows = before && after ? buildDiff(before, after) : [];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="workspace-page space-y-6">
       <Link
         href="/admin/audit-logs"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -139,7 +143,7 @@ export default async function AuditLogDetailPage({
 
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
             <ScrollText className="h-6 w-6" />
           </span>
           <div>
@@ -182,10 +186,14 @@ export default async function AuditLogDetailPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
-              {l.actorRef ? <UserRound className="h-[18px] w-[18px]" /> : <Bot className="h-[18px] w-[18px]" />}
+              {l.actorRef ? (
+                <UserRound className="h-[18px] w-[18px]" />
+              ) : (
+                <Bot className="h-[18px] w-[18px]" />
+              )}
             </span>
             <p className="text-sm font-semibold text-[var(--foreground)]">Performed by</p>
           </div>
@@ -210,13 +218,13 @@ export default async function AuditLogDetailPage({
             </dl>
           ) : (
             <p className="mt-4 text-sm text-[var(--muted-foreground)]">
-              No user was signed in for this action — it was written by a system process
-              (e.g. the SLA cron or an automated escalation), not a person.
+              No user was signed in for this action — it was written by a system process (e.g. the
+              SLA cron or an automated escalation), not a person.
             </p>
           )}
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]/15 text-[var(--secondary)]">
               <Globe className="h-[18px] w-[18px]" />
@@ -255,7 +263,7 @@ export default async function AuditLogDetailPage({
         </div>
       </div>
 
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
         <p className="text-sm font-semibold text-[var(--foreground)]">What changed</p>
 
         {!before && !after && (
@@ -311,10 +319,10 @@ export default async function AuditLogDetailPage({
                 Nothing in the tracked fields differs between before and after.
               </p>
             ) : (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border)]">
+              <div className="mt-4 overflow-hidden rounded-lg border border-[var(--border)]">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[var(--border)] bg-[var(--muted)]/40 text-left text-xs text-[var(--muted-foreground)] uppercase tracking-wide">
+                    <tr className="border-b border-[var(--border)] bg-[var(--muted)]/40 text-left text-xs tracking-wide text-[var(--muted-foreground)] uppercase">
                       <th className="px-4 py-2.5 font-semibold">Field</th>
                       <th className="px-4 py-2.5 font-semibold">Before</th>
                       <th className="px-4 py-2.5 font-semibold">After</th>
@@ -348,7 +356,7 @@ export default async function AuditLogDetailPage({
         )}
 
         {(before || after) && (
-          <details className="mt-4 group">
+          <details className="group mt-4">
             <summary className="cursor-pointer text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]">
               View raw JSON snapshots
             </summary>

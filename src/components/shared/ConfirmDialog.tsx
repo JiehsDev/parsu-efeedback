@@ -56,7 +56,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
           }}
         >
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm" />
+            <Dialog.Overlay className="motion-overlay fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm" />
             <Dialog.Content
               role="alertdialog"
               onOpenAutoFocus={(event) => {
@@ -68,7 +68,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 opener.current?.focus();
               }}
               onPointerDownOutside={(event) => event.preventDefault()}
-              className="fixed top-1/2 left-1/2 z-[110] max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl shadow-black/40"
+              className="motion-dialog fixed top-1/2 left-1/2 z-[110] max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl shadow-black/40"
             >
               <span
                 className={`flex h-11 w-11 items-center justify-center rounded-2xl ${

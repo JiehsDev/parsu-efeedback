@@ -70,7 +70,7 @@ export default function AdminCategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)]">
             <Tag className="h-5 w-5" />
           </span>
           <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Categories</h1>
@@ -84,7 +84,7 @@ export default function AdminCategoriesPage() {
         </Link>
       </div>
 
-      <div className="flex items-start gap-2.5 rounded-2xl border border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] px-4 py-3 text-sm text-[var(--qa-amber-strong)]">
+      <div className="flex items-start gap-2.5 rounded-lg border border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] px-4 py-3 text-sm text-[var(--qa-amber-strong)]">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
           Use categories to help students describe their concerns. Add or update a category below.
@@ -98,15 +98,15 @@ export default function AdminCategoriesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search categories…"
-          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] py-2.5 pr-3.5 pl-10 text-sm text-[var(--foreground)] transition-colors outline-none focus:border-[var(--ring)] focus:ring-1 focus:ring-[var(--ring)]"
         />
       </div>
 
       {isLoading ? (
         <ListRowsSkeleton />
       ) : visibleCategories.length === 0 ? (
-        <div className="flex flex-col items-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--muted-foreground)]">
+        <div className="flex flex-col items-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-8 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
             <Tag className="h-6 w-6" />
           </span>
           <p className="mt-4 text-sm font-medium text-[var(--foreground)]">
@@ -114,7 +114,7 @@ export default function AdminCategoriesPage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]">
+        <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
           <ul className="divide-y divide-[var(--border)]">
             {visibleCategories.map((c) => (
               <li

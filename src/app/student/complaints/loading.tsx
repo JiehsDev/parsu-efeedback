@@ -1,6 +1,5 @@
-// src/app/student/complaints/loading.tsx
-import { TableSkeleton } from "@/components/shared/Skeleton";
+import { StudentComplaintsSkeleton } from "@/components/shared/WorkspaceSkeletons";
 
 export default function Loading() {
-  return <TableSkeleton rows={6} cols={5} />;
+  return <StudentComplaintsSkeleton />;
 }

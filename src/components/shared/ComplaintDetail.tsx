@@ -80,7 +80,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     refId(c.assignedStaffRef) !== session.user.id &&
     !(await canSuperviseComplaint(session, c));
   return (
-    <div className="mx-auto max-w-[1440px] space-y-5">
+    <div className="workspace-page space-y-5">
       <Link href={`/${base}/complaints`} className="text-sm text-[var(--muted-foreground)]">
         Back to complaints
       </Link>
@@ -101,9 +101,9 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
           action.
         </p>
       )}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+      <div className="reading-layout">
         <div className="min-w-0 space-y-5">
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
             <h2 className="text-sm font-semibold">Description</h2>
             <p className="mt-2 text-sm break-words whitespace-pre-wrap">{c.description}</p>
           </section>
@@ -120,7 +120,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
           />
           <AttachmentGallery complaintId={id} />
           <NotesSection complaintId={id} initialNotes={plain(notes)} readOnly={readOnly} />
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
             <h2 className="mb-4 text-sm font-semibold">Timeline</h2>
             {timeline.map((event: any) => (
               <TimelineEvent key={refId(event._id)} event={event} />
@@ -129,7 +129,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
           <AssignmentHistoryPanel entries={history} />
         </div>
         <aside className="space-y-5">
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
             <h2 className="text-sm font-semibold">Details</h2>
             <dl className="mt-3 space-y-3 text-sm">
               {Object.entries({

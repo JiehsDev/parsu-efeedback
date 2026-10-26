@@ -21,9 +21,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <ClientDataBoundary key={cacheScope} scope={cacheScope}>
-      <div className="flex h-screen flex-col bg-[var(--background)]">
+      <div className="app-shell flex flex-col bg-[var(--background)]">
         <StudentNav userName={session?.user?.name ?? "Student"} />
-        <main className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-10 sm:px-6 sm:py-5 sm:pb-12 lg:px-8">
+        <main id="main-content" className="workspace">
           {children}
         </main>
       </div>

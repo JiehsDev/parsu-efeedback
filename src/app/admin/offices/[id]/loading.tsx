@@ -1,15 +1,15 @@
 // src/app/admin/offices/[id]/loading.tsx
-import { Skeleton } from "@/components/shared/Skeleton";
+import { Skeleton, SkeletonPage } from "@/components/shared/Skeleton";
 
 export default function Loading() {
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <SkeletonPage label="Loading office details" className="space-y-6">
       <Skeleton className="h-4 w-28" />
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-14 w-14 rounded-2xl" />
-          <div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          <Skeleton className="h-14 w-14 shrink-0 rounded-lg" />
+          <div className="min-w-0 flex-1">
             <Skeleton className="h-6 w-40" />
             <Skeleton className="mt-2 h-5 w-24 rounded-full" />
           </div>
@@ -19,7 +19,7 @@ export default function Loading() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div key={i} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
             <Skeleton className="h-4 w-24" />
             <div className="mt-4 space-y-4">
               {Array.from({ length: 3 }).map((_, j) => (
@@ -32,6 +32,6 @@ export default function Loading() {
           </div>
         ))}
       </div>
-    </div>
+    </SkeletonPage>
   );
 }

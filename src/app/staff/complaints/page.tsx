@@ -54,7 +54,6 @@ function Metric({
   value,
   hint,
   href,
-  icon: Icon,
   tone,
 }: {
   label: string;
@@ -64,12 +63,6 @@ function Metric({
   icon: typeof Inbox;
   tone: "neutral" | "amber" | "rose" | "teal";
 }) {
-  const iconClass = {
-    neutral: "bg-[var(--primary)]/10 text-[var(--primary)]",
-    amber: "bg-[var(--qa-amber-soft)] text-[var(--qa-amber-strong)]",
-    rose: "bg-[var(--qa-rose-soft)] text-[var(--qa-rose-strong)]",
-    teal: "bg-[var(--qa-teal-soft)] text-[var(--qa-teal-strong)]",
-  }[tone];
   const valueClass =
     tone === "amber"
       ? "text-[var(--qa-amber-strong)]"
@@ -81,25 +74,18 @@ function Metric({
   return (
     <Link
       href={href}
-      className="group flex min-h-[84px] items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3 transition-colors hover:bg-[var(--muted)]/45"
+      className="group relative flex min-h-[110px] flex-col items-start justify-between gap-2 border-b border-[var(--border)] px-3 py-3 transition-colors hover:bg-[var(--muted)]/45"
     >
-      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconClass}`}>
-        <Icon className="h-4 w-4" />
-      </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-semibold text-[var(--foreground)]">
-          {label}
-        </span>
-        <span className="mt-1 block truncate text-[11px] text-[var(--muted-foreground)]">
-          {hint}
-        </span>
+        <span className="block pr-3 text-xs font-semibold text-[var(--foreground)]">{label}</span>
+        <span className="mt-1 block text-[11px] text-[var(--muted-foreground)]">{hint}</span>
       </span>
       <span
         className={`qa-tabular shrink-0 text-2xl leading-none font-semibold tracking-tight ${valueClass}`}
       >
         {value}
       </span>
-      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      <ArrowUpRight className="absolute top-3 right-1 h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
     </Link>
   );
 }
@@ -138,7 +124,7 @@ function QueueRow({ complaint, isMine }: { complaint: any; isMine: boolean }) {
         aria-label={`View complaint ${complaint.ticketNumber}: ${complaint.title}`}
         className="group block px-4 py-3 transition-colors outline-none hover:bg-[var(--muted)]/40 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
       >
-        <div className="grid items-center gap-3 lg:grid-cols-[9rem_minmax(15rem,1fr)_8rem_8rem_9rem_7rem_4rem]">
+        <div className="grid items-center gap-3 2xl:grid-cols-[9rem_minmax(15rem,1fr)_8rem_8rem_9rem_7rem_4rem]">
           <div className="flex min-w-0 items-center gap-1 font-mono text-xs text-[var(--muted-foreground)]">
             <span className="truncate">{complaint.ticketNumber}</span>
             <CopyButton
@@ -169,10 +155,10 @@ function QueueRow({ complaint, isMine }: { complaint: any; isMine: boolean }) {
           >
             {complaint.priority}
           </span>
-          <span className="hidden lg:block">
+          <span className="hidden 2xl:block">
             <StatusBadge status={complaint.status as ComplaintStatus} />
           </span>
-          <span className={`hidden text-xs font-semibold lg:block ${slaClass}`}>
+          <span className={`hidden text-xs font-semibold 2xl:block ${slaClass}`}>
             <span className="block">{sla.label}</span>
             <span className="mt-0.5 block text-[11px] font-normal opacity-80">{sla.detail}</span>
           </span>
@@ -182,11 +168,11 @@ function QueueRow({ complaint, isMine }: { complaint: any; isMine: boolean }) {
               day: "numeric",
             })}
           </span>
-          <span className="hidden items-center justify-end gap-1 text-xs font-semibold text-[var(--primary)] lg:flex">
+          <span className="hidden items-center justify-end gap-1 text-xs font-semibold text-[var(--primary)] 2xl:flex">
             View <ChevronRight className="h-4 w-4" />
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-2 lg:hidden">
+        <div className="mt-2 flex items-center gap-2 2xl:hidden">
           <StatusBadge status={complaint.status as ComplaintStatus} />
           <span className={`text-xs font-semibold ${slaClass}`}>
             {sla.label} · {sla.detail}
@@ -328,7 +314,7 @@ export default async function StaffComplaintsPage({
   const firstShown = totalFiltered ? (safePage - 1) * PAGE_SIZE + 1 : 0;
   const lastShown = Math.min(safePage * PAGE_SIZE, totalFiltered);
   return (
-    <div className="mx-auto max-w-[1440px] space-y-5">
+    <div className="workspace-page space-y-5">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-wide text-[var(--primary)] uppercase">
@@ -347,7 +333,7 @@ export default async function StaffComplaintsPage({
           {totalOpen} open complaint{totalOpen === 1 ? "" : "s"} in your queue
         </p>
       </header>
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Metric
           label="Assigned to Me"
           value={myAssignedCount}
@@ -381,7 +367,7 @@ export default async function StaffComplaintsPage({
           tone="neutral"
         />
       </section>
-      <section className="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4">
+      <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4">
         <nav
           aria-label="Complaint status views"
           className="flex flex-wrap gap-1 rounded-xl bg-[var(--muted)]/55 p-1"
@@ -401,7 +387,7 @@ export default async function StaffComplaintsPage({
         </nav>
         <form
           method="get"
-          className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(13rem,1fr)_repeat(4,minmax(8rem,auto))_auto]"
+          className="grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-[minmax(13rem,1fr)_repeat(4,minmax(8rem,auto))_auto]"
         >
           <label className="sr-only" htmlFor="queue-search">
             Search complaints
@@ -474,7 +460,7 @@ export default async function StaffComplaintsPage({
         )}
       </section>
       {sorted.length === 0 ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] px-5 py-8">
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-5 py-8">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--muted)] text-[var(--muted-foreground)]">
             <Inbox className="h-5 w-5" />
           </span>
@@ -497,7 +483,7 @@ export default async function StaffComplaintsPage({
         </div>
       ) : (
         <section
-          className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]"
+          className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]"
           aria-labelledby="queue-heading"
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
@@ -512,7 +498,7 @@ export default async function StaffComplaintsPage({
             </div>
             <Clock3 className="h-4 w-4 text-[var(--muted-foreground)]" />
           </div>
-          <div className="hidden grid-cols-[9rem_minmax(15rem,1fr)_8rem_8rem_9rem_7rem_4rem] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/35 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase lg:grid">
+          <div className="hidden grid-cols-[9rem_minmax(15rem,1fr)_8rem_8rem_9rem_7rem_4rem] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/35 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase 2xl:grid">
             <span>Ticket</span>
             <span>Complaint / owner</span>
             <span>Priority</span>

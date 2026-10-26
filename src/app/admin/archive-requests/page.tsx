@@ -50,7 +50,7 @@ export default async function AdminArchiveRequestsPage() {
     .lean();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="workspace-page space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-wide text-[var(--primary)] uppercase">
@@ -72,7 +72,7 @@ export default async function AdminArchiveRequestsPage() {
         </Link>
       </header>
       {requests.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-16 text-center">
+        <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-16 text-center">
           <Archive className="mx-auto h-8 w-8 text-[var(--muted-foreground)]" />
           <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
             No pending archive requests
@@ -90,7 +90,7 @@ export default async function AdminArchiveRequestsPage() {
             return (
               <article
                 key={String(request._id)}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm"
+                className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
