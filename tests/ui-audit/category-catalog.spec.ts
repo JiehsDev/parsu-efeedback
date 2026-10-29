@@ -32,15 +32,26 @@ test("category classification stays separate from OSAS intake and remains manage
   try {
     const categories = (await (await student.page.request.get("/api/categories")).json())
       .categories;
-    expect(categories.filter((c: any) => c.group === "vpaa")).toHaveLength(3);
-    expect(categories.filter((c: any) => c.group === "vpaf")).toHaveLength(1);
+    expect(categories.map((category: any) => category.name)).toEqual(
+      expect.arrayContaining([
+        "Curriculum & Class Scheduling",
+        "Academic Advising & Consultation",
+        "Library Services & Resources",
+        "Student Payment & Cashier Concerns",
+      ]),
+    );
+    for (const category of categories) {
+      expect(category).not.toHaveProperty("group");
+      expect(category).not.toHaveProperty("defaultOfficeRef");
+    }
     await student.page.goto("/student/complaints/new");
     const picker = student.page.getByRole("combobox", { name: "Category", exact: true });
     for (const width of [1440, 768, 390]) {
       await student.page.setViewportSize({ width, height: 900 });
       await picker.click();
       for (const label of ["OSAS", "VPAA", "VPAF"])
-        await expect(student.page.getByRole("group", { name: label, exact: true })).toHaveCount(1);
+        await expect(student.page.getByRole("group", { name: label, exact: true })).toHaveCount(0);
+      await expect(student.page.getByRole("option")).toHaveCount(categories.length);
       await student.page
         .getByRole("option", { name: "Student Payment & Cashier Concerns", exact: true })
         .click();

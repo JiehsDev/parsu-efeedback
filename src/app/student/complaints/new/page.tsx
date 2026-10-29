@@ -2,7 +2,6 @@
 "use client";
 
 import { clientFetch } from "@/lib/client-fetch";
-import { CATEGORY_GROUP_OPTIONS, type CategoryGroup } from "@/lib/category-groups";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -25,8 +24,6 @@ import {
 import {
   Select,
   SelectContent,
-  SelectGroup,
-  SelectLabel,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -34,7 +31,6 @@ import {
 import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-field";
 
 interface Category {
-  group?: CategoryGroup | null;
   _id: string;
   name: string;
   description: string;
@@ -296,22 +292,11 @@ export default function NewComplaintPage() {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORY_GROUP_OPTIONS.map(({ value, label }) => {
-                      const rows = categories.filter(
-                        (category) => (category.group ?? null) === value,
-                      );
-                      if (!rows.length) return null;
-                      return (
-                        <SelectGroup key={value ?? "other"}>
-                          <SelectLabel>{label}</SelectLabel>
-                          {rows.map((category) => (
-                            <SelectItem key={category._id} value={category._id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      );
-                    })}
+                    {categories.map((category) => (
+                      <SelectItem key={category._id} value={category._id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

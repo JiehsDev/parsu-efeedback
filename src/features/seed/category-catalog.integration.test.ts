@@ -230,7 +230,7 @@ describe("non-destructive complaint category catalog", () => {
     expect(await RoutingRule.countDocuments({ categoryRef: category._id, isActive: true })).toBe(0);
   });
 
-  it("lists every active group for students and routes all restored VPAA/VPAF submissions to OSAS using configured priority and SLA", async () => {
+  it("lists all active categories without internal office groups and routes restored-category submissions to OSAS using configured priority and SLA", async () => {
     const osas = await createTestOffice({ code: "OSAS" });
     const aaOffice = await createTestOffice({ code: "OVPAA" });
     const afOffice = await createTestOffice({ code: "OVPAF" });
@@ -243,9 +243,11 @@ describe("non-destructive complaint category catalog", () => {
     mocks.auth.mockResolvedValue(session(student));
     const list = await (await studentCategories()).json();
     expect(list.categories).toHaveLength(CATEGORY_CATALOG.length - 1);
-    expect(new Set(list.categories.map((c: any) => c.group))).toEqual(
-      new Set(["osas", "vpaa", "vpaf"]),
-    );
+    for (const category of list.categories) {
+      expect(category).not.toHaveProperty("group");
+      expect(category).not.toHaveProperty("defaultOfficeRef");
+      expect(category).not.toHaveProperty("targetOfficeRef");
+    }
     expect(list.categories.find((c: any) => c.name === hidden!.name)).toBeUndefined();
     for (const definition of [...RESTORED_VPAA_CATEGORIES, ...RESTORED_VPAF_CATEGORIES]) {
       const category = (await Category.findOne({ name: definition.name }))!;

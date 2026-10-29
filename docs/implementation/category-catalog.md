@@ -69,9 +69,9 @@ The development seed now calls the same category provisioner, adds the old gener
 - `src/features/seed/categories.ts`: requested catalog, documented aliases, recovered IDs, and preserved generic development categories.
 - `scripts/migrate-complaint-categories.cjs`, `package.json`: preview/apply command, scoped configuration backup, idempotent upserts, and collision checks.
 - `src/features/seed/seed.service.ts`, `scripts/seed-demo.cjs`: non-destructive configuration seed and updated retired demo-seed guidance.
-- `src/features/admin/schemas/category.schema.ts`, `src/app/api/categories/route.ts`: validate classification and expose it with active category names/descriptions. Existing administrator guards remain unchanged.
+- `src/features/admin/schemas/category.schema.ts`, `src/app/api/categories/route.ts`: validate classification for administrator writes; return active categories without internal office-group/ownership metadata from the student-facing endpoint. Existing administrator guards remain unchanged.
 - `src/app/admin/categories/page.tsx`, `new/page.tsx`, `[id]/page.tsx`, `src/components/admin/EditCategoryButton.tsx`: grouped listings, visible descriptions, and classification management using existing components.
-- `src/app/student/complaints/new/page.tsx`, `src/components/ui/select.tsx`: labeled option groups using the existing Radix select; selected descriptions remain visible.
+- `src/app/student/complaints/new/page.tsx`, `src/components/ui/select.tsx`: an alphabetical category list using the existing Radix select, with no office-group labels; selected descriptions remain visible. Administrative grouping remains available.
 - `src/features/seed/category-catalog.integration.test.ts`, `src/features/seed/demo-seed.integration.test.ts`, `src/features/seed/cleanup-non-osas.integration.test.ts`, `src/features/complaints/centralized-osas.integration.test.ts`, and `tests/ui-audit/category-catalog.spec.ts`: migration, preservation, authorization, submission, and UI verification.
 - `docs/implementation/category-catalog.md`, `docs/implementation/controlled-forwarding.md`: migration instructions, recovered configuration provenance, and updated seed documentation.
 
@@ -82,7 +82,7 @@ The development seed now calls the same category provisioner, adds the old gener
 - Targeted automated run: 80 tests passed across 11 files, covering catalog migration/idempotence, identity collisions, inactive-state preservation, customized priorities/SLA, protected records, category management, active student selection, centralized intake, forwarding authorization, receiving-office access, SLA calculation, and administrator scoping.
 - Production build: passed, including TypeScript checking.
 - Targeted ESLint: passed.
-- Production-browser regression: passed against the optimized production build. Verified grouped options, original descriptions, VPAF-category submission into OSAS, administrator group search, category creation/SLA setup, and group editing. Category workspace checks passed at 1440, 768, and 390 pixels.
+- Production-browser regression: passed against the optimized production build. Verified category selection, original descriptions, VPAF-category submission into OSAS, administrator group search, category creation/SLA setup, and group editing. Student-facing category responses and options omit office groups. Category workspace checks passed at 1440, 768, and 390 pixels.
 - Browser assertions deliberately cover category content. An existing student navigation overflow at 768 pixels was observed and left unchanged under the category-only scope.
 - First-run seed initialization now awaits model indexes before configuration upserts. The browser audit passes with this startup safeguard.
 

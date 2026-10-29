@@ -6,7 +6,7 @@ import { Category } from "@/models/Category";
 
 // Any authenticated user can see active categories (needed by the
 // complaint submission form) — unlike /api/admin/categories, this never
-// exposes inactive/draft categories or admin-only fields.
+// exposes inactive/draft categories or internal office-group/ownership metadata.
 export async function GET() {
   const session = await auth();
   if (!session?.user) {
@@ -16,7 +16,7 @@ export async function GET() {
   await connectToDatabase();
 
   const categories = await Category.find({ isActive: true })
-    .select("name description defaultPriority domain group")
+    .select("name description defaultPriority domain")
     .sort({ name: 1 })
     .lean();
 
