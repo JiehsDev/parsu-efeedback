@@ -1,7 +1,7 @@
 // Retired: the authoritative development seed creates accounts/configuration and zero tickets.
 async function seedDemo() {
   throw new Error(
-    "Complaint demo seeding is retired. The authenticated /api/dev/seed reset creates accounts and categories with zero complaints. Existing records are unchanged by this command.",
+    "Complaint demo seeding is retired. The authenticated /api/dev/seed provisions accounts and categories without creating or deleting complaints. Existing records are unchanged by this command.",
   );
 }
 if (require.main === module)

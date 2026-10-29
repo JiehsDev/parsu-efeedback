@@ -1,50 +1,14 @@
 import bcrypt from "bcryptjs";
-import { ForwardingRequest } from "@/models/ForwardingRequest";
-import {
-  Office,
-  User,
-  Category,
-  RoutingRule,
-  SLARule,
-  Complaint,
-  ComplaintTimeline,
-  ComplaintNote,
-  Assignment,
-  ArchiveRequest,
-  InformationRequest,
-  Attachment,
-  Notification,
-  AuditLog,
-} from "@/models";
-import { DEFAULT_SLA_HOURS } from "@/lib/constants";
+import mongoose from "mongoose";
+import { join } from "node:path";
+import { Office, User, Category, Complaint } from "@/models";
 import { SEED_CATEGORIES } from "./categories";
-// Explicit development reset of tickets only. Configuration and account IDs are stable.
+import { migrateComplaintCategories } from "../../../scripts/migrate-complaint-categories.cjs";
+
+// Configuration seeding is non-destructive: never reset existing complaint data.
 export async function seedDevelopmentData() {
-  for (const model of [
-    ForwardingRequest,
-    InformationRequest,
-    ArchiveRequest,
-    Assignment,
-    Attachment,
-    ComplaintNote,
-    ComplaintTimeline,
-  ] as any[])
-    await model.deleteMany({});
-  await Notification.deleteMany({ relatedComplaintRef: { $ne: null } });
-  await Complaint.deleteMany({});
-  await AuditLog.deleteMany({
-    entityType: {
-      $in: [
-        "ForwardingRequest",
-        "Complaint",
-        "Assignment",
-        "ArchiveRequest",
-        "ComplaintNote",
-        "Attachment",
-        "InformationRequest",
-      ],
-    },
-  });
+  // Await unique indexes before upserts; first-run model initialization is asynchronous.
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()));
   const office = await Office.findOneAndUpdate(
     { code: "OSAS" },
     {
@@ -165,37 +129,11 @@ export async function seedDevelopmentData() {
   }
   const head = await User.findOne({ email: "osasdirector@parsu.edu.ph" });
   await Office.updateOne({ _id: office._id }, { $set: { headUserRef: head!._id } });
-  for (const category of SEED_CATEGORIES)
-    await Category.updateOne(
-      { name: category.name },
-      { $setOnInsert: { ...category, isActive: true, defaultOfficeRef: office._id } },
-      { upsert: true },
-    );
-  // Existing official and custom categories are preserved and centralized as well.
-  for (const category of await Category.find()) {
-    await Category.updateOne({ _id: category._id }, { $set: { defaultOfficeRef: office._id } });
-    if (!category.isActive) continue;
-    await RoutingRule.updateOne(
-      { categoryRef: category._id, isActive: true },
-      {
-        $set: { targetOfficeRef: office._id, conditions: {} },
-        $setOnInsert: { categoryRef: category._id, isActive: true },
-      },
-      { upsert: true },
-    );
-    await SLARule.updateOne(
-      { categoryRef: category._id, isActive: true },
-      {
-        $set: { priority: category.defaultPriority, escalateToOfficeRef: null },
-        $setOnInsert: {
-          categoryRef: category._id,
-          isActive: true,
-          ...DEFAULT_SLA_HOURS[category.defaultPriority],
-        },
-      },
-      { upsert: true },
-    );
-  }
+  await migrateComplaintCategories(mongoose.connection.db!, {
+    apply: true,
+    categories: SEED_CATEGORIES,
+    backupDirectory: join(process.cwd(), ".local-backups", "category-catalog"),
+  });
   return {
     office: office._id,
     counts: {

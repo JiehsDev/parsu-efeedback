@@ -373,13 +373,15 @@ describe("centralized OSAS architecture", () => {
     expect(await ComplaintTimeline.countDocuments({ complaintRef: d.complaint._id })).toBe(2);
     expect(await Assignment.countDocuments({ complaintRef: d.complaint._id })).toBe(1);
   });
-  it("seeds stable accounts/categories and zero complaints or dependent demo records", async () => {
-    await setup();
+  it("seeds stable accounts/categories without resetting existing complaints or history", async () => {
+    const existing = await setup();
+    const beforeComplaint = (await Complaint.findById(existing.complaint._id))!.toObject();
     const first = await seedDevelopmentData();
     const head = await User.findOne({ email: "osasdirector@parsu.edu.ph" });
     const second = await seedDevelopmentData();
     expect(second.counts).toEqual(first.counts);
-    expect(second.counts.complaints).toBe(0);
+    expect(second.counts.complaints).toBe(1);
+    expect((await Complaint.findById(existing.complaint._id))!.toObject()).toEqual(beforeComplaint);
     expect(String((await User.findOne({ email: "osasdirector@parsu.edu.ph" }))!._id)).toBe(
       String(head!._id),
     );
@@ -388,9 +390,11 @@ describe("centralized OSAS architecture", () => {
     expect(await ArchiveRequest.countDocuments()).toBe(0);
     const osas = await Office.findOne({ code: "OSAS" });
     expect(
-      await mongoose.connection
-        .db!.collection("routing_rules")
-        .countDocuments({ isActive: true, targetOfficeRef: { $ne: osas!._id } }),
+      await mongoose.connection.db!.collection("routing_rules").countDocuments({
+        isActive: true,
+        targetOfficeRef: { $ne: osas!._id },
+        categoryRef: { $ne: existing.category._id },
+      }),
     ).toBe(0);
   });
 });

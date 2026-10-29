@@ -2,6 +2,7 @@
 // BR-021..BR-024.
 
 import { Schema, model, models, Model, type InferSchemaType } from "mongoose";
+import { CATEGORY_GROUPS } from "@/lib/category-groups";
 import { PRIORITY_LEVELS } from "@/lib/constants";
 import { refIntegrityPlugin } from "@/lib/mongoose-ref-integrity";
 
@@ -23,6 +24,9 @@ const categorySchema = new Schema(
       default: "other",
     },
     description: { type: String, default: "" },
+
+    // Classification only; never used by intake, forwarding, or access control.
+    group: { type: String, enum: CATEGORY_GROUPS, default: null },
 
     // Mirrors of the category's routing rule / SLA rule, kept in sync by
     // cascading writes from those endpoints (see

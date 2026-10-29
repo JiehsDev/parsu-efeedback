@@ -1,6 +1,7 @@
 // src/components/admin/EditCategoryButton.tsx
 "use client";
 
+import { CATEGORY_GROUP_OPTIONS, type CategoryGroup } from "@/lib/category-groups";
 import { clientFetch } from "@/lib/client-fetch";
 
 import { useState } from "react";
@@ -15,6 +16,7 @@ interface EditableCategory {
   name: string;
   description: string;
   domain?: string;
+  group?: CategoryGroup | null;
 }
 
 export function EditCategoryButton({ category }: { category: EditableCategory }) {
@@ -27,6 +29,7 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
     name: category.name,
     description: category.description,
     domain: category.domain ?? "other",
+    group: category.group ?? "",
   });
 
   async function handleSubmit(event: React.FormEvent) {
@@ -37,7 +40,7 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
     const res = await clientFetch(`/api/admin/categories/${category._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, group: form.group || null }),
     });
     const data = await res.json().catch(() => ({}));
     setIsSubmitting(false);
@@ -81,6 +84,27 @@ export function EditCategoryButton({ category }: { category: EditableCategory })
               />
             </FormField>
 
+            <FormField label="Category group">
+              <select
+                className={inputClass}
+                value={form.group}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    group: event.target.value as CategoryGroup | "",
+                  }))
+                }
+              >
+                {CATEGORY_GROUP_OPTIONS.map((option) => (
+                  <option key={option.value ?? "other"} value={option.value ?? ""}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Groups classify services. All complaints enter OSAS intake.
+            </p>
             <FormField label="Service domain">
               <select
                 className={inputClass}

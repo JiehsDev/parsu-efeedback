@@ -1,3 +1,4 @@
+import { categoryGroupLabel } from "@/lib/category-groups";
 // src/app/admin/categories/[id]/page.tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -93,6 +94,7 @@ export default async function AdminCategoryDetailPage({
               name: c.name,
               description: c.description,
               domain: c.domain ?? "other",
+              group: c.group ?? null,
             }}
           />
           <CategoryStatusToggle
@@ -112,6 +114,10 @@ export default async function AdminCategoryDetailPage({
             <p className="text-sm font-semibold text-[var(--foreground)]">Details</p>
           </div>
           <dl className="mt-4 space-y-4 text-sm">
+            <div>
+              <dt className="text-xs text-[var(--muted-foreground)]">Category group</dt>
+              <dd className="mt-1.5 text-[var(--foreground)]">{categoryGroupLabel(c.group)}</dd>
+            </div>
             <div>
               <dt className="text-xs text-[var(--muted-foreground)]">Description</dt>
               <dd className="mt-1.5 text-[var(--foreground)]">{c.description || "—"}</dd>

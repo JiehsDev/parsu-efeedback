@@ -8,6 +8,17 @@ import { FormFieldContext } from "./form-field-context";
 import { cn } from "@/lib/utils";
 
 export const SelectGroup = SelectPrimitive.Group;
+export function SelectLabel({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Label>) {
+  return (
+    <SelectPrimitive.Label
+      className={cn("px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)]", className)}
+      {...props}
+    />
+  );
+}
 export const SelectValue = SelectPrimitive.Value;
 
 // Radix disallows an empty-string item value (it's reserved internally to

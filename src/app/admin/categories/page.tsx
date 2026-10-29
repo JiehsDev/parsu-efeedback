@@ -1,6 +1,11 @@
 // src/app/admin/categories/page.tsx
 "use client";
 
+import {
+  CATEGORY_GROUP_OPTIONS,
+  categoryGroupLabel,
+  type CategoryGroup,
+} from "@/lib/category-groups";
 import { clientFetch } from "@/lib/client-fetch";
 
 import { useEffect, useMemo, useState } from "react";
@@ -11,6 +16,7 @@ import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { ListRowsSkeleton } from "@/components/shared/Skeleton";
 
 interface CategoryRow {
+  group?: CategoryGroup | null;
   _id: string;
   name: string;
   description: string;
@@ -63,12 +69,14 @@ export default function AdminCategoriesPage() {
   const visibleCategories = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return categories;
-    return categories.filter((c) => c.name.toLowerCase().includes(term));
+    return categories.filter((c) =>
+      `${c.name} ${c.description} ${categoryGroupLabel(c.group)}`.toLowerCase().includes(term),
+    );
   }, [categories, search]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/15 text-[var(--primary)]">
             <Tag className="h-5 w-5" />
@@ -87,7 +95,8 @@ export default function AdminCategoriesPage() {
       <div className="flex items-start gap-2.5 rounded-lg border border-[var(--qa-amber-strong)]/30 bg-[var(--qa-amber-soft)] px-4 py-3 text-sm text-[var(--qa-amber-strong)]">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          Use categories to help students describe their concerns. Add or update a category below.
+          Category groups classify services; they do not assign or forward complaints. All new
+          complaints enter OSAS intake.
         </span>
       </div>
 
@@ -115,46 +124,65 @@ export default function AdminCategoriesPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
-          <ul className="divide-y divide-[var(--border)]">
-            {visibleCategories.map((c) => (
-              <li
-                key={c._id}
-                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
-              >
-                <Link
-                  href={`/admin/categories/${c._id}`}
-                  className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-[var(--foreground)]">
-                      {c.name}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-[var(--muted-foreground)] capitalize">
-                      {c.defaultPriority} priority
-                    </span>
+          {CATEGORY_GROUP_OPTIONS.map(({ value, label }) => {
+            const rows = visibleCategories.filter((category) => (category.group ?? null) === value);
+            if (!rows.length) return null;
+            return (
+              <section key={value ?? "other"}>
+                <h2 className="border-b border-[var(--border)] bg-[var(--muted)]/40 px-5 py-2 text-sm font-semibold">
+                  {label}{" "}
+                  <span className="ml-1 text-xs font-normal text-[var(--muted-foreground)]">
+                    ({rows.length})
                   </span>
-                  <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
-                </Link>
-                <div className="flex items-center gap-2 sm:shrink-0">
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                      c.isActive
-                        ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
-                        : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                    }`}
-                  >
-                    {c.isActive ? "Active" : "Inactive"}
-                  </span>
-                  <button
-                    onClick={() => toggleActive(c)}
-                    className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
-                  >
-                    {c.isActive ? "Deactivate" : "Activate"}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </h2>
+                <ul className="divide-y divide-[var(--border)]">
+                  {rows.map((c) => (
+                    <li
+                      key={c._id}
+                      className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4"
+                    >
+                      <Link
+                        href={`/admin/categories/${c._id}`}
+                        className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl transition-colors hover:bg-[var(--muted)]/40"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium text-[var(--foreground)]">
+                            {c.name}
+                          </span>
+                          {c.description && (
+                            <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                              {c.description}
+                            </span>
+                          )}
+                          <span className="mt-0.5 block text-xs text-[var(--muted-foreground)] capitalize">
+                            {c.defaultPriority} priority
+                          </span>
+                        </span>
+                        <ChevronRight className="hidden h-4 w-4 shrink-0 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+                      </Link>
+                      <div className="flex items-center gap-2 sm:shrink-0">
+                        <span
+                          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                            c.isActive
+                              ? "bg-[var(--qa-success-soft)] text-[var(--qa-success-strong)]"
+                              : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                          }`}
+                        >
+                          {c.isActive ? "Active" : "Inactive"}
+                        </span>
+                        <button
+                          onClick={() => toggleActive(c)}
+                          className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
+                        >
+                          {c.isActive ? "Deactivate" : "Activate"}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
         </div>
       )}
 

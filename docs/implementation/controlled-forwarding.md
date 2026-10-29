@@ -30,7 +30,7 @@ Staff details show Request Forwarding with destination and reason. Head details 
 
 ## Seed and development migration
 
-The authenticated `/api/dev/seed` remains an explicit ticket reset: it creates accounts, offices, categories, and rules with **zero complaints** and zero forwarding requests. It preserves existing/custom categories and adds missing academic, administrative, finance, ICT, facilities, and other classifications. All categories initially route to OSAS. The old additive `seed:demo` ticket generator is retired and refuses to insert tickets.
+The authenticated `/api/dev/seed` provisions development accounts, offices, categories, and rules without deleting or generating complaints, forwarding requests, or history. Fresh environments begin with zero complaints. It preserves existing/custom categories, priorities, SLA settings, and inactive category states. All seeded categories initially route to OSAS. For category-only updates on existing installations, use `npm run migrate:categories` and review [the category migration guide](category-catalog.md). The old additive `seed:demo` ticket generator is retired and refuses to insert tickets.
 
 `node scripts/migrate-forwarding.cjs` previews changes. `--apply` writes backups under `.local-backups`, centralizes active legacy complaints and category routes, clears invalid legacy assignments, links existing receiving accounts/offices, installs the pending-request constraint, and increments VP token versions once. It never resets tickets, removes history, fabricates approved forwarding, or moves formally forwarded cases back to OSAS. Closed/archived legacy records remain historical; Main Administrator can still read them. The older centralization migration now skips formally forwarded cases too.
 

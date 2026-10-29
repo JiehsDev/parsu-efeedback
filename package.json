@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "seed:demo": "node scripts/seed-demo.cjs",
-    "test:ui-audit": "node scripts/run-ui-audit.cjs"
+    "test:ui-audit": "node scripts/run-ui-audit.cjs",
+    "migrate:categories": "node scripts/migrate-complaint-categories.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",

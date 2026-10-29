@@ -1,5 +1,6 @@
 // src/features/admin/schemas/category.schema.ts
 import { z } from "zod";
+import { CATEGORY_GROUPS } from "@/lib/category-groups";
 import { PRIORITY_LEVELS } from "@/lib/constants";
 
 export const createCategorySchema = z.object({
@@ -18,6 +19,7 @@ export const createCategorySchema = z.object({
     .optional()
     .default("other"),
   description: z.string().trim().optional().default(""),
+  group: z.enum(CATEGORY_GROUPS).nullable().optional().default(null),
   defaultOfficeRef: z.string().min(1).optional(),
   defaultPriority: z.enum(PRIORITY_LEVELS),
   isActive: z.boolean().optional().default(true),
@@ -26,6 +28,7 @@ export const createCategorySchema = z.object({
 export const updateCategorySchema = createCategorySchema
   .extend({
     description: z.string().trim().optional(),
+    group: createCategorySchema.shape.group.removeDefault().optional(),
     domain: createCategorySchema.shape.domain.removeDefault().optional(),
     isActive: z.boolean().optional(),
   })

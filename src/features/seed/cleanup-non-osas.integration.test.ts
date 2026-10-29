@@ -5,6 +5,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { connectTestDb, disconnectTestDb, clearTestDb } from "@/test/setup-db";
+import { SEED_CATEGORIES } from "./categories";
 import { seedDevelopmentData } from "./seed.service";
 const { cleanupNonOsas } = require("../../../scripts/cleanup-non-osas.cjs");
 beforeAll(connectTestDb);
@@ -27,7 +28,14 @@ it("removes unrelated fixtures and logins while preserving OSAS data and histori
     { _id: historicalCategory, name: "Academic history", domain: "academic", isActive: true },
   ]);
   await db.collection("users").insertMany([
-    { _id: unusedStaff, email: "unused@example.test", employeeOrStudentId: "UNUSED", role: "office_staff", officeRef: foreignOffice, isActive: true },
+    {
+      _id: unusedStaff,
+      email: "unused@example.test",
+      employeeOrStudentId: "UNUSED",
+      role: "office_staff",
+      officeRef: foreignOffice,
+      isActive: true,
+    },
     {
       _id: historicalStaff,
       email: "historical@example.test",
@@ -67,7 +75,9 @@ it("removes unrelated fixtures and logins while preserving OSAS data and histori
     expect((await db.collection("categories").findOne({ _id: historicalCategory }))?.isActive).toBe(
       false,
     );
-    expect(await db.collection("categories").countDocuments({ isActive: true })).toBe(5);
+    expect(await db.collection("categories").countDocuments({ isActive: true })).toBe(
+      SEED_CATEGORIES.length,
+    );
     expect((await db.collection("users").findOne({ _id: historicalStaff }))?.isActive).toBe(false);
     expect(await db.collection("users").findOne({ _id: unusedStaff })).toBeNull();
     expect(

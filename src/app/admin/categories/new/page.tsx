@@ -1,5 +1,6 @@
 "use client";
 
+import { CATEGORY_GROUP_OPTIONS } from "@/lib/category-groups";
 import { clientFetch } from "@/lib/client-fetch";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,6 +8,7 @@ export default function NewCategoryPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [group, setGroup] = useState("osas");
   const [domain, setDomain] = useState("other");
   const [priority, setPriority] = useState("medium");
   const [error, setError] = useState("");
@@ -35,6 +37,7 @@ export default function NewCategoryPage() {
           name,
           description,
           domain,
+          group: group || null,
           defaultPriority: priority,
         });
         id = data.category._id as string;
@@ -91,6 +94,24 @@ export default function NewCategoryPage() {
           className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] p-2"
         />
       </label>
+      <label className="block">
+        Category group
+        <select
+          value={group}
+          disabled={Boolean(categoryId)}
+          onChange={(event) => setGroup(event.target.value)}
+          className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] p-2"
+        >
+          {CATEGORY_GROUP_OPTIONS.map((option) => (
+            <option key={option.value ?? "other"} value={option.value ?? ""}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="text-xs text-[var(--muted-foreground)]">
+        Groups classify services. All complaints enter OSAS intake.
+      </p>
       <label className="block">
         Service domain
         <select
