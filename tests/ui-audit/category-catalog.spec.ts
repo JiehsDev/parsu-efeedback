@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { VPAA_CATEGORIES, VPAF_CATEGORIES } from "../../src/features/seed/categories";
 
 test("category classification stays separate from OSAS intake and remains manageable", async ({
   browser,
@@ -37,7 +38,8 @@ test("category classification stays separate from OSAS intake and remains manage
         "Curriculum & Class Scheduling",
         "Academic Advising & Consultation",
         "Library Services & Resources",
-        "Student Payment & Cashier Concerns",
+        ...VPAA_CATEGORIES.map((category) => category.name),
+        ...VPAF_CATEGORIES.map((category) => category.name),
       ]),
     );
     for (const category of categories) {
@@ -53,13 +55,16 @@ test("category classification stays separate from OSAS intake and remains manage
         await expect(student.page.getByRole("group", { name: label, exact: true })).toHaveCount(0);
       await expect(student.page.getByRole("option")).toHaveCount(categories.length);
       await student.page
-        .getByRole("option", { name: "Student Payment & Cashier Concerns", exact: true })
+        .getByRole("option", { name: "Financial and Payment Concerns", exact: true })
         .click();
-      await expect(picker).toContainText("Student Payment & Cashier Concerns");
+      await expect(picker).toContainText("Financial and Payment Concerns");
       await expect(
-        student.page.getByText("Tuition payment posting delays, fee assessment discrepancies", {
-          exact: true,
-        }),
+        student.page.getByText(
+          "University fees, payment posting, cashier services, and financial transactions.",
+          {
+            exact: true,
+          },
+        ),
       ).toBeVisible();
       await categoryContentFits(student.page);
       await student.page.screenshot({

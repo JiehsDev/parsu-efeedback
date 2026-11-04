@@ -115,8 +115,9 @@ export const RESTORED_VPAA_CATEGORIES = [
 ] as const;
 export const RESTORED_VPAF_CATEGORIES = [
   {
-    name: "Student Payment & Cashier Concerns",
-    description: "Tuition payment posting delays, fee assessment discrepancies",
+    name: "Financial and Payment Concerns",
+    description: "University fees, payment posting, cashier services, and financial transactions.",
+    legacyNames: ["Student Payment & Cashier Concerns"],
     domain: "administrative",
     group: "vpaf",
     defaultPriority: "medium",
@@ -125,10 +126,89 @@ export const RESTORED_VPAF_CATEGORIES = [
   },
 ] as const;
 
+// Requested academic and institutional service classifications. New records use
+// the existing medium priority and DEFAULT_SLA_HOURS; configured rules survive.
+export const VPAA_CATEGORIES = [
+  {
+    name: "Teaching and Instruction Concerns",
+    description: "Teaching delivery, classroom instruction, and learning activities.",
+  },
+  {
+    name: "Faculty-Related Academic Concerns",
+    description: "Faculty academic responsibilities, classroom interactions, and course guidance.",
+  },
+  {
+    name: "Academic Policies and Procedures",
+    description: "Academic requirements, policies, and the application of academic procedures.",
+  },
+  {
+    name: "Grades and Academic Assessment",
+    description: "Grading, examinations, assessment methods, and academic evaluation.",
+    legacyNames: ["Grade Concern"],
+    // Explicitly requested restoration; other disabled categories stay disabled.
+    restoreActive: true,
+  },
+  {
+    name: "Curriculum and Course Concerns",
+    description: "Curriculum content, course requirements, prerequisites, and course offerings.",
+  },
+  {
+    name: "Academic Scheduling",
+    description: "Class timetables, examination schedules, and academic scheduling conflicts.",
+  },
+  {
+    name: "Academic Support Services",
+    description: "Academic assistance, learning support, and access to academic support services.",
+  },
+].map((category) => ({
+  ...category,
+  domain: "academic",
+  group: "vpaa",
+  defaultPriority: "medium",
+}));
+
+export const VPAF_CATEGORIES = [
+  {
+    name: "Campus Facilities and Maintenance",
+    description: "Campus facility upkeep, maintenance requests, and repair services.",
+    domain: "facilities",
+  },
+  ...RESTORED_VPAF_CATEGORIES,
+  {
+    name: "Administrative Services",
+    description:
+      "University administrative transactions, service procedures, and processing concerns.",
+    domain: "administrative",
+  },
+  {
+    name: "Campus Safety and Security",
+    description:
+      "Institutional security services, campus access controls, and safety infrastructure. For student safety assistance and incidents, use Campus Safety & Security.",
+    domain: "administrative",
+  },
+  {
+    name: "Buildings, Classrooms, and Equipment",
+    description: "Building and classroom conditions, room facilities, and university equipment.",
+    domain: "facilities",
+  },
+  {
+    name: "Sanitation and Campus Environment",
+    description: "Campus cleanliness, waste management, sanitation, and environmental conditions.",
+    domain: "facilities",
+  },
+  {
+    name: "University Infrastructure and Utilities",
+    description:
+      "University infrastructure, electricity, water supply, and campus utility services.",
+    domain: "facilities",
+  },
+].map((category) => ({ ...category, group: "vpaf", defaultPriority: "medium" }));
+
 export const CATEGORY_CATALOG = [
   ...OSAS_CATEGORIES,
   ...RESTORED_VPAA_CATEGORIES,
-  ...RESTORED_VPAF_CATEGORIES,
+  ...VPAA_CATEGORIES,
+  ...VPAF_CATEGORIES,
   // Existing OSAS categories remain available; they are not silently retired.
   {
     name: "Campus Safety & Security",

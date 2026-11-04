@@ -11,7 +11,7 @@ const { DEFAULT_SLA_HOURS } = require("../src/lib/constants.ts");
 
 /**
  * @param {import('mongodb').Db | import('mongoose').mongo.Db} db
- * @param {{ apply?: boolean, backupDirectory?: string, categories?: readonly {name:string, description:string, domain:string, defaultPriority:string, group?:string, legacyNames?:readonly string[], historicalId?:string, historicalSlaId?:string}[] }} [options]
+ * @param {{ apply?: boolean, backupDirectory?: string, categories?: readonly {name:string, description:string, domain:string, defaultPriority:string, group?:string, legacyNames?:readonly string[], restoreActive?:boolean, historicalId?:string, historicalSlaId?:string}[] }} [options]
  */
 async function migrateComplaintCategories(
   db,
@@ -76,18 +76,24 @@ async function migrateComplaintCategories(
         `Historical SLA ID for ${definition.name} is already in use. No writes were attempted.`,
       );
     const changes = {};
+    // Restore only the legacy identity explicitly requested by this catalog.
+    // A later administrator deactivation of the canonical category is respected.
+    const restoreActive = Boolean(
+      existing && definition.restoreActive && existing.name !== definition.name,
+    );
     if (existing) {
       if (existing.name !== definition.name) changes.name = definition.name;
-      // Keep configured descriptions unless this is an explicitly renamed OSAS
-      // service, whose expanded scope needs the new requested description.
+      // Keep configured descriptions unless an explicitly renamed service has
+      // an expanded requested scope.
       if (!existing.description || existing.name !== definition.name)
         changes.description = definition.description;
       if (!existing.domain) changes.domain = definition.domain;
       if (definition.group && existing.group !== definition.group) changes.group = definition.group;
       if (!same(existing.defaultOfficeRef, osas._id)) changes.defaultOfficeRef = osas._id;
-      if (!existing.isActive) summary.inactivePreserved.push(definition.name);
+      if (!existing.isActive && !restoreActive) summary.inactivePreserved.push(definition.name);
+      if (!existing.isActive && restoreActive) changes.isActive = true;
     }
-    const enabled = existing ? existing.isActive === true : true;
+    const enabled = existing ? existing.isActive === true || restoreActive : true;
     const createRoute = enabled && !routes.length;
     const updateRoute = enabled && route && !same(route.targetOfficeRef, osas._id);
     const createSla = enabled && !rules.length;
@@ -115,6 +121,7 @@ async function migrateComplaintCategories(
       existing,
       id,
       changes,
+      restoreActive,
       priority,
       createRoute,
       updateRoute,
@@ -189,10 +196,10 @@ async function migrateComplaintCategories(
           `Category catalog changed concurrently. Rerun the migration for ${definition.name}.`,
         );
     } else if (Object.keys(plan.changes).length) {
-      await categoryCollection.updateOne(
-        { _id: id },
-        { $set: { ...plan.changes, updatedAt: now } },
-      );
+      // Publish a restored legacy category only after configuration is ready.
+      const changes = { ...plan.changes };
+      if (plan.restoreActive) delete changes.isActive;
+      await categoryCollection.updateOne({ _id: id }, { $set: { ...changes, updatedAt: now } });
     }
     if (plan.createRoute)
       await routeCollection.updateOne(
@@ -233,7 +240,12 @@ async function migrateComplaintCategories(
         },
         { upsert: true },
       );
-    if (!existing)
+    if (
+      !existing ||
+      (plan.restoreActive &&
+        (plan.createRoute || plan.route) &&
+        (plan.createSla || (await slaCollection.findOne({ categoryRef: id, isActive: true }))))
+    )
       await categoryCollection.updateOne(
         { _id: id, isActive: false },
         { $set: { isActive: true } },

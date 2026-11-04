@@ -31,6 +31,8 @@ import { Category, RoutingRule, SLARule, Complaint, Office } from "@/models";
 import {
   CATEGORY_CATALOG,
   OSAS_CATEGORIES,
+  VPAA_CATEGORIES,
+  VPAF_CATEGORIES,
   RESTORED_VPAA_CATEGORIES,
   RESTORED_VPAF_CATEGORIES,
 } from "./categories";
@@ -39,6 +41,7 @@ import { POST as submitComplaint } from "@/app/api/complaints/route";
 import { GET as adminCategories, POST as createCategory } from "@/app/api/admin/categories/route";
 import { PATCH as updateCategory } from "@/app/api/admin/categories/[id]/route";
 import { canAccessComplaint } from "@/lib/complaint-access";
+import { getCategoryBreakdown } from "@/features/analytics/services/analytics.service";
 const { migrateComplaintCategories } = require("../../../scripts/migrate-complaint-categories.cjs");
 let backupDirectory: string;
 beforeAll(async () => {
@@ -81,14 +84,111 @@ const snapshot = async (names: string[]) =>
   );
 
 describe("non-destructive complaint category catalog", () => {
+  it("restores a legacy grade record with missing configurations using its existing priority and the shared SLA defaults", async () => {
+    const osas = await createTestOffice({ code: "OSAS" });
+    const grade = await createTestCategory({
+      name: "Grade Concern",
+      isActive: false,
+      defaultPriority: "low",
+      defaultOfficeRef: osas._id,
+    });
+    await migrate();
+    expect(await Category.findById(grade._id)).toMatchObject({
+      name: "Grades and Academic Assessment",
+      isActive: true,
+      defaultPriority: "low",
+      group: "vpaa",
+    });
+    expect(await RoutingRule.findOne({ categoryRef: grade._id })).toMatchObject({
+      targetOfficeRef: osas._id,
+      isActive: true,
+    });
+    expect(await SLARule.findOne({ categoryRef: grade._id })).toMatchObject({
+      priority: "low",
+      responseHours: 72,
+      resolutionHours: 72,
+      isActive: true,
+    });
+  });
+
+  it("reuses payment and grade records, restores only the requested grade category, and preserves OSAS records, complaint filters, and analytics", async () => {
+    const osas = await createTestOffice({ code: "OSAS" });
+    await migrate();
+    const osasRows = JSON.stringify(await Category.find({ group: "osas" }).sort({ _id: 1 }).lean());
+    const payment = (await Category.findOne({ name: "Financial and Payment Concerns" }))!;
+    await Category.updateOne(
+      { _id: payment._id },
+      { name: "Student Payment & Cashier Concerns", defaultPriority: "high" },
+    );
+    await SLARule.updateOne(
+      { categoryRef: payment._id },
+      { priority: "high", responseHours: 9, resolutionHours: 37 },
+    );
+    const grade = (await Category.findOne({ name: "Grades and Academic Assessment" }))!;
+    await Category.updateOne({ _id: grade._id }, { name: "Grade Concern", isActive: false });
+    const unrelated = await createTestCategory({
+      name: "Disabled custom category",
+      isActive: false,
+      defaultOfficeRef: osas._id,
+    });
+    const student = await createTestUser();
+    await Complaint.create({
+      ticketNumber: "EXISTING-PAYMENT",
+      studentRef: student._id,
+      categoryRef: payment._id,
+      assignedOfficeRef: osas._id,
+      title: "Existing payment concern",
+      description: "Preserve this historical complaint unchanged.",
+      priority: "low",
+      status: "submitted",
+    });
+    const before = await snapshot(["complaints", "sla_rules", "routing_rules"]);
+    await migrate();
+    expect(await snapshot(["complaints", "sla_rules", "routing_rules"])).toEqual(before);
+    expect(JSON.stringify(await Category.find({ group: "osas" }).sort({ _id: 1 }).lean())).toBe(
+      osasRows,
+    );
+    expect(await Category.findById(payment._id)).toMatchObject({
+      name: "Financial and Payment Concerns",
+      defaultPriority: "high",
+      group: "vpaf",
+    });
+    expect(await Category.findById(grade._id)).toMatchObject({
+      name: "Grades and Academic Assessment",
+      isActive: true,
+      group: "vpaa",
+    });
+    expect((await Category.findById(unrelated._id))!.isActive).toBe(false);
+    expect(await Complaint.countDocuments({ categoryRef: payment._id })).toBe(1);
+    expect(await getCategoryBreakdown({ categoryRef: payment._id })).toEqual([
+      { category: "Financial and Payment Concerns", volume: 1 },
+    ]);
+    for (const [definitions, group] of [
+      [VPAA_CATEGORIES, "vpaa"],
+      [VPAF_CATEGORIES, "vpaf"],
+    ] as const) {
+      expect(definitions).toHaveLength(7);
+      expect(
+        await Category.countDocuments({
+          name: { $in: definitions.map((c) => c.name) },
+          group,
+          isActive: true,
+        }),
+      ).toBe(7);
+    }
+    await Category.updateOne({ _id: grade._id }, { isActive: false });
+    await migrate();
+    expect((await Category.findById(grade._id))!.isActive).toBe(false);
+  });
+
   it("previews without writes and repeatedly provisions the catalog with original recovered IDs and OSAS-only routing", async () => {
     const osas = await createTestOffice({ code: "OSAS" });
-    expect((await migrate(false)).created).toBe(16);
+    expect((await migrate(false)).created).toBe(CATEGORY_CATALOG.length);
     expect(await Category.countDocuments()).toBe(0);
     const first = await migrate();
-    expect(first.created).toBe(16);
+    expect(first.created).toBe(CATEGORY_CATALOG.length);
     expect(first.backupFile).toBeTruthy();
-    expect(await Category.countDocuments({ isActive: true })).toBe(16);
+    expect(await Category.countDocuments({ isActive: true })).toBe(CATEGORY_CATALOG.length);
     expect(
       await Category.countDocuments({
         name: { $in: OSAS_CATEGORIES.map((c) => c.name) },
@@ -96,7 +196,7 @@ describe("non-destructive complaint category catalog", () => {
       }),
     ).toBe(10);
     expect(await RoutingRule.countDocuments({ targetOfficeRef: osas._id, isActive: true })).toBe(
-      16,
+      CATEGORY_CATALOG.length,
     );
     expect(
       await SLARule.countDocuments({
@@ -104,7 +204,7 @@ describe("non-destructive complaint category catalog", () => {
         resolutionHours: 72,
         escalateToOfficeRef: null,
       }),
-    ).toBe(16);
+    ).toBe(CATEGORY_CATALOG.length);
     for (const definition of [...RESTORED_VPAA_CATEGORIES, ...RESTORED_VPAF_CATEGORIES]) {
       const category = await Category.findOne({ name: definition.name });
       expect(String(category!._id)).toBe(definition.historicalId);
@@ -230,7 +330,7 @@ describe("non-destructive complaint category catalog", () => {
     expect(await RoutingRule.countDocuments({ categoryRef: category._id, isActive: true })).toBe(0);
   });
 
-  it("lists all active categories without internal office groups and routes restored-category submissions to OSAS using configured priority and SLA", async () => {
+  it("lists all active categories without internal office groups and routes all fourteen requested-category submissions to OSAS using configured priority and SLA", async () => {
     const osas = await createTestOffice({ code: "OSAS" });
     const aaOffice = await createTestOffice({ code: "OVPAA" });
     const afOffice = await createTestOffice({ code: "OVPAF" });
@@ -249,7 +349,7 @@ describe("non-destructive complaint category catalog", () => {
       expect(category).not.toHaveProperty("targetOfficeRef");
     }
     expect(list.categories.find((c: any) => c.name === hidden!.name)).toBeUndefined();
-    for (const definition of [...RESTORED_VPAA_CATEGORIES, ...RESTORED_VPAF_CATEGORIES]) {
+    for (const definition of [...VPAA_CATEGORIES, ...VPAF_CATEGORIES]) {
       const category = (await Category.findOne({ name: definition.name }))!;
       await SLARule.updateOne(
         { categoryRef: category._id },
