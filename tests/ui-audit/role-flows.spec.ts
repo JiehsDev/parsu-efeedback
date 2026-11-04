@@ -170,7 +170,11 @@ for (const destination of ["vpaa", "vpaf"] as const) {
       expect(result.complaints).toHaveLength(0);
       await page.goto(`/admin/complaints?q=${encodeURIComponent(before.title)}`);
       await expect(page.getByText(before.title, { exact: true })).toHaveCount(0);
-      expect((await page.goto(`/admin/complaints/${id}`))?.status()).toBe(404);
+      // Protected page routes redirect unauthorized roles to their own
+      // workspace (HTTP 200); the complaint API above is the access-control
+      // boundary and must deny access without returning complaint details.
+      await page.goto(`/admin/complaints/${id}`);
+      await expect(page.getByText(before.title, { exact: true })).toHaveCount(0);
     }
     async function staffRequest() {
       await handler.goto(`/staff/complaints/${id}`);
@@ -557,6 +561,15 @@ test("student withdrawal, handler release, head review and archive approval", as
     .getByRole("alertdialog")
     .getByRole("button", { name: "Change Assignee", exact: true })
     .click();
+  const handlerUser = (await (await handler.request.get("/api/me")).json()).user;
+  await expect
+    .poll(
+      async () =>
+        (await (await handler.request.get(`/api/complaints/${id}`)).json()).complaint
+          .assignedStaffRef,
+      { timeout: 60000 },
+    )
+    .toBe(handlerUser._id);
   await handler.goto(`/staff/complaints/${id}`);
   await handler.getByRole("button", { name: "Request Archive", exact: true }).click();
   await handler

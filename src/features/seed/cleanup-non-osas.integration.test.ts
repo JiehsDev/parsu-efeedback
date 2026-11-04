@@ -63,7 +63,9 @@ it("removes unrelated fixtures and logins while preserving OSAS data and histori
   const backupDirectory = mkdtempSync(join(tmpdir(), "osas-cleanup-"));
   try {
     const result = await cleanupNonOsas(db, { apply: true, backupDirectory });
-    expect(result.staffDeleted).toBe(1);
+    // Development seeding also provisions one receiving-office staff account
+    // for VPAA and VPAF, in addition to the unused fixture created above.
+    expect(result.staffDeleted).toBe(3);
     expect(result.staffDisabledForHistory).toBe(1);
     expect(readFileSync(result.backupFile, "utf8")).toContain("DEMO-OSAS-9999");
     expect(await db.collection("complaints").findOne({ _id: demo })).toBeNull();

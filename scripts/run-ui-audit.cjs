@@ -7,6 +7,9 @@ const path = require("node:path");
 
 async function run() {
   const useBuild = process.env.UI_AUDIT_USE_BUILD === "1";
+  const minDisk = process.env.MONGO_TEST_MIN_DISK_MB ?? "128";
+  if (!/^\d+$/.test(minDisk) || Number(minDisk) < 64)
+    throw new Error("MONGO_TEST_MIN_DISK_MB must be at least 64.");
   if (useBuild && !fs.existsSync(".next/BUILD_ID"))
     throw new Error("Run npm run build before auditing the production build.");
   // Refuse an occupied port before contacting any seed endpoint.
@@ -22,7 +25,7 @@ async function run() {
         dbName: "ui_audit",
         args: [
           "--setParameter",
-          "indexBuildMinAvailableDiskSpaceMB=128",
+          `indexBuildMinAvailableDiskSpaceMB=${minDisk}`,
           "--oplogSize",
           "16",
           "--wiredTigerCacheSizeGB",

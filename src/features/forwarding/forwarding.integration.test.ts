@@ -43,7 +43,14 @@ let mongo: MongoMemoryReplSet;
 beforeAll(async () => {
   mongo = await MongoMemoryReplSet.create({
     replSet: { count: 1 },
-    instanceOpts: [{ args: ["--setParameter", "indexBuildMinAvailableDiskSpaceMB=128"] }],
+    instanceOpts: [
+      {
+        args: [
+          "--setParameter",
+          `indexBuildMinAvailableDiskSpaceMB=${process.env.MONGO_TEST_MIN_DISK_MB ?? "128"}`,
+        ],
+      },
+    ],
   });
   await mongoose.connect(mongo.getUri());
   await Promise.all(Object.values(mongoose.models).map((model) => model.init()));
