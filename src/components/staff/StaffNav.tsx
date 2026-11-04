@@ -23,7 +23,12 @@ import {
 
 const NAV_ITEMS = [
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { href: "/staff/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
+  {
+    href: "/staff/forwarding-requests",
+    label: "Forwarding Requests",
+    icon: Inbox,
+    requiresOsas: true,
+  },
   { href: "/staff/complaints", label: "Queue", icon: Inbox },
   { href: "/staff/sla", label: "SLA deadlines", icon: Timer },
   { href: "/staff/reports", label: "Reports", icon: FileBarChart },
@@ -41,9 +46,13 @@ function getInitials(name: string) {
 export function StaffNav({
   userName,
   isOfficeHead = false,
+  officeLabel = "OSAS",
+  showForwarding = true,
 }: {
   userName: string;
   isOfficeHead?: boolean;
+  officeLabel?: string;
+  showForwarding?: boolean;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -81,6 +90,10 @@ export function StaffNav({
   }, [menuOpen]);
 
   const initials = getInitials(userName);
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => (!item.requiresHead || isOfficeHead) && (!item.requiresOsas || showForwarding),
+  );
+  const roleLabel = `${officeLabel} ${isOfficeHead ? "Head" : "Staff"}`;
 
   return (
     <aside className="sticky top-0 flex h-dvh w-16 shrink-0 flex-col border-r border-white/15 bg-[var(--navigation)] lg:w-56">
@@ -95,14 +108,12 @@ export function StaffNav({
         aria-label="Main navigation"
         className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2"
       >
-        {NAV_ITEMS.filter((item) => !item.requiresHead || isOfficeHead).map((item) => {
+        {visibleItems.map((item) => {
           const active = isNavigationItemActive(
             pathname,
             search,
             item.href,
-            NAV_ITEMS.filter((entry) => !entry.requiresHead || isOfficeHead).map(
-              (entry) => entry.href,
-            ),
+            visibleItems.map((entry) => entry.href),
           );
           return (
             <Link
@@ -159,9 +170,7 @@ export function StaffNav({
                 <span className="block truncate text-[12.5px] font-semibold text-white">
                   {userName}
                 </span>
-                <span className="block truncate text-[10.5px] text-white">
-                  {isOfficeHead ? "OSAS Head" : "OSAS Staff"}
-                </span>
+                <span className="block truncate text-[10.5px] text-white">{roleLabel}</span>
               </span>
             </button>
 
@@ -175,9 +184,7 @@ export function StaffNav({
                   <p className="truncate text-sm font-medium text-[var(--foreground)]">
                     {userName}
                   </p>
-                  <p className="text-xs text-[var(--muted-foreground)]">
-                    {isOfficeHead ? "OSAS Head" : "OSAS Staff"}
-                  </p>
+                  <p className="text-xs text-[var(--muted-foreground)]">{roleLabel}</p>
                 </div>
                 <div className="p-1">
                   <Link

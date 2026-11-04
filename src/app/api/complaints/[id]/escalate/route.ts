@@ -1,4 +1,4 @@
-import { canProcessComplaint } from "@/lib/osas-operations";
+import { canProcessComplaint, isOsasComplaint } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   }
 
-  if (!(await canProcessComplaint(session, complaint)))
+  if (!(await isOsasComplaint(complaint)) || !(await canProcessComplaint(session, complaint)))
     return NextResponse.json(
       { error: "Only the assigned OSAS handler can request supervisor review." },
       { status: 403 },

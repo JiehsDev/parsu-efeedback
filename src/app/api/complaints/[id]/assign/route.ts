@@ -3,34 +3,22 @@ import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { User } from "@/models/User";
+import { Office } from "@/models/Office";
 import { Assignment } from "@/models/Assignment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { assignComplaintSchema } from "@/features/complaints/schemas/assign.schema";
-import {
-  getOperationalOffice,
-  isOsasHead,
-  refId,
-  isReceivingOfficeRole,
-} from "@/lib/osas-operations";
+import { canAssignComplaint, refId } from "@/lib/osas-operations";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { notifyComplaintAssigned } from "@/features/notifications/services/notification.service";
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (
-    isReceivingOfficeRole(session.user.role) ||
-    !["osas", "office_staff", "administrator"].includes(session.user.role)
-  )
+  if (!["osas", "office_staff", "administrator", "vpaa", "vpaf"].includes(session.user.role))
     return NextResponse.json(
       { error: "Oversight users cannot assign complaints." },
       { status: 403 },
     );
   await connectToDatabase();
-  if (session.user.role !== "administrator" && !(await isOsasHead(session)))
-    return NextResponse.json(
-      { error: "Only the OSAS Head may assign complaints or Handle Personally." },
-      { status: 403 },
-    );
   const parsed = assignComplaintSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success)
     return NextResponse.json(
@@ -39,17 +27,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   if (parsed.data.action === "escalate")
     return NextResponse.json({ error: "Use internal OSAS supervisor review." }, { status: 400 });
-  const office = await getOperationalOffice();
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!office || refId(complaint.assignedOfficeRef) !== refId(office._id))
-    return NextResponse.json({ error: "Only OSAS complaints can be assigned." }, { status: 403 });
+  if (!(await canAssignComplaint(session, complaint)))
+    return NextResponse.json(
+      {
+        error:
+          "Only the responsible office head may assign this complaint within its current office.",
+      },
+      { status: 403 },
+    );
+  const office = (await Office.findById(complaint.assignedOfficeRef).lean())!;
   if (complaint.isArchived || ["resolved", "closed", "withdrawn"].includes(complaint.status))
     return NextResponse.json({ error: "This complaint is read-only." }, { status: 403 });
   if (parsed.data.assignedOfficeRef && parsed.data.assignedOfficeRef !== refId(office._id))
     return NextResponse.json(
-      { error: "Office transfers are disabled. OSAS is the only handling office." },
+      {
+        error:
+          "Assignment must remain within the current handling office. Use authorized forwarding for office transfers.",
+      },
       { status: 400 },
     );
   const staff = await User.findById(parsed.data.assignedStaffRef).lean();
@@ -58,10 +55,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     !staff ||
     !staff.isActive ||
     refId(staff.officeRef) !== refId(office._id) ||
-    !(staff.role === "office_staff" || (staff.role === "osas" && isHeadTarget))
+    !(
+      staff.role === "office_staff" ||
+      (isHeadTarget &&
+        staff.role ===
+          (office.code === "OSAS" ? "osas" : office.code === "OVPAA" ? "vpaa" : "vpaf"))
+    )
   )
     return NextResponse.json(
-      { error: "Select an active OSAS staff member or the OSAS Head." },
+      { error: "Select an active staff member or the designated head of this office." },
       { status: 400 },
     );
   const changing = Boolean(
@@ -99,8 +101,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     message:
       parsed.data.message ||
       (refId(staff._id) === session.user.id
-        ? "OSAS Head is handling this complaint personally."
-        : "Assigned to OSAS staff. Processing started."),
+        ? "Office Head is handling this complaint personally."
+        : "Assigned to office staff. Processing started."),
   });
   await writeAuditLog({
     actorId: session.user.id,

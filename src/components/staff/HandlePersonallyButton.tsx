@@ -25,7 +25,7 @@ export function HandlePersonallyButton({
         body: JSON.stringify({
           action: needsReason ? "reassign" : "assign",
           assignedStaffRef: headId,
-          message: reason || "OSAS Head handling personally.",
+          message: reason || "Office Head handling personally.",
         }),
       });
       const data = await response.json();

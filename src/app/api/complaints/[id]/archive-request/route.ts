@@ -1,4 +1,4 @@
-import { canProcessComplaint } from "@/lib/osas-operations";
+import { canProcessComplaint, isOsasComplaint } from "@/lib/osas-operations";
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
-  if (!(await canProcessComplaint(session, complaint)))
+  if (!(await isOsasComplaint(complaint)) || !(await canProcessComplaint(session, complaint)))
     return NextResponse.json(
       { error: "Only the assigned OSAS staff member may request archive." },
       { status: 403 },

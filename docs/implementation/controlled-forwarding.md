@@ -12,6 +12,18 @@ The existing VPAA/VPAF accounts are receiving handlers. Existing OVPAA/OVPAF off
 
 Receiving users may request information, add notes/attachments, change allowed statuses, and resolve their assigned forwarded cases. Student information responses resume processing in the same receiving office. Student confirmation and optional rating continue unchanged. Archive administration retains its existing head/admin restrictions. Reopening preserves current ownership; no return-to-OSAS action is introduced.
 
+### Receiving-office staff (2026-11-04)
+
+Active `office_staff` accounts attached to OVPAA or OVPAF can read only their current office's formally forwarded complaints. The same office, destination-role, and forwarding-date requirements apply to queues, details, internal notes, attachments, dashboards, analytics, archived lists, and reports. Category classification never grants access. Inactive or unrelated offices grant no staff complaint access.
+
+The designated VPAA/VPAF Office Head (`Office.headUserRef`, matching role and office membership) can assign or reassign these complaints to active staff in that same office, or handle them personally. Assignment cannot change the office, submission time, forwarding markers, SLA policy, or deadlines. Only the assigned handler can change status, request information, add notes or attachments, and resolve. Other colleagues retain office reading only. Ordinary staff cannot pick up or reassign complaints themselves.
+
+OSAS retains initial intake and exclusive authority over forwarding approval/rejection/direct forwarding. Receiving staff cannot use OSAS supervisor-review, archive-request, or forwarding-management endpoints. Staff navigation displays the actual VPAA/VPAF office and omits OSAS-only management links and dashboard totals. Existing OSAS behavior is preserved.
+
+The configuration seed provisions `vpaa.staff@parsu.edu.ph` and `vpaf.staff@parsu.edu.ph` as `office_staff` under OVPAA and OVPAF respectively, using the existing development password convention. The configured database's already-created accounts were verified as active and correctly linked; no complaint reassignment or database migration was required.
+
+Verification for this addition: 71 tests passed across eight integration/regression files, including 12 new receiving-staff cases for both offices. Coverage includes head assignment and roster scoping; own-office lists, dashboards, reports, notes, information requests/responses, attachment authorization, and resolution; cross-office rejection; missing/wrong forwarding markers; inactive offices/assignees; self-assignment denial; unchanged SLA/history; and continued OSAS forwarding restrictions. TypeScript, targeted ESLint, and the production build passed. The isolated production-browser test also passed for both offices: real sign-in, student submission to OSAS, OSAS Head forwarding, receiving-head assignment through the dialog, staff resolution, cross-office access denial, correct office labels, and hidden OSAS-only controls. Browser examples were created only in the disposable test database.
+
 ## Requests, persistence, history, and notifications
 
 `ForwardingRequest` records complaint, source/destination, requester, reason, timestamps, decision, reviewer, and decision note. A partial unique database index enforces one pending request per complaint. Pending requests leave ownership unchanged. Rejection requires a reason and preserves ownership and assignment.

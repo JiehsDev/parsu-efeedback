@@ -17,6 +17,9 @@ it("seeds configuration and receiving accounts with zero tickets, and retires ti
     const user = await User.findOne({ role });
     expect(String(office!.headUserRef)).toBe(String(user!._id));
     expect(String(user!.officeRef)).toBe(String(office!._id));
+    const staff = await User.findOne({ email: `${role}.staff@parsu.edu.ph` });
+    expect(staff).toMatchObject({ role: "office_staff", isActive: true });
+    expect(String(staff!.officeRef)).toBe(String(office!._id));
   }
   await expect(seedDemo()).rejects.toThrow("retired");
   expect(await Complaint.countDocuments()).toBe(0);

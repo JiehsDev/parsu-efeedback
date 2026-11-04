@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { getOperationalOffice, isOsasHead, refId } from "@/lib/osas-operations";
+import { canManageOfficeAssignments } from "@/lib/osas-operations";
+import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   await connectToDatabase();
-  const office = await getOperationalOffice();
   const { id } = await params;
-  if (
-    !office ||
-    id !== refId(office._id) ||
-    (session.user.role !== "administrator" && !(await isOsasHead(session)))
-  )
+  const office = await Office.findById(id).lean();
+  if (!office || !(await canManageOfficeAssignments(session, office)))
     return NextResponse.json(
-      { error: "Only the OSAS Head can select assignees." },
+      { error: "Only the responsible office head can select its assignees." },
       { status: 403 },
     );
   const staff = await User.find({

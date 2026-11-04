@@ -1,4 +1,9 @@
-import { canProcessComplaint, canSuperviseComplaint, refId } from "@/lib/osas-operations";
+import {
+  canAssignComplaint,
+  canProcessComplaint,
+  canSuperviseComplaint,
+  refId,
+} from "@/lib/osas-operations";
 import { resolveManualEscalationTarget } from "@/lib/manual-escalation";
 import { AssignmentDialog } from "./AssignmentDialog";
 import { StatusUpdateForm } from "@/components/staff/StatusUpdateForm";
@@ -24,15 +29,16 @@ export async function ComplaintActions({
   requests: any[];
   archives: any[];
 }) {
-  const receiving = ["vpaa", "vpaf"].includes(session.user.role);
+  const receiving = ["OVPAA", "OVPAF"].includes(office?.code);
   const head = await canSuperviseComplaint(session, c);
+  const canAssign = await canAssignComplaint(session, c);
   const mine = await canProcessComplaint(session, c);
   const admin = session.user.role === "administrator";
   const terminal = ["resolved", "closed", "withdrawn"].includes(c.status);
   const id = refId(c._id);
   const pending = archives.find((r) => r.status === "pending");
   const target =
-    !admin && mine && !head && !terminal && !c.isArchived
+    !admin && !receiving && mine && !head && !terminal && !c.isArchived
       ? await resolveManualEscalationTarget(c, session.user.role)
       : null;
   const assignmentProps = {
@@ -41,8 +47,9 @@ export async function ComplaintActions({
     currentOfficeName: office?.name ?? "OSAS",
     currentStaffId: c.assignedStaffRef ? refId(c.assignedStaffRef) : null,
     currentStaffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+    receivingOffice: receiving,
   };
-  if (!admin && !head && !mine) return null;
+  if (!admin && !head && !mine && !canAssign) return null;
   return (
     <section className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
       <h2 className="text-sm font-semibold">
@@ -64,7 +71,7 @@ export async function ComplaintActions({
         </>
       ) : (
         <>
-          {head && !terminal && (
+          {canAssign && !terminal && (
             <>
               <AssignmentDialog
                 {...assignmentProps}

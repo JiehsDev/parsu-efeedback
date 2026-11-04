@@ -65,6 +65,22 @@ export async function seedDevelopmentData() {
       officeRef: vpafOffice!._id,
     },
     {
+      email: "vpaa.staff@parsu.edu.ph",
+      role: "office_staff",
+      firstName: "VPAA",
+      lastName: "Demo Staff",
+      employeeOrStudentId: "DEMO-VPAA-STAFF-01",
+      officeRef: vpaaOffice!._id,
+    },
+    {
+      email: "vpaf.staff@parsu.edu.ph",
+      role: "office_staff",
+      firstName: "VPAF",
+      lastName: "Demo Staff",
+      employeeOrStudentId: "DEMO-VPAF-STAFF-01",
+      officeRef: vpafOffice!._id,
+    },
+    {
       email: "osasdirector@parsu.edu.ph",
       role: "osas",
       firstName: "Cristina",

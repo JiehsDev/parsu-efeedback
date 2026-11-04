@@ -2,7 +2,12 @@ import { ForwardingRequest } from "@/models/ForwardingRequest";
 import type { Session } from "next-auth";
 import { Complaint } from "@/models/Complaint";
 import { getAdminScope, complaintFilterForScope } from "@/lib/admin-scope";
-import { staffComplaintFilter, isOsasHead, getOperationalOffice } from "@/lib/osas-operations";
+import {
+  staffComplaintFilter,
+  isOsasHead,
+  getOperationalOffice,
+  getStaffOffice,
+} from "@/lib/osas-operations";
 import {
   getAnalyticsSummary,
   getMonthlyTrends,
@@ -67,7 +72,8 @@ export async function getDashboardData(session: Session) {
   ]);
   const osas = await getOperationalOffice();
   const head = await isOsasHead(session);
-  const showForwarding = session.user.role === "osas" || session.user.role === "office_staff";
+  const staffOffice = await getStaffOffice(session);
+  const showForwarding = staffOffice?.code === "OSAS";
   const forwardingStats =
     showForwarding && osas
       ? {
@@ -90,7 +96,9 @@ export async function getDashboardData(session: Session) {
       : null;
   return {
     forwardingStats,
-    receivingOffice: ["vpaa", "vpaf"].includes(session.user.role),
+    receivingOffice:
+      ["vpaa", "vpaf"].includes(session.user.role) ||
+      ["OVPAA", "OVPAF"].includes(staffOffice?.code ?? ""),
     summary,
     trends,
     openCount,

@@ -41,6 +41,7 @@ export function AssignmentDialog({
   currentStaffName,
   label,
   action = "reassign",
+  receivingOffice = false,
 }: {
   complaintId: string;
   currentOfficeId: string | null;
@@ -49,6 +50,7 @@ export function AssignmentDialog({
   currentStaffName: string | null;
   label?: string;
   action?: "assign" | "reassign" | "escalate";
+  receivingOffice?: boolean;
 }) {
   const router = useRouter();
   const { show: showToast } = useToast();
@@ -95,7 +97,7 @@ export function AssignmentDialog({
 
   async function submit() {
     if (!currentOfficeId) {
-      setError("OSAS staff are unavailable. Please try again.");
+      setError("Office staff are unavailable. Please try again.");
       return;
     }
     const targetStaff = staff.find((member) => member._id === selectedStaffId);
@@ -270,7 +272,11 @@ export function AssignmentDialog({
                       <SelectValue placeholder="Select a reason" />
                     </SelectTrigger>
                     <SelectContent>
-                      {REASSIGNMENT_REASONS.map((option) => (
+                      {REASSIGNMENT_REASONS.map((option) =>
+                        receivingOffice && option === "OSAS Head review"
+                          ? "Office Head review"
+                          : option,
+                      ).map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>

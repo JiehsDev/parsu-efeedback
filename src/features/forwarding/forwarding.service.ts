@@ -9,7 +9,7 @@ import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { AuditLog } from "@/models/AuditLog";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { Notification } from "@/models/Notification";
-import { canProcessComplaint, isOsasHead, refId } from "@/lib/osas-operations";
+import { canProcessComplaint, getStaffOffice, isOsasHead, refId } from "@/lib/osas-operations";
 
 export const requestSchema = z
   .object({
@@ -36,7 +36,10 @@ const active = ["submitted", "assigned", "in_progress", "pending_information", "
 
 export async function forwardingHistoryFilter(session: any) {
   if (session.user.role === "administrator" || (await isOsasHead(session))) return {};
-  if (session.user.role === "office_staff" || session.user.role === "osas")
+  if (
+    (session.user.role === "office_staff" || session.user.role === "osas") &&
+    (await getStaffOffice(session))?.code === "OSAS"
+  )
     return { requestedByUserRef: session.user.id };
   // Receiving-office history is provided only through an authorized complaint view.
   throw new ForwardingError("Forbidden", 403);
