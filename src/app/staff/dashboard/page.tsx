@@ -13,7 +13,13 @@ import { Complaint } from "@/models/Complaint";
 import { ComplaintListRow, ComplaintRowHeader } from "@/components/shared/ComplaintListRow";
 import { staffComplaintFilter, getStaffOffice } from "@/lib/osas-operations";
 
-const OPEN_STATUSES = ["submitted", "assigned", "in_progress", "pending_information", "escalated"];
+const OPEN_STATUSES = [
+  "submitted",
+  "assigned",
+  "in_progress",
+  "pending_information",
+  "escalated",
+] as const;
 
 export default async function StaffDashboardPage() {
   const session = await auth();
