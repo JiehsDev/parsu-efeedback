@@ -21,8 +21,8 @@ test("VPAA and VPAF heads assign formally forwarded complaints to their own staf
   try {
     const student = await login("student@parsu.edu.ph");
     const osas = await login("osasdirector@parsu.edu.ph");
-    const vpaaStaff = await login("vpaa.staff@parsu.edu.ph");
-    const vpafStaff = await login("vpaf.staff@parsu.edu.ph");
+    const vpaaStaff = await login("vpaa.staff1@parsu.edu.ph");
+    const vpafStaff = await login("vpaf.staff1@parsu.edu.ph");
     const categories = (await (await student.request.get("/api/categories")).json()).categories;
     for (const role of ["vpaa", "vpaf"] as const) {
       const head = await login(`${role}@parsu.edu.ph`);
@@ -59,9 +59,8 @@ test("VPAA and VPAF heads assign formally forwarded complaints to their own staf
       const dialog = head.getByRole("dialog");
       await expect(dialog.getByRole("combobox").first()).toBeEnabled();
       await dialog.getByRole("combobox").first().click();
-      await head
-        .getByRole("option", { name: `${role.toUpperCase()} Demo Staff`, exact: true })
-        .click();
+      const staffName = role === "vpaa" ? "Rafael Mendoza" : "Angela Bautista";
+      await head.getByRole("option", { name: staffName, exact: true }).click();
       await dialog.getByRole("combobox").nth(1).click();
       await head.getByRole("option", { name: "Workload balancing", exact: true }).click();
       await dialog
@@ -78,7 +77,7 @@ test("VPAA and VPAF heads assign formally forwarded complaints to their own staf
       await expect(
         staff.getByRole("link", { name: "Forwarding Requests", exact: true }),
       ).toHaveCount(0);
-      await expect(staff.getByText(`${role.toUpperCase()} Staff`, { exact: true })).toBeVisible();
+      await expect(staff.getByText(staffName, { exact: true })).toBeVisible();
       await expect(staff.getByRole("button", { name: "Change Assignee", exact: true })).toHaveCount(
         0,
       );

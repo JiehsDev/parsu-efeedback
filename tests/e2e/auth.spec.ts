@@ -1,7 +1,7 @@
 // tests/e2e/auth.spec.ts — BR-005, BR-012, BR-013, BR-083, BR-085, BR-087
 //
 // Unauthenticated flows only — imports plain @playwright/test, no
-// storageState. Uses staff2@parsu.edu.ph for the lockout test specifically
+// storageState. Uses osas.staff1@parsu.edu for the lockout test specifically
 // because it is NOT one of the five accounts saved as a reusable
 // storageState fixture in tests/e2e/auth.setup.ts, so locking it out here
 // cannot break any other spec that depends on being able to log in as
@@ -18,7 +18,7 @@ test.describe("Authentication — BR-005/012/013/083/085/087", () => {
     await page.goto("/login");
 
     for (let attempt = 1; attempt <= AUTH_MAX_FAILED_LOGIN_ATTEMPTS; attempt++) {
-      await page.getByLabel("Email").fill("staff2@parsu.edu.ph");
+      await page.getByLabel("Email").fill("osas.staff1@parsu.edu");
       await page.getByLabel("Password", { exact: true }).fill("definitely-the-wrong-password");
       await page.getByRole("button", { name: "Sign in" }).click();
 
@@ -38,7 +38,7 @@ test.describe("Authentication — BR-005/012/013/083/085/087", () => {
     // BR-013 (continued): even the *correct* password is now rejected while
     // locked — proves the account is actually locked, not just that the
     // last wrong-password attempt happened to show a locked message.
-    await page.getByLabel("Email").fill("staff2@parsu.edu.ph");
+    await page.getByLabel("Email").fill("osas.staff1@parsu.edu");
     await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(errorAlert(page)).toHaveText(/too many failed attempts|temporarily locked/i);

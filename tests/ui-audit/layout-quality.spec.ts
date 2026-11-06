@@ -11,7 +11,7 @@ test("workspace layouts adapt across desktop, tablet and mobile", async ({ brows
       email: "student@parsu.edu.ph",
       routes: ["dashboard", "complaints", "complaints/new", "profile"],
     },
-    { base: "staff", email: "osas.staff@parsu.edu.ph", routes: ["dashboard", "complaints", "sla"] },
+    { base: "staff", email: "osas.staff2@parsu.edu.ph", routes: ["dashboard", "complaints", "sla"] },
     {
       base: "admin",
       email: "admin@parsu.edu.ph",

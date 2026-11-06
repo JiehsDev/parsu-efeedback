@@ -8,8 +8,8 @@ test.describe.configure({ mode: "default", timeout: 600000 });
 const accounts = {
   student: "student@parsu.edu.ph",
   head: "osasdirector@parsu.edu.ph",
-  handler: "osas.staff@parsu.edu.ph",
-  colleague: "staff2@parsu.edu.ph",
+  handler: "osas.staff2@parsu.edu.ph",
+  colleague: "osas.staff1@parsu.edu",
   admin: "admin@parsu.edu.ph",
   vpaa: "vpaa@parsu.edu.ph",
   vpaf: "vpaf@parsu.edu.ph",
@@ -84,7 +84,7 @@ async function assign(id: string) {
   await head.getByRole("button", { name: "Assign Staff", exact: true }).click();
   const dialog = head.getByRole("dialog", { name: "Assign Staff", exact: true });
   await expect(dialog.getByRole("combobox", { name: "Assigned staff", exact: true })).toBeVisible();
-  await select(head, "Assigned staff", "OSAS Staff Two");
+  await select(head, "Assigned staff", "Miguel Santos");
   await dialog.getByRole("button", { name: "Assign Staff", exact: true }).click();
   const confirmation = head.getByRole("alertdialog");
   await expect(confirmation.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
@@ -590,7 +590,7 @@ test("student withdrawal, handler release, head review and archive approval", as
     .toBe(true);
   await head.goto(`/admin/complaints/${id}`);
   await head.getByRole("button", { name: "Change Assignee", exact: true }).click();
-  await select(head, "Assigned staff", "OSAS Staff Two");
+  await select(head, "Assigned staff", "Miguel Santos");
   await select(head, "Reason for reassignment", "Workload balancing");
   await head
     .getByRole("dialog")

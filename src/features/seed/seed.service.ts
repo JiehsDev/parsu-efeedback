@@ -5,6 +5,13 @@ import { Office, User, Category, Complaint } from "@/models";
 import { SEED_CATEGORIES } from "./categories";
 import { migrateComplaintCategories } from "../../../scripts/migrate-complaint-categories.cjs";
 
+const SEEDED_STAFF_EMAIL_MIGRATIONS = [
+  ["staff2@parsu.edu.ph", "osas.staff1@parsu.edu"],
+  ["osas.staff@parsu.edu.ph", "osas.staff2@parsu.edu.ph"],
+  ["vpaa.staff@parsu.edu.ph", "vpaa.staff1@parsu.edu.ph"],
+  ["vpaf.staff@parsu.edu.ph", "vpaf.staff1@parsu.edu.ph"],
+] as const;
+
 // Configuration seeding is non-destructive: never reset existing complaint data.
 export async function seedDevelopmentData() {
   // Await unique indexes before upserts; first-run model initialization is asynchronous.
@@ -39,6 +46,18 @@ export async function seedDevelopmentData() {
   const vpaaOffice = await Office.findOne({ code: "OVPAA" });
   const vpafOffice = await Office.findOne({ code: "OVPAF" });
   const passwordHash = await bcrypt.hash("ParSU_test2026", 10);
+
+  // Rename existing seeded logins in place so they retain passwords and references.
+  for (const [oldEmail, newEmail] of SEEDED_STAFF_EMAIL_MIGRATIONS) {
+    const existing = await User.findOne({ email: oldEmail }).select("_id").lean();
+    if (!existing) continue;
+    const collision = await User.findOne({ email: newEmail }).select("_id").lean();
+    if (collision && String(collision._id) !== String(existing._id)) {
+      throw new Error(`Cannot rename seeded staff login ${oldEmail}: ${newEmail} is already in use.`);
+    }
+    await User.updateOne({ _id: existing._id }, { $set: { email: newEmail } });
+  }
+
   const users = [
     {
       email: "admin@parsu.edu.ph",
@@ -65,19 +84,51 @@ export async function seedDevelopmentData() {
       officeRef: vpafOffice!._id,
     },
     {
-      email: "vpaa.staff@parsu.edu.ph",
+      email: "vpaa.staff1@parsu.edu.ph",
       role: "office_staff",
-      firstName: "VPAA",
-      lastName: "Demo Staff",
+      firstName: "Rafael",
+      lastName: "Mendoza",
       employeeOrStudentId: "DEMO-VPAA-STAFF-01",
       officeRef: vpaaOffice!._id,
     },
     {
-      email: "vpaf.staff@parsu.edu.ph",
+      email: "vpaa.staff2@parsu.edu.ph",
       role: "office_staff",
-      firstName: "VPAF",
-      lastName: "Demo Staff",
+      firstName: "Sofia",
+      lastName: "Cruz",
+      employeeOrStudentId: "DEMO-VPAA-STAFF-02",
+      officeRef: vpaaOffice!._id,
+    },
+    {
+      email: "vpaa.staff3@parsu.edu.ph",
+      role: "office_staff",
+      firstName: "Daniel",
+      lastName: "Flores",
+      employeeOrStudentId: "DEMO-VPAA-STAFF-03",
+      officeRef: vpaaOffice!._id,
+    },
+    {
+      email: "vpaf.staff1@parsu.edu.ph",
+      role: "office_staff",
+      firstName: "Angela",
+      lastName: "Bautista",
       employeeOrStudentId: "DEMO-VPAF-STAFF-01",
+      officeRef: vpafOffice!._id,
+    },
+    {
+      email: "vpaf.staff2@parsu.edu.ph",
+      role: "office_staff",
+      firstName: "Marco",
+      lastName: "Dela Cruz",
+      employeeOrStudentId: "DEMO-VPAF-STAFF-02",
+      officeRef: vpafOffice!._id,
+    },
+    {
+      email: "vpaf.staff3@parsu.edu.ph",
+      role: "office_staff",
+      firstName: "Patricia",
+      lastName: "Ramos",
+      employeeOrStudentId: "DEMO-VPAF-STAFF-03",
       officeRef: vpafOffice!._id,
     },
     {
@@ -89,19 +140,27 @@ export async function seedDevelopmentData() {
       officeRef: office._id,
     },
     {
-      email: "staff2@parsu.edu.ph",
+      email: "osas.staff1@parsu.edu",
       role: "office_staff",
-      firstName: "OSAS",
-      lastName: "Staff",
+      firstName: "Andrea",
+      lastName: "Villanueva",
       employeeOrStudentId: "EMP-OSAS-1",
       officeRef: office._id,
     },
     {
-      email: "osas.staff@parsu.edu.ph",
+      email: "osas.staff2@parsu.edu.ph",
       role: "office_staff",
-      firstName: "OSAS",
-      lastName: "Staff Two",
+      firstName: "Miguel",
+      lastName: "Santos",
       employeeOrStudentId: "EMP-OSAS-2",
+      officeRef: office._id,
+    },
+    {
+      email: "osas.staff3@parsu.edu.ph",
+      role: "office_staff",
+      firstName: "Camille",
+      lastName: "Reyes",
+      employeeOrStudentId: "EMP-OSAS-3",
       officeRef: office._id,
     },
     {
