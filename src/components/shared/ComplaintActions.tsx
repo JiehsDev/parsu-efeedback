@@ -14,6 +14,8 @@ import { ArchiveApprovalPanel } from "@/components/staff/ArchiveApprovalPanel";
 import { InformationRequestPanel } from "@/components/staff/InformationRequestPanel";
 import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggle";
 import { ReopenComplaintButton } from "./ReopenComplaintButton";
+import { ResolutionApprovalPanel } from "@/components/staff/ResolutionApprovalPanel";
+import { isOfficeHead } from "@/lib/office-head";
 export async function ComplaintActions({
   session,
   complaint: c,
@@ -21,6 +23,7 @@ export async function ComplaintActions({
   staff,
   requests,
   archives,
+  resolutionRequests,
 }: {
   session: any;
   complaint: any;
@@ -28,15 +31,19 @@ export async function ComplaintActions({
   staff: any;
   requests: any[];
   archives: any[];
+  resolutionRequests: any[];
 }) {
   const receiving = ["OVPAA", "OVPAF"].includes(office?.code);
   const head = await canSuperviseComplaint(session, c);
+  const officeHead = await isOfficeHead(session.user.id, c.assignedOfficeRef);
   const canAssign = await canAssignComplaint(session, c);
   const mine = await canProcessComplaint(session, c);
   const admin = session.user.role === "administrator";
   const terminal = ["resolved", "closed", "withdrawn"].includes(c.status);
   const id = refId(c._id);
   const pending = archives.find((r) => r.status === "pending");
+  const pendingResolution = resolutionRequests.find((r) => r.status === "pending");
+  const latestResolutionRequest = resolutionRequests[0];
   const target =
     !admin && !receiving && mine && !head && !terminal && !c.isArchived
       ? await resolveManualEscalationTarget(c, session.user.role)
@@ -71,6 +78,12 @@ export async function ComplaintActions({
         </>
       ) : (
         <>
+          {latestResolutionRequest && (
+            <ResolutionApprovalPanel
+              request={latestResolutionRequest}
+              canReview={officeHead}
+            />
+          )}
           {canAssign && !terminal && (
             <>
               <AssignmentDialog
@@ -89,7 +102,13 @@ export async function ComplaintActions({
           )}
           {!admin && mine && !terminal && (
             <>
-              <StatusUpdateForm complaintId={id} currentStatus={c.status} />
+              {!pendingResolution && (
+                <StatusUpdateForm
+                  complaintId={id}
+                  currentStatus={c.status}
+                  requiresResolutionApproval={!officeHead}
+                />
+              )}
               <InformationRequestPanel complaintId={id} status={c.status} requests={requests} />
               {!receiving && <ReleaseAssignmentButton complaintId={id} />}
               {!receiving && !head && !pending && <ArchiveRequestButton complaintId={id} />}

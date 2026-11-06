@@ -38,11 +38,17 @@ const PRIORITY_DOT: Record<string, string> = {
   critical: "bg-[var(--destructive)]",
 };
 
-export default async function ComplaintDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ComplaintDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ attachmentWarning?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   await connectToDatabase();
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
 
   const complaint = await Complaint.findById(id)
     .populate("resolvedByRef", "firstName lastName")
@@ -52,7 +58,7 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
   }
 
   const c = complaint as any;
-  const [timeline, assignedOffice, assignmentHistory, openInformationRequest] = await Promise.all([
+  const [timelineEvents, assignedOffice, assignmentHistory, openInformationRequest] = await Promise.all([
     ComplaintTimeline.find({ complaintRef: id })
       .sort({ createdAt: 1 })
       .populate("actorRef", "firstName lastName role employeeOrStudentId")
@@ -63,6 +69,9 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
       .sort({ requestedAt: -1 })
       .lean(),
   ]);
+  const timeline = (timelineEvents as any[]).filter(
+    (event) => !["resolution_requested", "resolution_rejected"].includes(event.eventType),
+  );
   const firstResponseAt =
     assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
   const resolutionEvent = [...(timeline as any[])]
@@ -82,6 +91,17 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to my complaints
       </Link>
+
+      {query.attachmentWarning && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-[var(--foreground)]"
+        >
+          <p className="font-medium">Your complaint was submitted, but an attachment could not be added.</p>
+          <p className="mt-1 break-words text-[var(--muted-foreground)]">{query.attachmentWarning}</p>
+          <p className="mt-1 text-[var(--muted-foreground)]">You can try attaching the file again later.</p>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">

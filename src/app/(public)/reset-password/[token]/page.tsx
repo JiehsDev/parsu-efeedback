@@ -23,7 +23,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
           Reset password
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Choose a new password for your account.
+          Set a new password for your account.
         </p>
 
         {state?.success ? (

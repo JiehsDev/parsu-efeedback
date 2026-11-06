@@ -10,11 +10,11 @@ import { FieldError, FieldLabel, focusFirstInvalid } from "@/components/ui/form-
 // Maps the CredentialsSignin `code` values thrown in src/lib/auth.ts to
 // copy a person can actually act on.
 const ERROR_MESSAGES: Record<string, string> = {
-  invalid_credentials: "Invalid email or password.",
+  invalid_credentials: "That email and password don’t match.",
   account_locked:
-    "Too many failed attempts. This account is temporarily locked — try again shortly.",
-  account_inactive: "This account has been deactivated. Contact your administrator.",
-  rate_limited: "Too many login attempts. Please wait a moment and try again.",
+    "This account is locked after too many failed attempts. Try again in a few minutes.",
+  account_inactive: "This account is inactive. Ask your administrator for help.",
+  rate_limited: "Too many sign-in attempts. Wait a moment, then try again.",
 };
 
 const inputClass =
@@ -82,7 +82,7 @@ function LoginForm() {
       // Safe client-side redirect fallback to let middleware pick up token placement cleanly
       window.location.href = callbackUrl;
     } catch {
-      setError("Could not sign you in. Please try again.");
+      setError("We couldn’t sign you in. Try again.");
       setIsSubmitting(false);
     }
   }
@@ -91,10 +91,10 @@ function LoginForm() {
     <main className="w-full max-w-sm">
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
         <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-          Welcome back
+          Sign in
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Sign in to your ParSU e-Feedback account
+          Use your ParSU account to open your e-Feedback workspace.
         </p>
 
         <form method="post" onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>

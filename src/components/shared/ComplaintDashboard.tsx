@@ -29,7 +29,7 @@ export function ComplaintDashboard({ base }: { base: "admin" | "staff" }) {
     let active = true;
     clientFetch("/api/dashboard")
       .then(async (response) => {
-        if (!response.ok) throw new Error("Could not load the dashboard. Please try again.");
+        if (!response.ok) throw new Error("We couldn’t load the dashboard. Try again.");
         const payload = (await response.json()) as DashboardPayload;
         if (active) {
           setData(payload);
@@ -38,7 +38,7 @@ export function ComplaintDashboard({ base }: { base: "admin" | "staff" }) {
       })
       .catch((reason) => {
         if (active)
-          setError(reason instanceof Error ? reason.message : "Could not load the dashboard.");
+          setError(reason instanceof Error ? reason.message : "We couldn’t load the dashboard. Try again.");
       });
     window.addEventListener(CLIENT_DATA_REFRESH_EVENT, reload);
     return () => {
@@ -146,8 +146,8 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {data.receivingOffice
-              ? "Review your complaints, deadlines, and assigned work."
-              : "Review complaints, deadlines, and assigned work."}
+              ? "See your office’s queue, deadlines, and assigned complaints."
+              : "See the complaint queue, deadlines, and current assignments."}
           </p>
         </div>
         <Link

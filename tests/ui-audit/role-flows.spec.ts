@@ -71,7 +71,11 @@ async function resolve(page: Page, id: string) {
   await page
     .getByPlaceholder("Add a message about this status change")
     .fill("Your concern has been reviewed and addressed.");
-  await page.getByRole("button", { name: "Update Status", exact: true }).click();
+  await page.getByRole("button", { name: "Request Resolution Approval", exact: true }).click();
+  await expect(page.getByText("Resolution request sent to the office head for approval.", { exact: true })).toBeVisible();
+  await checkState(page, id, "in_progress");
+  await pages.head.goto(`/admin/complaints/${id}`);
+  await pages.head.getByRole("button", { name: "Approve resolution", exact: true }).click();
   await checkState(page, id, "resolved");
 }
 async function assign(id: string) {
@@ -87,6 +91,20 @@ async function assign(id: string) {
   await confirmation.getByRole("button", { name: "Assign Staff", exact: true }).click();
   await checkState(head, id, "in_progress");
 }
+
+test("staff resolution requests wait for OSAS head approval", async () => {
+  const { student, head, handler } = pages;
+  const id = await submit(student, `UI resolution approval ${Date.now()}`);
+  await assign(id);
+  await resolve(handler, id);
+  const complaint = (await (await head.request.get(`/api/complaints/${id}`)).json()).complaint;
+  expect(complaint.status).toBe("resolved");
+  expect(complaint.resolutionSummary).toBe(
+    "OSAS verified the details and completed the requested assistance.",
+  );
+  await student.goto(`/student/complaints/${id}`);
+  await expect(student.getByText("Resolution details", { exact: true })).toBeVisible();
+});
 
 test.beforeAll(async ({ browser }) => {
   test.setTimeout(600000);
@@ -144,6 +162,8 @@ test.beforeAll(async ({ browser }) => {
     `/api/complaints/${missingId}/information-request`,
     `/api/complaints/${missingId}/information-response`,
     `/api/complaints/${missingId}/close-without-rating`,
+    `/api/complaints/${missingId}/resolution-requests`,
+    `/api/resolution-requests/${missingId}`,
   ])
     await pages.head.request.fetch(path, { method: "OPTIONS" });
 });
@@ -200,12 +220,16 @@ for (const destination of ["vpaa", "vpaf"] as const) {
     await expect(
       head.getByRole("heading", { name: "Forwarding Requests", exact: true }),
     ).toBeVisible();
-    await head
+    const reviewComplaintLink = head
       .locator("article")
       .filter({ hasText: before.title })
       .getByRole("link", { name: "Review complaint", exact: true })
-      .first()
-      .click();
+      .first();
+    await Promise.all([
+      head.waitForURL(new RegExp(`/admin/complaints/${id}$`)),
+      reviewComplaintLink.click(),
+    ]);
+    await expect(head.getByRole("heading", { name: before.title, exact: true })).toBeVisible();
     if (destination === "vpaf") {
       await head
         .getByLabel("Decision note (required to reject)", { exact: true })
@@ -413,13 +437,28 @@ test("student submission, head assignment, office-wide reading, information requ
     await student.request.get(`/api/complaints/${complaintId}/attachments`)
   ).json();
   expect(files.attachments).toHaveLength(1);
-  expect(
-    (
-      await student.request.get(
-        `/api/complaints/${complaintId}/attachments/${files.attachments[0]._id}/download`,
-      )
-    ).ok(),
-  ).toBe(true);
+  const downloadResponse = await student.request.get(
+    `/api/complaints/${complaintId}/attachments/${files.attachments[0]._id}/download`,
+  );
+  expect(downloadResponse.ok()).toBe(true);
+  expect((await downloadResponse.body()).toString()).toContain("Audit supporting document");
+  await student.goto(`/student/complaints/${complaintId}`);
+  await expect(student.getByText("Attachments (1)", { exact: true })).toBeVisible();
+  const attachmentButton = student.getByRole("button", { name: /support\.pdf/ });
+  await expect(attachmentButton).toBeVisible();
+  const [download] = await Promise.all([
+    student.waitForEvent("download"),
+    attachmentButton.click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("support.pdf");
+  const storageUrl = process.env.UI_AUDIT_STORAGE_URL;
+  expect(storageUrl).toMatch(/^http:\/\/127\.0\.0\.1:/);
+  const storageFile = new URL(files.attachments[0].fileUrl);
+  const removed = await fetch(`${storageUrl}${storageFile.pathname}`, { method: "DELETE" });
+  expect(removed.status).toBe(204);
+  await attachmentButton.click();
+  await expect(student.locator('[role="alert"]').filter({ hasText: "Couldn’t fetch this attachment" }))
+    .toContainText(/Storage could not return this file|no longer present in storage|AccessDenied|NoSuchKey/i);
   await assign(complaintId);
   await colleague.goto(`/staff/complaints/${complaintId}`);
   await expect(

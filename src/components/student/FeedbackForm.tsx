@@ -23,7 +23,7 @@ const MIN_MESSAGE_LENGTH = 10;
 // the same teaching job at the moment the student is actually deciding what
 // to write, and costs no layout.
 const MESSAGE_PLACEHOLDER =
-  "e.g. The online enrollment portal times out during peak hours — it usually takes three tries to get through.";
+  "For example: The enrollment portal times out during peak hours, and I need several tries to sign in.";
 
 export function FeedbackForm() {
   const router = useRouter();
@@ -49,7 +49,7 @@ export function FeedbackForm() {
     };
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      setError("Please correct the highlighted fields below.");
+      setError("Fix the highlighted fields, then try again.");
       const formElement = event.currentTarget;
       requestAnimationFrame(() => focusFirstInvalid(formElement));
       return;
@@ -83,7 +83,7 @@ export function FeedbackForm() {
       // list below picks up the row that was just created.
       router.refresh();
     } catch {
-      setError("Could not send your feedback. Please try again.");
+      setError("We couldn’t send your feedback. Try again.");
       setIsSubmitting(false);
     }
   }
@@ -96,7 +96,7 @@ export function FeedbackForm() {
         </span>
         <p className="mt-3 text-sm font-medium text-[var(--qa-success-strong)]">Feedback sent</p>
         <p className="mt-1 text-sm text-[var(--qa-success-strong)]/80">
-          Thank you for sharing your suggestion. To track a concern, submit a complaint.
+          Thanks for sharing your feedback. To follow up on a specific issue, file a complaint.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
           <button
@@ -211,8 +211,7 @@ export function FeedbackForm() {
               either way — so the honest promise is about who sees it, not
               about the record not existing. */}
           <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
-            Your name is hidden from reviewers. This does not make your feedback fully anonymous: it
-            remains linked to your account.
+            Reviewers won’t see your name, but your feedback remains linked to your account.
           </p>
         </div>
 

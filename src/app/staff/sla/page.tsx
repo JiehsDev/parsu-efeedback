@@ -172,7 +172,7 @@ function EmptyQueue({ view }: { view: View }) {
     view === "overdue"
       ? "No overdue complaints. Good job."
       : view === "due"
-        ? "No complaints are due within the next 24 SLA hours."
+        ? "No complaints have a deadline in the next 24 SLA hours."
         : "No open complaints currently under SLA monitoring.";
   return (
     <div className="flex items-center gap-3 rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] px-5 py-8">

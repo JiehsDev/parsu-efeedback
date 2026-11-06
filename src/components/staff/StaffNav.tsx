@@ -23,13 +23,13 @@ import {
 
 const NAV_ITEMS = [
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { href: "/staff/complaints", label: "Queue", icon: Inbox },
   {
     href: "/staff/forwarding-requests",
     label: "Forwarding Requests",
     icon: Inbox,
     requiresOsas: true,
   },
-  { href: "/staff/complaints", label: "Queue", icon: Inbox },
   { href: "/staff/sla", label: "SLA deadlines", icon: Timer },
   { href: "/staff/reports", label: "Reports", icon: FileBarChart },
   { href: "/staff/archive-requests", label: "Archive Requests", icon: Archive, requiresHead: true },

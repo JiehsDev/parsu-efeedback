@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
 import { Office } from "@/models/Office";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { resolverDisplayName } from "@/components/shared/ComplaintListRow";
 import type { ComplaintStatus } from "@/lib/constants";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { ListSearchInput } from "@/components/shared/ListSearchInput";
@@ -91,6 +92,7 @@ export default async function AdminComplaintsPage({
   const complaints = await Complaint.find(filter)
     .populate("assignedOfficeRef", "name")
     .populate("archivedByRef", "firstName lastName")
+    .populate("resolvedByRef", "firstName lastName")
     .populate({
       // Student identity is kept out of the admin view — ID + college
       // only, not name, so a complaint reads a little more anonymous.
@@ -248,12 +250,17 @@ export default async function AdminComplaintsPage({
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
+          <div className="hidden grid-cols-[minmax(0,1fr)_11rem_auto] gap-4 border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase sm:grid">
+            <span>Complaint</span>
+            <span>Resolver</span>
+            <span>Status</span>
+          </div>
           <ul className="divide-y divide-[var(--border)]">
             {scopedComplaints.map((c: any) => (
               <li key={c._id}>
                 <Link
                   href={`/admin/complaints/${c._id}`}
-                  className="flex flex-col items-start gap-3 px-4 py-4 transition-colors hover:bg-[var(--muted)]/40 sm:flex-row sm:items-center sm:gap-4"
+                  className="grid grid-cols-1 items-center gap-3 px-4 py-4 transition-colors hover:bg-[var(--muted)]/40 sm:grid-cols-[minmax(0,1fr)_11rem_auto] sm:gap-4"
                 >
                   <span className="w-full min-w-0 flex-1 sm:w-auto">
                     <span className="flex items-center gap-2">
@@ -298,6 +305,10 @@ export default async function AdminComplaintsPage({
                         · {c.archiveReason || "No reason recorded"}
                       </span>
                     )}
+                  </span>
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    <span className="font-medium sm:hidden">Resolver: </span>
+                    {resolverDisplayName(c.status, c.resolvedByRef)}
                   </span>
                   <StatusBadge status={c.status as ComplaintStatus} />
                 </Link>

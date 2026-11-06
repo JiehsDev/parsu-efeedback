@@ -1,5 +1,6 @@
 import { canProcessComplaint } from "@/lib/osas-operations";
 import { canAccessComplaint } from "@/lib/complaint-access";
+import { isOfficeHead } from "@/lib/office-head";
 // src/app/api/complaints/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Types } from "mongoose";
@@ -40,7 +41,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const safeTimeline =
     session.user.role === "student"
-      ? timeline
+      ? timeline.filter(
+          (event: any) => !["resolution_requested", "resolution_rejected"].includes(event.eventType),
+        )
       : timeline.map((event: any) => {
           if (event.actorRef?.role !== "student") return event;
           return {
@@ -170,6 +173,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const fromStatus = complaint.status as ComplaintStatus;
   const toStatus = parsed.data.status;
+  if (toStatus === "resolved" && !(await isOfficeHead(session.user.id, complaint.assignedOfficeRef)))
+    return NextResponse.json(
+      { error: "Staff must submit a resolution request for approval by the responsible office head." },
+      { status: 403 },
+    );
   if (toStatus === "assigned") {
     return NextResponse.json(
       { error: "Use Assign Staff and select a staff member to assign this complaint." },

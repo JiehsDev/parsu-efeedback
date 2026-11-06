@@ -242,7 +242,7 @@ describe("centralized OSAS architecture", () => {
     d.complaint.assignedStaffRef = d.staff._id;
     d.complaint.status = "in_progress";
     await d.complaint.save();
-    expect((await status(request({ status: "resolved" }, "PATCH"), ctx)).status).toBe(200);
+    expect((await status(request({ status: "resolved" }, "PATCH"), ctx)).status).toBe(403);
   });
   it.each(["submitted", "in_progress", "resolved", "closed"])(
     "lets office colleagues read %s complaints without granting actions",

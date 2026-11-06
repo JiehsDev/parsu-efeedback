@@ -14,6 +14,8 @@ vi.mock("@/features/notifications/services/notification.service", () => ({
   notifyStatusUpdated: vi.fn(),
   notifyComplaintResolved: vi.fn(),
   notifyManualEscalation: vi.fn(),
+  notifyResolutionRequest: vi.fn(),
+  notifyResolutionDecision: vi.fn(),
 }));
 import { Complaint, Office, Assignment, ForwardingRequest, User } from "@/models";
 import { createTestOffice, createTestUser, createTestCategory } from "@/test/fixtures";
@@ -24,9 +26,11 @@ import {
   forwardingHistoryFilter,
 } from "@/features/forwarding/forwarding.service";
 import { POST as assign } from "@/app/api/complaints/[id]/assign/route";
+import { PATCH as updateStatus } from "@/app/api/complaints/[id]/route";
 import { GET as roster } from "@/app/api/offices/[id]/staff/route";
 import { GET as list } from "@/app/api/complaints/route";
-import { PATCH as updateStatus } from "@/app/api/complaints/[id]/route";
+import { POST as requestResolution } from "@/app/api/complaints/[id]/resolution-requests/route";
+import { PATCH as decideResolution } from "@/app/api/resolution-requests/[id]/route";
 import { POST as addNote } from "@/app/api/complaints/[id]/notes/route";
 import { POST as requestInformation } from "@/app/api/complaints/[id]/information-request/route";
 import { POST as respondInformation } from "@/app/api/complaints/[id]/information-response/route";
@@ -131,7 +135,7 @@ async function setup(role: "vpaa" | "vpaf") {
   };
 }
 describe.each(["vpaa", "vpaf"] as const)("%s receiving staff", (role) => {
-  it("receives head assignment, reads its own forwarded office queue, and processes notes, information, attachments, and resolution without changing SLA or ownership", async () => {
+  it("receives head assignment, reads its own forwarded office queue, and processes notes, information, attachments, and head-approved resolution without changing SLA or ownership", async () => {
     const d = await setup(role);
     expect(await canAccessComplaint(session(d.staff), d.complaint)).toBe(false);
     const forwarded = await d.forward();
@@ -194,18 +198,23 @@ describe.each(["vpaa", "vpaf"] as const)("%s receiving staff", (role) => {
       ).status,
     ).toBe(200);
     d.login(d.staff);
+    d.login(d.staff);
+    const submittedResolution = await requestResolution(
+      request({
+        resolutionSummary: "The receiving office reviewed the supporting details and resolved the concern.",
+        message: "The concern is ready for head review.",
+      }),
+      context(saved._id),
+    );
+    expect(submittedResolution.status).toBe(201);
+    const approvalRequest = (await submittedResolution.json()).request;
+    expect((await Complaint.findById(saved._id))?.status).toBe("in_progress");
+    d.login(d.receivingHead);
     expect(
       (
-        await updateStatus(
-          request(
-            {
-              status: "resolved",
-              resolutionSummary:
-                "The receiving office reviewed the supporting details and resolved the concern.",
-            },
-            "PATCH",
-          ),
-          context(saved._id),
+        await decideResolution(
+          request({ action: "approve" }, "PATCH"),
+          context(approvalRequest._id),
         )
       ).status,
     ).toBe(200);

@@ -39,10 +39,10 @@ export default async function PublicLayout({ children }: { children: React.React
 
         <div className="relative mt-auto">
           <h2 className="max-w-sm text-3xl leading-tight font-semibold text-white xl:text-4xl">
-            Heard. Handle. Resolved
+            Your concern deserves a response.
           </h2>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white">
-            Submit a concern, follow its progress, and review the response.
+            Send a complaint, check its progress, and read the response when it’s ready.
           </p>
         </div>
         <p className="relative mt-12 text-xs text-white">

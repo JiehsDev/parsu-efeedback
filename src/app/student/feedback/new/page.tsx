@@ -22,7 +22,7 @@ export default async function NewFeedbackPage() {
     .lean();
 
   return (
-    <div className="w-full max-w-3xl space-y-5">
+    <div className="w-full space-y-6">
       <Link
         href="/student/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -33,10 +33,10 @@ export default async function NewFeedbackPage() {
 
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
-          Share Feedback
+          Share feedback
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Share suggestions and observations. Need help with a specific problem?{" "}
+          Have a suggestion or comment? For help with a specific issue,{" "}
           <Link
             href="/student/complaints/new"
             className="text-[var(--primary)] underline underline-offset-2"
@@ -47,7 +47,46 @@ export default async function NewFeedbackPage() {
         </p>
       </div>
 
-      <FeedbackForm />
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(17rem,0.75fr)]">
+        <FeedbackForm />
+
+        <aside className="border-t border-[var(--border)] pt-5 xl:sticky xl:top-6 xl:border-t-0 xl:border-l xl:pl-6 xl:pt-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">
+            A useful note
+          </p>
+          <h2 className="mt-2 text-lg font-semibold tracking-tight text-[var(--foreground)]">
+            Make your feedback specific
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
+            A few concrete details help reviewers understand what happened and what could improve.
+          </p>
+
+          <ul className="mt-5 space-y-4 text-sm text-[var(--foreground)]">
+            <li>
+              <span className="block font-medium">Name the situation</span>
+              <span className="mt-1 block leading-relaxed text-[var(--muted-foreground)]">
+                Mention the service, class, or process you’re referring to.
+              </span>
+            </li>
+            <li>
+              <span className="block font-medium">Add useful context</span>
+              <span className="mt-1 block leading-relaxed text-[var(--muted-foreground)]">
+                Include when or where it happened, and what made it difficult.
+              </span>
+            </li>
+            <li>
+              <span className="block font-medium">Suggest a next step</span>
+              <span className="mt-1 block leading-relaxed text-[var(--muted-foreground)]">
+                If you have an idea, say what change would help.
+              </span>
+            </li>
+          </ul>
+
+          <p className="mt-5 border-t border-[var(--border)] pt-4 text-xs leading-relaxed text-[var(--muted-foreground)]">
+            Avoid sharing passwords or sensitive personal details. For help with a specific problem, file a complaint so you can track its progress.
+          </p>
+        </aside>
+      </div>
 
       {recent.length > 0 && <FeedbackList feedback={JSON.parse(JSON.stringify(recent))} />}
     </div>

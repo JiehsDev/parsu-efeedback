@@ -123,8 +123,9 @@ export default async function StudentComplaintsPage({
 
   const complaints = await Complaint.find(filter)
     .select(
-      "title ticketNumber priority status createdAt updatedAt slaResponseDueAt slaResolutionDueAt isOverdue",
+      "title ticketNumber priority status createdAt updatedAt slaResponseDueAt slaResolutionDueAt isOverdue resolvedByRef",
     )
+    .populate("resolvedByRef", "firstName lastName")
     .sort(SORT_ORDERS[sort])
     .skip((page - 1) * PAGE_SIZE)
     .limit(PAGE_SIZE)
@@ -265,7 +266,7 @@ export default async function StudentComplaintsPage({
             <>
               <p className="mt-3 text-sm font-medium text-[var(--foreground)]">No complaints yet</p>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Anything you file shows up here with its status and deadline.
+                Your submitted complaints will appear here with their status and deadlines.
               </p>
               <Link
                 href="/student/complaints/new"

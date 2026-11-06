@@ -41,6 +41,7 @@ export const PRIORITY_FLAG: Partial<Record<string, { label: string; className: s
 
 export type ComplaintRowData = {
   slaPolicy?: SlaPolicy | null;
+  resolvedByRef?: { firstName?: string; lastName?: string } | null;
   _id: unknown;
   title: string;
   ticketNumber: string;
@@ -51,6 +52,33 @@ export type ComplaintRowData = {
   slaResolutionDueAt?: Date | null;
   isOverdue?: boolean;
 };
+
+export function resolverDisplayName(
+  status: string,
+  resolvedByRef?: { firstName?: string; lastName?: string } | null,
+) {
+  if (status !== "resolved" && status !== "closed") return "—";
+  const resolverName = [resolvedByRef?.firstName, resolvedByRef?.lastName]
+    .filter(Boolean)
+    .join(" ");
+  return resolverName || "Not recorded";
+}
+
+export function ResolverCell({
+  status,
+  resolvedByRef,
+  className = "",
+}: {
+  status: string;
+  resolvedByRef?: { firstName?: string; lastName?: string } | null;
+  className?: string;
+}) {
+  return (
+    <span className={`text-xs text-[var(--muted-foreground)] ${className}`.trim()}>
+      {resolverDisplayName(status, resolvedByRef)}
+    </span>
+  );
+}
 
 /**
  * Which SLA clock a student actually cares about right now.
@@ -93,6 +121,7 @@ export function ComplaintRowHeader({ showTicket = true }: { showTicket?: boolean
     <div className="hidden items-center gap-4 border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2 text-[11px] font-medium tracking-wide text-[var(--muted-foreground)] uppercase sm:flex">
       {showTicket && <span className="w-[10.5rem] shrink-0">Ticket</span>}
       <span className="min-w-0 flex-1">Complaint</span>
+      <span className="hidden w-36 shrink-0 xl:block">Resolver</span>
       <span className="w-24 shrink-0 text-right">Due</span>
       <span className="w-[7.5rem] shrink-0">Status</span>
       <span className="w-16 shrink-0 text-right">Updated</span>
@@ -104,11 +133,13 @@ export function ComplaintListRow({
   complaint,
   hrefPrefix,
   showTicket = true,
+  showCopyButton = true,
 }: {
   complaint: ComplaintRowData;
   /** e.g. "/student/complaints" — the row links to `${hrefPrefix}/${_id}`. */
   hrefPrefix: string;
   showTicket?: boolean;
+  showCopyButton?: boolean;
 }) {
   const flag = PRIORITY_FLAG[complaint.priority];
   const sla = slaClock(complaint);
@@ -127,10 +158,12 @@ export function ComplaintListRow({
         {showTicket && (
           <span className="qa-mono pointer-events-auto hidden w-[10.5rem] shrink-0 items-center gap-1 text-xs text-[var(--muted-foreground)] sm:inline-flex">
             <span className="truncate">{complaint.ticketNumber}</span>
-            <CopyButton
-              value={complaint.ticketNumber}
-              className="opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100"
-            />
+            {showCopyButton && (
+              <CopyButton
+                value={complaint.ticketNumber}
+                className="opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100"
+              />
+            )}
           </span>
         )}
 
@@ -150,7 +183,17 @@ export function ComplaintListRow({
             <span aria-hidden>&middot;</span>
             <RelativeTime date={complaint.updatedAt} className="qa-tabular shrink-0" />
           </span>
+          <span className="mt-0.5 text-xs text-[var(--muted-foreground)] xl:hidden">
+            <span className="font-medium">Resolver:</span>{" "}
+            {resolverDisplayName(complaint.status, complaint.resolvedByRef)}
+          </span>
         </span>
+
+        <ResolverCell
+          status={complaint.status}
+          resolvedByRef={complaint.resolvedByRef}
+          className="hidden w-36 shrink-0 truncate xl:block"
+        />
 
         <span className="hidden w-24 shrink-0 text-right text-xs sm:block">
           {sla ? (

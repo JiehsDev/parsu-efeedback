@@ -57,6 +57,7 @@ test("VPAA and VPAF heads assign formally forwarded complaints to their own staf
       await head.goto(`/admin/complaints/${complaint._id}`);
       await head.getByRole("button", { name: "Change Assignee", exact: true }).click();
       const dialog = head.getByRole("dialog");
+      await expect(dialog.getByRole("combobox").first()).toBeEnabled();
       await dialog.getByRole("combobox").first().click();
       await head
         .getByRole("option", { name: `${role.toUpperCase()} Demo Staff`, exact: true })
@@ -91,8 +92,12 @@ test("VPAA and VPAF heads assign formally forwarded complaints to their own staf
         .fill(
           "The assigned receiving-office staff member reviewed and resolved the reported service concern.",
         );
-      await staff.getByRole("button", { name: /Update Status/i }).click();
-      await expect(staff.getByText("Update status", { exact: true })).toHaveCount(0);
+      await staff.getByRole("button", { name: "Request Resolution Approval", exact: true }).click();
+      const pending = (await (await staff.request.get(`/api/complaints/${complaint._id}/resolution-requests`)).json()).requests;
+      expect(pending[0].status).toBe("pending");
+      expect((await (await staff.request.get(`/api/complaints/${complaint._id}`)).json()).complaint.status).toBe("in_progress");
+      await head.goto(`/admin/complaints/${complaint._id}`);
+      await head.getByRole("button", { name: "Approve resolution", exact: true }).click();
       expect((await otherStaff.request.get(`/api/complaints/${complaint._id}`)).status()).toBe(403);
       const final = (await (await staff.request.get(`/api/complaints/${complaint._id}`)).json())
         .complaint;

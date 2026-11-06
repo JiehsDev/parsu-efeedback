@@ -38,31 +38,31 @@ interface Category {
 }
 
 const TIPS = [
-  "Be specific — include dates, locations, and names of anyone involved.",
-  "Attach evidence — screenshots, photos, or documents help staff resolve it faster.",
-  "One issue per complaint — file separate complaints for unrelated concerns.",
+  "Add dates, locations, and names when they help explain what happened.",
+  "Attach a photo, screenshot, or document if it supports your complaint.",
+  "File a separate complaint for each unrelated issue.",
 ];
 
 const PROCESS_STEPS = [
   {
     icon: Send,
     title: "Submitted",
-    description: "Receive a reference number to track your complaint.",
+    description: "Use your reference number to find this complaint later.",
   },
   {
     icon: Building2,
     title: "Under review",
-    description: "Your concern is being reviewed.",
+    description: "Staff check the details and decide the next step.",
   },
   {
     icon: UserCheck,
     title: "In progress",
-    description: "Check for updates and reply if more information is needed.",
+    description: "Check for updates and send details if staff ask for them.",
   },
   {
     icon: CheckCircle2,
     title: "Resolved",
-    description: "You're notified and can rate how it was handled.",
+    description: "We’ll notify you. You can then rate the response.",
   },
 ];
 
@@ -178,7 +178,7 @@ export default function NewComplaintPage() {
     };
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      setError("Please correct the highlighted fields below.");
+      setError("Fix the highlighted fields, then try again.");
       const formElement = event.currentTarget;
       requestAnimationFrame(() => focusFirstInvalid(formElement));
       return;
@@ -227,7 +227,7 @@ export default function NewComplaintPage() {
 
       router.push(`/student/complaints?submitted=${data.complaint.ticketNumber}`);
     } catch {
-      setError("Could not submit your complaint. Please try again.");
+      setError("We couldn’t submit your complaint. Try again.");
       setIsSubmitting(false);
       setUploadProgress(null);
     }
@@ -325,7 +325,7 @@ export default function NewComplaintPage() {
                 }}
                 aria-invalid={!!fieldErrors.title}
                 aria-describedby="complaint-title-error"
-                placeholder="Brief summary of the issue"
+                placeholder="Summarize the issue in a few words"
                 className={inputClass}
               />
               <FieldError id="complaint-title-error" message={fieldErrors.title} />
@@ -350,7 +350,7 @@ export default function NewComplaintPage() {
                   }}
                   aria-invalid={!!fieldErrors.description}
                   aria-describedby="complaint-description-error"
-                  placeholder="Explain what happened, when, and any relevant details."
+                  placeholder="What happened, when did it happen, and what help do you need?"
                   className={`${inputClass} py-3`}
                 />
               </div>
@@ -369,6 +369,9 @@ export default function NewComplaintPage() {
                 <Paperclip className="h-4 w-4" />
                 Click to attach files, or drag them here
               </label>
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Attach a photo, screenshot, or document that helps explain the issue. Make sure it’s readable and doesn’t include unrelated personal information.
+              </p>
               <input
                 id="attachments"
                 type="file"
@@ -424,7 +427,7 @@ export default function NewComplaintPage() {
             <div className="flex items-center gap-2">
               <Lightbulb className="h-4 w-4 shrink-0 text-[var(--qa-amber-strong)]" />
               <p className="text-sm font-medium text-[var(--foreground)]">
-                Tips for a faster resolution
+                Help us understand the issue
               </p>
             </div>
             <ul className="mt-3 space-y-2.5">
@@ -441,7 +444,7 @@ export default function NewComplaintPage() {
           </div>
 
           <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
-            <p className="text-sm font-medium text-[var(--foreground)]">What happens next</p>
+            <p className="text-sm font-medium text-[var(--foreground)]">After you submit</p>
             <div className="mt-3">
               {PROCESS_STEPS.map((step, i) => (
                 <div key={step.title} className="relative flex gap-2.5 pb-4 last:pb-0">

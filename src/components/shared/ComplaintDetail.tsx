@@ -10,6 +10,7 @@ import { ComplaintNote } from "@/models/ComplaintNote";
 import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
+import { ResolutionRequest } from "@/models/ResolutionRequest";
 import { InformationRequest } from "@/models/InformationRequest";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
 import { StatusBadge } from "./StatusBadge";
@@ -39,7 +40,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     })
     .lean();
   if (!c || !(await canAccessComplaint(session, c))) notFound();
-  const [timeline, notes, office, staff, history, requests, archives] = await Promise.all([
+  const [timeline, notes, office, staff, history, requests, archives, resolutionRequests] = await Promise.all([
     ComplaintTimeline.find({ complaintRef: id })
       .sort({ createdAt: 1 })
       .populate("actorRef", "firstName lastName role employeeOrStudentId")
@@ -60,6 +61,10 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     ArchiveRequest.find({ complaintRef: id })
       .sort({ createdAt: -1 })
       .populate("requestedByRef", "firstName lastName role")
+      .lean(),
+    ResolutionRequest.find({ complaintRef: id })
+      .sort({ createdAt: -1 })
+      .populate("requestedByRef reviewedByRef", "firstName lastName role")
       .lean(),
   ]);
   const forwarding = await ForwardingRequest.find({ complaintRef: id })
@@ -163,6 +168,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
             staff={staff}
             requests={plain(requests)}
             archives={plain(archives)}
+            resolutionRequests={plain(resolutionRequests)}
           />
           <SlaDetails
             complaint={c}

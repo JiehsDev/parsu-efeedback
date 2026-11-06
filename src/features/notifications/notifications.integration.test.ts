@@ -60,7 +60,7 @@ describe("Notifications — BR-071/072/073/074", () => {
     ).rejects.toThrow();
   });
 
-  it("all six documented notification types are valid", async () => {
+  it("documented notification types are valid", async () => {
     const user = await createTestUser();
     const types: NotificationType[] = [
       "complaint_submitted",
@@ -69,6 +69,8 @@ describe("Notifications — BR-071/072/073/074", () => {
       "sla_warning",
       "complaint_resolved",
       "report_generated",
+      "resolution_request",
+      "resolution_decision",
     ];
 
     for (const type of types) {

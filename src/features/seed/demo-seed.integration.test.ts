@@ -39,6 +39,7 @@ it("repeated configuration seeds preserve existing complaint, forwarding, user, 
     "complaint_notes",
     "information_requests",
     "archive_requests",
+    "resolution_requests",
     "notifications",
   ];
   for (const name of collections)

@@ -55,10 +55,24 @@ export async function GET(
     ? fileUrl.slice(env.R2_PUBLIC_URL.length + 1)
     : fileUrl;
 
-  const object = await r2Client.send(
-    new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
-  );
-  const bytes = await object.Body!.transformToByteArray();
+  let bytes: Uint8Array;
+  try {
+    const object = await r2Client.send(
+      new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
+    );
+    if (!object.Body) {
+      return NextResponse.json({ error: "The storage service returned an empty file." }, { status: 502 });
+    }
+    bytes = await object.Body.transformToByteArray();
+  } catch (error) {
+    const code = error instanceof Error ? error.name : "StorageError";
+    const message = code === "NoSuchKey" || code === "NotFound"
+      ? "The file is no longer present in storage."
+      : code === "AccessDenied" || code === "Forbidden"
+        ? "Storage denied access to this file."
+        : `Storage could not return this file (${code}).`;
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 
   // Never trust the stored mimeType for inline rendering — it's set from
   // client input at attachment-creation time, and serving arbitrary

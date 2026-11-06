@@ -32,18 +32,18 @@ import {
 const HOW_IT_WORKS = [
   {
     icon: Zap,
-    title: "Submit a complaint",
-    body: "Describe your concern and the help you need.",
+    title: "File a complaint",
+    body: "Choose a category, then tell us what happened and what help you need.",
   },
   {
     icon: Timer,
-    title: "Check your progress",
-    body: "View updates and response dates in your complaint details.",
+    title: "Track progress",
+    body: "Check the status, updates, and response dates on each complaint.",
   },
   {
     icon: Bell,
-    title: "Follow your complaint",
-    body: "Check updates, provide requested information, and review the resolution.",
+    title: "Reply and review",
+    body: "Send more details when staff ask. When they resolve the complaint, review their response.",
   },
 ];
 
@@ -58,8 +58,9 @@ export default async function StudentDashboardPage() {
   const [complaints, statusCounts] = await Promise.all([
     Complaint.find({ studentRef: studentId, isArchived: false })
       .select(
-        "title ticketNumber priority status createdAt updatedAt slaResponseDueAt slaResolutionDueAt isOverdue",
+        "title ticketNumber priority status createdAt updatedAt slaResponseDueAt slaResolutionDueAt isOverdue resolvedByRef",
       )
+      .populate("resolvedByRef", "firstName lastName")
       .sort({ updatedAt: -1 })
       .limit(6)
       .lean(),
@@ -93,7 +94,7 @@ export default async function StudentDashboardPage() {
   const SUMMARY = [
     {
       label: "Open",
-      description: "Still being processed",
+      description: "Staff are working on these",
       value: openCount,
       href: "/student/complaints",
       emphasis: "",
@@ -102,7 +103,7 @@ export default async function StudentDashboardPage() {
     },
     {
       label: "Needs Your Reply",
-      description: "Needs your response",
+      description: "Staff asked for more details",
       value: awaitingYou,
       href: "/student/complaints?status=pending_information",
       emphasis: awaitingYou > 0 ? "text-[var(--qa-amber-strong)]" : "",
@@ -111,7 +112,7 @@ export default async function StudentDashboardPage() {
     },
     {
       label: "Past Due",
-      description: "Deadline exceeded",
+      description: "The service deadline has passed",
       value: overdueCount,
       href: "/student/complaints?due=overdue",
       emphasis: overdueCount > 0 ? "text-[var(--qa-rose-strong)]" : "",
@@ -120,7 +121,7 @@ export default async function StudentDashboardPage() {
     },
     {
       label: "Resolved",
-      description: "Marked as resolved",
+      description: "Staff have sent a response",
       value: resolvedCount,
       href: "/student/complaints?view=resolved",
       emphasis: "",
@@ -197,16 +198,16 @@ export default async function StudentDashboardPage() {
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--muted-foreground)]">
               <ClipboardList className="h-4 w-4" />
             </span>
-            <p className="mt-3 text-sm font-medium text-[var(--foreground)]">No Complaints Yet</p>
+            <p className="mt-3 text-sm font-medium text-[var(--foreground)]">No complaints yet</p>
             <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-              Here is what happens after you submit one.
+              Once you file a complaint, its status and updates will appear here.
             </p>
             <Link
               href="/student/complaints/new"
               className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3.5 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
             >
               <Plus className="h-4 w-4" />
-              Submit Your First Complaint
+              File your first complaint
             </Link>
           </div>
 

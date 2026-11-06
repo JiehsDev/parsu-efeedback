@@ -10,6 +10,7 @@ export { Attachment } from "./Attachment";
 export { RoutingRule } from "./RoutingRule";
 export { SLARule } from "./SLARule";
 export { ArchiveRequest } from "./ArchiveRequest";
+export { ResolutionRequest } from "./ResolutionRequest";
 export { Notification } from "./Notification";
 export { AuditLog } from "./AuditLog";
 export { Feedback } from "./Feedback";

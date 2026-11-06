@@ -67,7 +67,7 @@ export default function RegisterPage() {
       }
     }
 
-    return "Registration failed.";
+    return "We couldn’t create your account. Check your details and try again.";
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -91,7 +91,7 @@ export default function RegisterPage() {
 
       router.push("/login?registered=true");
     } catch {
-      setError("Could not create your account. Please try again.");
+      setError("We couldn’t create your account. Try again.");
       setIsSubmitting(false);
     }
   }
@@ -100,10 +100,10 @@ export default function RegisterPage() {
     <main className="w-full max-w-md">
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
         <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-          Create your account
+          Create a student account
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          ParSU e-Feedback — students only
+          Register with your ParSU student details.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>

@@ -111,6 +111,25 @@ export const archiveDecisionSchema = z.object({
   rejectionReason: z.string().trim().max(2000).optional().default(""),
 });
 
+export const resolutionRequestSchema = z.object({
+  resolutionSummary: z
+    .string()
+    .trim()
+    .max(4000, "Resolution details must be 4,000 characters or fewer.")
+    .optional()
+    .default(""),
+  message: z.string().trim().max(2000, "Message must be 2,000 characters or fewer.").optional().default(""),
+});
+
+export const resolutionDecisionSchema = z.object({
+  action: z.enum(["approve", "reject"]),
+  rejectionReason: z.string().trim().max(2000).optional().default(""),
+}).superRefine((value, ctx) => {
+  if (value.action === "reject" && !value.rejectionReason) {
+    ctx.addIssue({ code: "custom", path: ["rejectionReason"], message: "Add a reason before rejecting this request." });
+  }
+});
+
 export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
 export type UpdateComplaintStatusInput = z.infer<typeof updateComplaintStatusSchema>;
 export type AddNoteInput = z.infer<typeof addNoteSchema>;

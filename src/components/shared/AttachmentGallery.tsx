@@ -17,14 +17,25 @@ interface AttachmentRecord {
 export function AttachmentGallery({ complaintId }: { complaintId: string }) {
   const [attachments, setAttachments] = useState<AttachmentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [preview, setPreview] = useState<AttachmentRecord | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [attachmentErrors, setAttachmentErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     clientFetch(`/api/complaints/${complaintId}/attachments`)
-      .then((res) => res.json())
-      .then((data) => setAttachments(data.attachments ?? []))
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
+        setAttachments(data.attachments ?? []);
+      })
+      .catch((error) => setLoadError(error instanceof Error ? error.message : "Could not load attachment details."))
       .finally(() => setLoading(false));
   }, [complaintId]);
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   useEffect(() => {
     if (!preview) return;
@@ -45,6 +56,7 @@ export function AttachmentGallery({ complaintId }: { complaintId: string }) {
   }
 
   if (attachments.length === 0) {
+    if (loadError) return <p role="alert" className="text-sm text-red-500">Couldn’t load attachments: {loadError}</p>;
     return null; // no section shown at all when nothing's attached
   }
 
@@ -53,6 +65,51 @@ export function AttachmentGallery({ complaintId }: { complaintId: string }) {
 
   function downloadUrl(attachmentId: string) {
     return `/api/complaints/${complaintId}/attachments/${attachmentId}/download`;
+  }
+
+  async function fetchAttachment(attachment: AttachmentRecord) {
+    setAttachmentErrors((current) => ({ ...current, [attachment._id]: "" }));
+    try {
+      const response = await clientFetch(downloadUrl(attachment._id));
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error ?? `Request failed (${response.status})`);
+      }
+      return URL.createObjectURL(await response.blob());
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "Unknown storage error";
+      setAttachmentErrors((current) => ({ ...current, [attachment._id]: reason }));
+      return null;
+    }
+  }
+
+  async function openPreview(attachment: AttachmentRecord) {
+    const url = await fetchAttachment(attachment);
+    if (url) {
+      setPreviewUrl(url);
+      setPreview(attachment);
+    }
+  }
+
+  async function downloadAttachment(attachment: AttachmentRecord) {
+    const url = await fetchAttachment(attachment);
+    if (!url) return;
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = attachment.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function explainImageFailure(attachment: AttachmentRecord) {
+    const url = await fetchAttachment(attachment);
+    if (url) {
+      URL.revokeObjectURL(url);
+      setAttachmentErrors((current) => ({
+        ...current,
+        [attachment._id]: "The file was fetched, but the browser couldn’t display it as an image.",
+      }));
+    }
   }
 
   return (
@@ -72,15 +129,18 @@ export function AttachmentGallery({ complaintId }: { complaintId: string }) {
             <button
               key={img._id}
               type="button"
-              onClick={() => setPreview(img)}
+              onClick={() => void openPreview(img)}
               className="group relative aspect-square overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--muted)]"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={downloadUrl(img._id)}
-                alt={img.fileName}
-                className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-              />
+              <span className="sr-only">Preview {img.fileName}</span>
+              {attachmentErrors[img._id] ? (
+                <span className="absolute inset-0 flex items-center justify-center p-2 text-center text-xs text-red-500">
+                  Couldn’t load image: {attachmentErrors[img._id]}
+                </span>
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={downloadUrl(img._id)} alt={img.fileName} onError={() => void explainImageFailure(img)} className="h-full w-full object-cover transition-opacity group-hover:opacity-80" />
+              )}
             </button>
           ))}
         </div>
@@ -90,18 +150,16 @@ export function AttachmentGallery({ complaintId }: { complaintId: string }) {
         <ul className="mt-3 space-y-1.5">
           {files.map((file) => (
             <li key={file._id}>
-              <a
-                href={downloadUrl(file._id)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2.5 rounded-xl bg-[var(--muted)]/50 px-3 py-2.5 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
-              >
+              <div className="rounded-xl bg-[var(--muted)]/50 px-3 py-2.5 text-sm text-[var(--foreground)]">
+                <button type="button" onClick={() => void downloadAttachment(file)} className="flex w-full items-center gap-2.5 text-left">
                 <FileText className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
                 <span className="truncate">{file.fileName}</span>
                 <span className="ml-auto shrink-0 text-xs text-[var(--muted-foreground)]">
                   {(file.sizeBytes / 1024).toFixed(0)} KB
                 </span>
-              </a>
+                </button>
+                {attachmentErrors[file._id] && <p role="alert" className="mt-2 text-xs text-red-500">Couldn’t fetch this attachment: {attachmentErrors[file._id]}</p>}
+              </div>
             </li>
           ))}
         </ul>
@@ -119,9 +177,8 @@ export function AttachmentGallery({ complaintId }: { complaintId: string }) {
             <p className="truncate text-sm font-medium text-white/90">{preview.fileName}</p>
             <div className="flex shrink-0 items-center gap-2">
               <a
-                href={downloadUrl(preview._id)}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={previewUrl ?? undefined}
+                download={preview.fileName}
                 onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/20"
               >
@@ -139,7 +196,7 @@ export function AttachmentGallery({ complaintId }: { complaintId: string }) {
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={downloadUrl(preview._id)}
+            src={previewUrl ?? undefined}
             alt={preview.fileName}
             onClick={(e) => e.stopPropagation()}
             className="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl"

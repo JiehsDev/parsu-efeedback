@@ -19,7 +19,11 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { escapeRegExp } from "@/lib/utils";
 import { COMPLAINT_STATUSES, type ComplaintStatus } from "@/lib/constants";
-import { slaClock, type ComplaintRowData } from "@/components/shared/ComplaintListRow";
+import {
+  resolverDisplayName,
+  slaClock,
+  type ComplaintRowData,
+} from "@/components/shared/ComplaintListRow";
 
 type SlaFilter = "" | "overdue" | "due" | "track";
 const DUE_SOON_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -124,7 +128,7 @@ function QueueRow({ complaint, isMine }: { complaint: any; isMine: boolean }) {
         aria-label={`View complaint ${complaint.ticketNumber}: ${complaint.title}`}
         className="group block px-4 py-3 transition-colors outline-none hover:bg-[var(--muted)]/40 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
       >
-        <div className="grid items-center gap-3 2xl:grid-cols-[9rem_minmax(15rem,1fr)_8rem_8rem_9rem_7rem_4rem]">
+        <div className="grid items-center gap-3 2xl:grid-cols-[9rem_minmax(15rem,1fr)_minmax(9rem,1fr)_8rem_8rem_9rem_7rem_4rem]">
           <div className="flex min-w-0 items-center gap-1 font-mono text-xs text-[var(--muted-foreground)]">
             <span className="truncate">{complaint.ticketNumber}</span>
             <CopyButton
@@ -150,6 +154,9 @@ function QueueRow({ complaint, isMine }: { complaint: any; isMine: boolean }) {
               )}
             </p>
           </div>
+          <span className="hidden min-w-0 truncate text-xs text-[var(--muted-foreground)] 2xl:block">
+            {resolverDisplayName(complaint.status, complaint.resolvedByRef)}
+          </span>
           <span
             className={`w-fit rounded-md px-2 py-1 text-[11px] font-semibold capitalize ${priorityClass}`}
           >
@@ -172,8 +179,11 @@ function QueueRow({ complaint, isMine }: { complaint: any; isMine: boolean }) {
             View <ChevronRight className="h-4 w-4" />
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-2 2xl:hidden">
+        <div className="mt-2 flex flex-wrap items-center gap-2 2xl:hidden">
           <StatusBadge status={complaint.status as ComplaintStatus} />
+          <span className="text-xs text-[var(--muted-foreground)]">
+            Resolver: {resolverDisplayName(complaint.status, complaint.resolvedByRef)}
+          </span>
           <span className={`text-xs font-semibold ${slaClass}`}>
             {sla.label} · {sla.detail}
           </span>
@@ -231,11 +241,13 @@ export default async function StaffComplaintsPage({
     .populate("assignedOfficeRef", "name")
     .populate("categoryRef", "name")
     .populate("assignedStaffRef", "firstName lastName role")
+    .populate("resolvedByRef", "firstName lastName")
     .lean();
   const complaints = await Complaint.find(activeFilter as any)
     .populate("assignedOfficeRef", "name")
     .populate("categoryRef", "name")
     .populate("assignedStaffRef", "firstName lastName role")
+    .populate("resolvedByRef", "firstName lastName")
     .lean();
   const active = allComplaints.filter(
     (complaint: any) => !["resolved", "closed", "withdrawn"].includes(complaint.status),
@@ -498,9 +510,10 @@ export default async function StaffComplaintsPage({
             </div>
             <Clock3 className="h-4 w-4 text-[var(--muted-foreground)]" />
           </div>
-          <div className="hidden grid-cols-[9rem_minmax(15rem,1fr)_8rem_8rem_9rem_7rem_4rem] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/35 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase 2xl:grid">
+          <div className="hidden grid-cols-[9rem_minmax(15rem,1fr)_minmax(9rem,1fr)_8rem_8rem_9rem_7rem_4rem] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/35 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase 2xl:grid">
             <span>Ticket</span>
             <span>Complaint / owner</span>
+            <span>Resolver</span>
             <span>Priority</span>
             <span>Status</span>
             <span>SLA state</span>

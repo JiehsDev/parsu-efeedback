@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   timeline: vi.fn(),
   audit: vi.fn(),
   notify: vi.fn(),
+  isOfficeHead: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/lib/db", () => ({ connectToDatabase: vi.fn() }));
@@ -15,6 +16,7 @@ vi.mock("@/lib/osas-operations", () => ({
   canProcessComplaint: async (s: any, c: any) => s.user.officeRef === c.assignedOfficeRef,
 }));
 vi.mock("@/lib/complaint-access", () => ({ canAccessComplaint: async () => true }));
+vi.mock("@/lib/office-head", () => ({ isOfficeHead: mocks.isOfficeHead }));
 vi.mock("@/models/Complaint", () => ({ Complaint: { findById: mocks.findById } }));
 vi.mock("@/models/ComplaintTimeline", () => ({ ComplaintTimeline: { create: mocks.timeline } }));
 vi.mock("@/features/audit-log/services/audit-log.service", () => ({ writeAuditLog: mocks.audit }));
@@ -62,9 +64,18 @@ beforeEach(() => {
   mocks.auth.mockResolvedValue({
     user: { id: staffId, role: "office_staff", officeRef: officeId },
   });
+  mocks.isOfficeHead.mockResolvedValue(true);
 });
 
 describe("complaint resolution", () => {
+  it("does not let a regular staff handler resolve directly", async () => {
+    mocks.isOfficeHead.mockResolvedValue(false);
+    const response = await update({ status: "resolved", resolutionSummary: "Completed." });
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toContain("resolution request");
+    expect(complaint.save).not.toHaveBeenCalled();
+    expect(mocks.timeline).not.toHaveBeenCalled();
+  });
   it.each(["submitted", "escalated"])(
     "requires the assignment workflow to mark %s complaints assigned",
     async (status) => {

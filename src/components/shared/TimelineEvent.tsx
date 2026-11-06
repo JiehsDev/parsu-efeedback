@@ -24,6 +24,8 @@ const EVENT_LABELS: Record<string, string> = {
   withdrawn: "Withdrawn by student",
   information_requested: "Additional information requested",
   information_submitted: "Additional information submitted",
+  resolution_requested: "Resolution submitted for approval",
+  resolution_rejected: "Resolution returned to staff",
 };
 
 export function TimelineEvent({
@@ -44,6 +46,8 @@ export function TimelineEvent({
       "forwarding_approved",
       "forwarding_rejected",
       "complaint_forwarded",
+      "resolution_requested",
+      "resolution_rejected",
     ].includes(event.eventType);
   const actor = event.actorRef;
   const actorName = getActorDisplayName(actor, viewerRole);

@@ -551,6 +551,38 @@ export async function notifyArchiveDecision(params: {
   });
 }
 
+export async function notifyResolutionRequest(params: {
+  userId: string;
+  ticketNumber: string;
+  complaintId: string;
+}) {
+  await createNotification({
+    userRef: params.userId,
+    type: "resolution_request",
+    title: "Resolution request needs review",
+    body: `A staff member submitted a resolution request for ${params.ticketNumber}.`,
+    relatedComplaintRef: params.complaintId,
+  });
+}
+
+export async function notifyResolutionDecision(params: {
+  userId: string;
+  approved: boolean;
+  ticketNumber: string;
+  complaintId: string;
+  reason?: string;
+}) {
+  await createNotification({
+    userRef: params.userId,
+    type: "resolution_decision",
+    title: params.approved ? "Resolution approved" : "Resolution request returned",
+    body: params.approved
+      ? `Your resolution request for ${params.ticketNumber} was approved.`
+      : `Your resolution request for ${params.ticketNumber} was not approved${params.reason ? `: ${params.reason}` : "."}`,
+    relatedComplaintRef: params.complaintId,
+  });
+}
+
 export async function notifyComplaintRestored(params: {
   studentId: string;
   ticketNumber: string;

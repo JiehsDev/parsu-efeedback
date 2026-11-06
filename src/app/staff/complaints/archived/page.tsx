@@ -8,6 +8,7 @@ import { Complaint } from "@/models/Complaint";
 import { Office } from "@/models/Office";
 import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggle";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { resolverDisplayName } from "@/components/shared/ComplaintListRow";
 import { escapeRegExp } from "@/lib/utils";
 import type { ComplaintStatus } from "@/lib/constants";
 
@@ -36,6 +37,7 @@ export default async function StaffArchivedComplaintsPage({
   const complaints = await Complaint.find(filter)
     .populate("assignedStaffRef", "firstName lastName")
     .populate("archivedByRef", "firstName lastName")
+    .populate("resolvedByRef", "firstName lastName")
     .sort({ archivedAt: -1 })
     .limit(200)
     .lean();
@@ -114,10 +116,11 @@ export default async function StaffArchivedComplaintsPage({
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
-          <div className="hidden grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_9rem_minmax(12rem,1fr)_auto] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase 2xl:grid">
+          <div className="hidden grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_minmax(9rem,1fr)_9rem_minmax(12rem,1fr)_auto] gap-3 border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2 text-[10px] font-semibold tracking-wide text-[var(--muted-foreground)] uppercase 2xl:grid">
             <span>Ticket</span>
             <span>Complaint</span>
             <span>Assigned staff</span>
+            <span>Resolver</span>
             <span>Original status</span>
             <span>Archive record</span>
             <span />
@@ -126,7 +129,7 @@ export default async function StaffArchivedComplaintsPage({
             {complaints.map((c: any) => (
               <li
                 key={String(c._id)}
-                className="flex flex-col gap-3 px-4 py-4 2xl:grid 2xl:grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_9rem_minmax(12rem,1fr)_auto] 2xl:items-center 2xl:gap-3"
+                className="flex flex-col gap-3 px-4 py-4 2xl:grid 2xl:grid-cols-[9rem_minmax(12rem,1fr)_minmax(10rem,1fr)_minmax(9rem,1fr)_9rem_minmax(12rem,1fr)_auto] 2xl:items-center 2xl:gap-3"
               >
                 <Link
                   href={`/staff/complaints/${c._id}`}
@@ -147,6 +150,10 @@ export default async function StaffArchivedComplaintsPage({
                   {c.assignedStaffRef
                     ? `${c.assignedStaffRef.firstName} ${c.assignedStaffRef.lastName}`
                     : "Unassigned"}
+                </p>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  <span className="2xl:hidden">Resolver: </span>
+                  {resolverDisplayName(c.status, c.resolvedByRef)}
                 </p>
                 <StatusBadge status={c.status as ComplaintStatus} />
                 <p className="text-xs text-[var(--muted-foreground)]">
