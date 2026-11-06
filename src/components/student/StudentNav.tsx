@@ -7,6 +7,7 @@ import Link from "next/link";
 import { isNavigationItemActive } from "@/lib/navigation";
 import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import { BrandLogo } from "@/components/shared/BrandLogo";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOutWithCacheReset } from "@/lib/client-sign-out";
 import { useEffect, useId, useRef, useState } from "react";
@@ -37,6 +38,7 @@ function getInitials(name: string): string {
 export function StudentNav({ userName }: { userName: string }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
+  const confirm = useConfirm();
   const accountId = useId();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,6 +73,18 @@ export function StudentNav({ userName }: { userName: string }) {
   }, [menuOpen]);
 
   const initials = getInitials(userName);
+
+  async function handleSignOut() {
+    const confirmed = await confirm({
+      title: "Sign out?",
+      message: "Are you sure you want to sign out?",
+      confirmLabel: "Sign out",
+      danger: true,
+    });
+    if (!confirmed) return;
+    setMenuOpen(false);
+    await signOutWithCacheReset();
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/15 bg-[var(--navigation)] backdrop-blur-xl">
@@ -161,7 +175,7 @@ export function StudentNav({ userName }: { userName: string }) {
                   </Link>
                   <button
                     onClick={() => {
-                      void signOutWithCacheReset();
+                      void handleSignOut();
                     }}
                     className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
                   >

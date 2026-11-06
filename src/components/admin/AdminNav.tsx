@@ -7,6 +7,7 @@ import Link from "next/link";
 import { isNavigationItemActive } from "@/lib/navigation";
 import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import { BrandLogo } from "@/components/shared/BrandLogo";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOutWithCacheReset } from "@/lib/client-sign-out";
 import { useEffect, useId, useRef, useState } from "react";
@@ -84,6 +85,7 @@ function getInitials(name: string) {
 export function AdminNav({ userName, role }: { userName: string; role: UserRole }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
+  const confirm = useConfirm();
   const accountId = useId();
   const isScopedSubAdmin = role === "vpaa" || role === "vpaf" || role === "osas";
   const roleLabel = ROLE_LABELS[role] ?? "Administrator";
@@ -145,6 +147,18 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   }, [menuOpen]);
 
   const initials = getInitials(userName);
+
+  async function handleSignOut() {
+    const confirmed = await confirm({
+      title: "Sign out?",
+      message: "Are you sure you want to sign out?",
+      confirmLabel: "Sign out",
+      danger: true,
+    });
+    if (!confirmed) return;
+    setMenuOpen(false);
+    await signOutWithCacheReset();
+  }
 
   function renderItem(item: (typeof PRIMARY_NAV_ITEMS)[number]) {
     const active = isNavigationItemActive(
@@ -275,7 +289,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
                   </Link>
                   <button
                     onClick={() => {
-                      void signOutWithCacheReset();
+                      void handleSignOut();
                     }}
                     className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
                   >
