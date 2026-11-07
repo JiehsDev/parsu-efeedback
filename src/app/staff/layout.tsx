@@ -5,6 +5,7 @@ import { StaffNav } from "@/components/staff/StaffNav";
 import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import { getStaffOffice, isOsasHead } from "@/lib/osas-operations";
+import { isOfficeHead as isHeadOfOffice } from "@/lib/office-head";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -15,6 +16,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   await connectToDatabase();
   const isOfficeHead = await isOsasHead(session);
   const office = await getStaffOffice(session);
+  const canReviewResolutionRequests = await isHeadOfOffice(session.user.id, office?._id);
   const officeLabel =
     office?.code === "OVPAA"
       ? "VPAA"
@@ -38,6 +40,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           isOfficeHead={isOfficeHead}
           officeLabel={officeLabel}
           showForwarding={office?.code === "OSAS"}
+          canReviewResolutionRequests={canReviewResolutionRequests}
         />
         <main id="main-content" className="workspace">
           {children}

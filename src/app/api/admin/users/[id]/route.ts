@@ -92,12 +92,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { password, forceLogout, ...rest } = parsed.data;
   const update: Record<string, unknown> = { ...rest };
 
+  const authorizationClaimsChanged =
+    (parsed.data.role !== undefined && parsed.data.role !== (before as any).role) ||
+    (parsed.data.officeRef !== undefined &&
+      String(parsed.data.officeRef ?? "") !== String((before as any).officeRef ?? "")) ||
+    (parsed.data.collegeRef !== undefined &&
+      String(parsed.data.collegeRef ?? "") !== String((before as any).collegeRef ?? "")) ||
+    (parsed.data.isActive !== undefined && parsed.data.isActive !== (before as any).isActive);
+
   if (password) {
     update.passwordHash = await hashPassword(password);
     update.passwordChangedAt = new Date();
-    // Force existing sessions to invalidate on password reset
-    update.tokenVersion = (before as any).tokenVersion + 1;
-  } else if (forceLogout) {
+  }
+  if (password || forceLogout || authorizationClaimsChanged) {
     update.tokenVersion = (before as any).tokenVersion + 1;
   }
 
@@ -157,7 +164,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   // Soft-delete preferred: deactivate rather than hard-delete, since Users
   // are referenced everywhere (complaints, notes, audit logs)
-  const after = await User.findByIdAndUpdate(id, { isActive: false }, { returnDocument: "after" })
+  const after = await User.findByIdAndUpdate(
+    id,
+    { isActive: false, tokenVersion: (before as any).tokenVersion + 1 },
+    { returnDocument: "after" },
+  )
     .select("-passwordHash")
     .lean();
 

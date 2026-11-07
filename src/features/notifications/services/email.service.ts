@@ -12,6 +12,8 @@ import Escalation from "../../../../emails/Escalation";
 import PasswordReset from "../../../../emails/PasswordReset";
 import InformationRequested from "../../../../emails/InformationRequested";
 import InformationSubmitted from "../../../../emails/InformationSubmitted";
+import EmailChangeConfirmation from "../../../../emails/EmailChangeConfirmation";
+import EmailChangedNotice from "../../../../emails/EmailChangedNotice";
 
 const EMAIL_SEND_TIMEOUT_MS = env.NODE_ENV === "production" ? 10_000 : 1_000;
 
@@ -27,7 +29,41 @@ export async function sendPasswordResetEmail(params: {
     PasswordReset({ recipientName: params.recipientName, resetUrl }),
   );
 }
-async function sendEmail(to: string, subject: string, react: React.ReactElement) {
+
+export async function sendEmailChangeConfirmation(params: {
+  to: string;
+  recipientName: string;
+  confirmationUrl: string;
+}) {
+  await sendEmail(
+    params.to,
+    "Confirm your ParSU e-Feedback email change",
+    EmailChangeConfirmation({
+      recipientName: params.recipientName,
+      confirmationUrl: params.confirmationUrl,
+    }),
+    { failOnError: true },
+  );
+}
+
+export async function sendEmailChangedNotice(params: {
+  to: string;
+  recipientName: string;
+  newEmail: string;
+}) {
+  await sendEmail(
+    params.to,
+    "Your ParSU e-Feedback email was changed",
+    EmailChangedNotice({ recipientName: params.recipientName, newEmail: params.newEmail }),
+  );
+}
+
+async function sendEmail(
+  to: string,
+  subject: string,
+  react: React.ReactElement,
+  { failOnError = false }: { failOnError?: boolean } = {},
+) {
   // Without a verified domain, Resend only delivers to the account's own
   // signup email. Redirect there in dev/test so the pipeline is still
   // exercised honestly, without needing real inboxes for seeded accounts.
@@ -35,19 +71,26 @@ async function sendEmail(to: string, subject: string, react: React.ReactElement)
 
   const actualSubject = env.NODE_ENV === "production" ? subject : `[would go to ${to}] ${subject}`;
 
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     const html = await render(react);
-    await Promise.race([
+    const result = await Promise.race<Awaited<ReturnType<typeof resend.emails.send>>>([
       resend.emails.send({
         from: env.RESEND_FROM_EMAIL,
         to: actualRecipient,
         subject: actualSubject,
         html,
       }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Email send timed out")), EMAIL_SEND_TIMEOUT_MS),
-      ),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Email send timed out")),
+          EMAIL_SEND_TIMEOUT_MS,
+        );
+      }),
     ]);
+    if (failOnError && result.error) {
+      throw new Error(result.error.message);
+    }
   } catch (error) {
     logger.error("Failed to send email", {
       to: actualRecipient,
@@ -55,6 +98,9 @@ async function sendEmail(to: string, subject: string, react: React.ReactElement)
       subject,
       error: error instanceof Error ? error.message : String(error),
     });
+    if (failOnError) throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }
 

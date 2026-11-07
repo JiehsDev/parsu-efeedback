@@ -6,6 +6,7 @@ import { Complaint, ComplaintTimeline, Office, ResolutionRequest } from "@/model
 import { createTestCategory, createTestOffice, createTestUser } from "@/test/fixtures";
 import { POST as requestResolution } from "@/app/api/complaints/[id]/resolution-requests/route";
 import { PATCH as decideResolution } from "@/app/api/resolution-requests/[id]/route";
+import { GET as listResolutionRequests } from "@/app/api/resolution-requests/route";
 import { GET as readComplaint } from "@/app/api/complaints/[id]/route";
 
 const mocks = vi.hoisted(() => ({ auth: vi.fn() }));
@@ -22,7 +23,14 @@ let mongo: MongoMemoryReplSet;
 beforeAll(async () => {
   mongo = await MongoMemoryReplSet.create({
     replSet: { count: 1 },
-    instanceOpts: [{ args: ["--setParameter", `indexBuildMinAvailableDiskSpaceMB=${process.env.MONGO_TEST_MIN_DISK_MB ?? "128"}`] }],
+    instanceOpts: [
+      {
+        args: [
+          "--setParameter",
+          `indexBuildMinAvailableDiskSpaceMB=${process.env.MONGO_TEST_MIN_DISK_MB ?? "128"}`,
+        ],
+      },
+    ],
   });
   await mongoose.connect(mongo.getUri());
   await Promise.all(Object.values(mongoose.models).map((model) => model.init()));
@@ -73,11 +81,107 @@ async function setup() {
 }
 
 describe("staff resolution approval workflow", () => {
+  it("lists only pending requests for the designated office head", async () => {
+    const d = await setup();
+    mocks.auth.mockResolvedValue(session(d.staff));
+    const submitted = await requestResolution(
+      request({ resolutionSummary: "Repaired and verified." }),
+      context(d.complaint._id),
+    );
+    const pending = (await submitted.json()).request;
+    await ResolutionRequest.create({
+      complaintRef: d.complaint._id,
+      requestedByRef: d.staff._id,
+      officeRef: d.office._id,
+      assignedStaffRef: d.staff._id,
+      complaintStatus: d.complaint.status,
+      status: "approved",
+    });
+
+    mocks.auth.mockResolvedValue(session(d.head));
+    const response = await listResolutionRequests();
+    expect(response.status).toBe(200);
+    const listed = (await response.json()).requests;
+    expect(listed).toHaveLength(1);
+    expect(String(listed[0]._id)).toBe(String(pending._id));
+    expect(String(listed[0].complaintRef._id)).toBe(String(d.complaint._id));
+
+    mocks.auth.mockResolvedValue(session(d.staff));
+    expect((await listResolutionRequests()).status).toBe(403);
+  });
+
+  it("allows the OSAS head account to list its office resolution requests", async () => {
+    const d = await setup();
+    const osasHead = await createTestUser({ role: "osas", officeRef: d.office._id });
+    await Office.updateOne({ _id: d.office._id }, { headUserRef: osasHead._id });
+    mocks.auth.mockResolvedValue(session(d.staff));
+    await requestResolution(
+      request({ resolutionSummary: "Repaired and verified." }),
+      context(d.complaint._id),
+    );
+
+    mocks.auth.mockResolvedValue(session(osasHead));
+    const response = await listResolutionRequests();
+    expect(response.status).toBe(200);
+    expect((await response.json()).requests).toHaveLength(1);
+  });
+
+  it.each([
+    { role: "vpaa", code: "OVPAA" },
+    { role: "vpaf", code: "OVPAF" },
+  ] as const)(
+    "allows the designated $role head to list only their office requests",
+    async ({ role, code }) => {
+      const office = await createTestOffice({ code, type: "university_office" });
+      const head = await createTestUser({ role, officeRef: office._id });
+      const staff = await createTestUser({ role: "office_staff", officeRef: office._id });
+      const student = await createTestUser();
+      const category = await createTestCategory({ defaultOfficeRef: office._id });
+      const complaint = await Complaint.create({
+        ticketNumber: `RESOLUTION-${code}-1`,
+        studentRef: student._id,
+        categoryRef: category._id,
+        title: `${role} resolution`,
+        description: "Review this resolution.",
+        priority: "medium",
+        status: "in_progress",
+        assignedOfficeRef: office._id,
+        initialOfficeRef: office._id,
+        assignedStaffRef: staff._id,
+        forwardedToRole: role,
+        forwardedAt: new Date(),
+        slaResponseDueAt: new Date("2026-12-01"),
+        slaResolutionDueAt: new Date("2026-12-04"),
+      });
+      await Office.updateOne({ _id: office._id }, { headUserRef: head._id });
+      await ResolutionRequest.create({
+        complaintRef: complaint._id,
+        requestedByRef: staff._id,
+        officeRef: office._id,
+        assignedStaffRef: staff._id,
+        complaintStatus: complaint.status,
+        resolutionSummary: "Completed work.",
+        status: "pending",
+      });
+
+      mocks.auth.mockResolvedValue(session(head));
+      const response = await listResolutionRequests();
+      expect(response.status).toBe(200);
+      const listed = (await response.json()).requests;
+      expect(listed).toHaveLength(1);
+      expect(String(listed[0].officeRef)).toBe(String(office._id));
+      expect(String(listed[0].complaintRef._id)).toBe(String(complaint._id));
+    },
+  );
+
   it("keeps the complaint active until the designated head approves, then resolves as the staff member", async () => {
     const d = await setup();
     mocks.auth.mockResolvedValue(session(d.staff));
     const submitResponse = await requestResolution(
-      request({ resolutionSummary: "Repaired and verified.", message: "Please review the completed work." }),
+      request({
+        resolutionSummary: "Repaired and verified.",
+        message: "Please review the completed work.",
+      }),
       context(d.complaint._id),
     );
     expect(submitResponse.status).toBe(201);
@@ -86,7 +190,12 @@ describe("staff resolution approval workflow", () => {
     expect(waiting?.status).toBe("in_progress");
     expect(waiting?.resolvedAt).toBeNull();
     expect(waiting?.resolvedByRef).toBeNull();
-    expect(await ComplaintTimeline.exists({ complaintRef: d.complaint._id, eventType: "resolution_requested" })).toBeTruthy();
+    expect(
+      await ComplaintTimeline.exists({
+        complaintRef: d.complaint._id,
+        eventType: "resolution_requested",
+      }),
+    ).toBeTruthy();
     mocks.auth.mockResolvedValue(session(d.student));
     const studentView = await readComplaint(
       new NextRequest("http://localhost/api/complaints/test"),
@@ -124,7 +233,10 @@ describe("staff resolution approval workflow", () => {
     );
     expect(missingReason.status).toBe(400);
     const rejected = await decideResolution(
-      request({ action: "reject", rejectionReason: "Please verify the repair with the student." }, "http://localhost/api/resolution-requests/test"),
+      request(
+        { action: "reject", rejectionReason: "Please verify the repair with the student." },
+        "http://localhost/api/resolution-requests/test",
+      ),
       context(pending._id),
     );
     expect(rejected.status).toBe(200);

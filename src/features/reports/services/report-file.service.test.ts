@@ -63,6 +63,16 @@ describe("report-file.service — BR-079", () => {
     expect(text).toContain('"Has, a comma ""and quotes"""');
   });
 
+  it("generateCsv neutralizes spreadsheet formulas, including after leading whitespace", () => {
+    const data = [
+      { ...rows[0]!, title: "=HYPERLINK(\"https://example.com\", \"open\")" },
+      { ...rows[1]!, title: " \t@SUM(1,1)" },
+    ];
+    const text = generateCsv(data).toString("utf-8");
+    expect(text).toContain(`"'=HYPERLINK(""https://example.com"", ""open"")"`);
+    expect(text).toContain(`"' \t@SUM(1,1)"`);
+  });
+
   it("generateCsv returns just the header for an empty row set", () => {
     const buffer = generateCsv([]);
     expect(buffer.toString("utf-8")).toBe(

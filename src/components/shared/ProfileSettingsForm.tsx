@@ -28,6 +28,7 @@ interface Profile {
   employeeOrStudentId: string;
   officeRef: { name: string } | null;
   collegeRef: { name: string } | null;
+  role: string;
 }
 
 const SECURITY_TIPS = [
@@ -38,24 +39,44 @@ const SECURITY_TIPS = [
 
 export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState("");
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
 
   useEffect(() => {
-    clientFetch("/api/me")
-      .then((res) => res.json())
-      .then((data) => {
+    async function loadProfile() {
+      try {
+        const response = await clientFetch("/api/me");
+        const data = await response.json();
+        if (!response.ok || !data.user) {
+          throw new Error("Could not load profile.");
+        }
         setProfile(data.user);
         setFirstName(data.user.firstName);
         setLastName(data.user.lastName);
-      });
+        setNewEmail(data.user.email);
+        setPendingEmail(data.pendingEmailChange?.email ?? null);
+      } catch {
+        setProfileLoadError("Could not load your profile. Check your connection and try again.");
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    }
+    void loadProfile();
   }, []);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -70,27 +91,68 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
       payload.newPassword = newPassword;
     }
 
-    const res = await clientFetch("/api/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    try {
+      const res = await clientFetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "Could not update profile.");
+      if (!res.ok) {
+        setError(
+          typeof data.error === "string"
+            ? data.error
+            : (data.errors?.[0]?.message ?? "Could not update profile."),
+        );
+        return;
+      }
+
+      setProfile((current) => (current ? { ...current, firstName, lastName } : current));
+      setSuccess(
+        newPassword
+          ? "Profile updated. Please sign in again with your new password."
+          : "Profile updated.",
+      );
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch {
+      setError("Could not update your profile. Check your connection and try again.");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
+  }
 
-    setSuccess(
-      newPassword
-        ? "Profile updated. Please sign in again with your new password."
-        : "Profile updated.",
-    );
-    setCurrentPassword("");
-    setNewPassword("");
-    setIsSubmitting(false);
+  async function handleEmailSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setEmailError(null);
+    setEmailSuccess(null);
+    setIsEmailSubmitting(true);
+
+    try {
+      const response = await clientFetch("/api/me/email-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newEmail,
+          currentPassword: emailCurrentPassword,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setEmailError(
+          typeof data.error === "string" ? data.error : "Could not request an email change.",
+        );
+        return;
+      }
+      setPendingEmail(data.pendingEmailChange.email);
+      setEmailCurrentPassword("");
+      setEmailSuccess(data.message);
+    } catch {
+      setEmailError("Could not request an email change. Check your connection and try again.");
+    } finally {
+      setIsEmailSubmitting(false);
+    }
   }
 
   const inputClass =
@@ -99,10 +161,16 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
   if (!profile) {
     return (
       <div className="workspace-page">
-        <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading profile…
-        </div>
+        {profileLoadError ? (
+          <p role="alert" className="text-sm text-[var(--destructive)]">
+            {profileLoadError}
+          </p>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+            {isLoadingProfile && <Loader2 className="h-4 w-4 animate-spin" />}
+            Loading profile…
+          </div>
+        )}
       </div>
     );
   }
@@ -259,6 +327,85 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
               {isSubmitting ? "Saving…" : "Save Changes"}
             </button>
           </form>
+
+          <form
+            onSubmit={handleEmailSubmit}
+            className="mt-6 space-y-4 border-t border-[var(--border)] pt-5"
+          >
+            <div>
+              <p className="text-sm font-semibold text-[var(--foreground)]">Change email address</p>
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                Enter your current password. We’ll update your sign-in email after you confirm the
+                link sent to the new address.
+              </p>
+            </div>
+
+            {emailError && (
+              <p
+                role="alert"
+                className="rounded-lg border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
+              >
+                {emailError}
+              </p>
+            )}
+            {emailSuccess && (
+              <p
+                role="status"
+                className="rounded-lg border border-[var(--qa-success-strong)]/30 bg-[var(--card)] px-3 py-2.5 text-sm text-[var(--qa-success-strong)]"
+              >
+                {emailSuccess}
+              </p>
+            )}
+            {pendingEmail && (
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Confirmation pending for <span className="font-medium">{pendingEmail}</span>. Your
+                current email remains active until you confirm.
+              </p>
+            )}
+
+            <div className="space-y-3">
+              <div className="relative">
+                <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <label htmlFor="profile-newEmail" className="sr-only">
+                  New email address
+                </label>
+                <input
+                  id="profile-newEmail"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  maxLength={254}
+                  value={newEmail}
+                  onChange={(event) => setNewEmail(event.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                <label htmlFor="profile-emailCurrentPassword" className="sr-only">
+                  Current password to change email
+                </label>
+                <input
+                  id="profile-emailCurrentPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Current password"
+                  required
+                  value={emailCurrentPassword}
+                  onChange={(event) => setEmailCurrentPassword(event.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={isEmailSubmitting}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] px-5 py-2.5 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] disabled:opacity-50 sm:w-auto"
+            >
+              {isEmailSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isEmailSubmitting ? "Sending…" : "Send confirmation"}
+            </button>
+          </form>
         </div>
 
         <div className="space-y-6">
@@ -288,7 +435,15 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                   <dd className="mt-1.5 text-[var(--foreground)]">{affiliation}</dd>
                 </div>
               )}
+              <div>
+                <dt className="text-xs text-[var(--muted-foreground)]">Role</dt>
+                <dd className="mt-1.5 text-[var(--foreground)]">{profile.role}</dd>
+              </div>
             </dl>
+            <p className="mt-4 border-t border-[var(--border)] pt-4 text-xs leading-relaxed text-[var(--muted-foreground)]">
+              Your role, {roleLabel.toLowerCase()} ID, and office or college assignment are managed
+              by an administrator.
+            </p>
           </div>
 
           <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">

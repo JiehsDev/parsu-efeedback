@@ -28,7 +28,8 @@ export function generateCsv(rows: ReportRow[]): Buffer {
   const header = COLUMNS.map((c) => c.label).join(",");
   const lines = rows.map((row) =>
     COLUMNS.map((c) => {
-      const value = String((row as any)[c.key] ?? "");
+      let value = String((row as any)[c.key] ?? "");
+      if (/^[\s\uFEFF]*[=+\-@]/.test(value)) value = `'${value}`;
       // Escape commas/quotes per basic CSV rules
       return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
     }).join(","),

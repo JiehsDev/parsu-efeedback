@@ -32,8 +32,10 @@ export const proxy = auth((req) => {
     "/register",
     "/forgot-password",
     "/reset-password",
+    "/email-change/",
     "/api/dev/seed",
   ].some((route) => currentPath.startsWith(route));
+  const isPublicEmailChangeConfirmation = currentPath === "/api/me/email-change/confirm";
 
   // Handle Guest-Only Navigation. Deliberately NOT auto-redirecting an
   // "already logged in" visitor away from here: `isLoggedIn` above is only
@@ -49,7 +51,7 @@ export const proxy = auth((req) => {
   }
 
   // Handle completely open public routes
-  if (isPublicRoute) {
+  if (isPublicRoute || isPublicEmailChangeConfirmation) {
     return NextResponse.next();
   }
 
@@ -96,5 +98,7 @@ export const proxy = auth((req) => {
 
 // src/proxy.ts
 export const config = {
-  matcher: ["/((?!api/auth|api/cron|api/colleges|_next/static|_next/image|favicon.ico|favicon.png|LOGO.jpg|new_logo.jpg).*)"],
+  matcher: [
+    "/((?!api/auth|api/cron|api/colleges|_next/static|_next/image|favicon.ico|favicon.png|LOGO.jpg|new_logo.jpg).*)",
+  ],
 };

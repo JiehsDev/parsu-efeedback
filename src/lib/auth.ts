@@ -24,6 +24,7 @@ import {
 import { loginRateLimit, checkRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { connectToDatabase } from "@/lib/db";
 import { User } from "@/models/User";
+import { sessionAuthorizationClaimsMatch } from "./session-authorization";
 
 // Distinct error codes surfaced to the client via the `error` field
 // returned from next-auth's signIn({ redirect: false }) — the login page
@@ -115,8 +116,15 @@ export async function auth(): Promise<Session | null> {
   if (!session?.user) return session;
 
   await connectToDatabase();
-  const user = await User.findById(session.user.id).select("isActive tokenVersion").lean();
-  if (!user || !user.isActive || user.tokenVersion !== session.user.tokenVersion) {
+  const user = await User.findById(session.user.id)
+    .select("isActive tokenVersion role officeRef collegeRef")
+    .lean();
+  if (
+    !user ||
+    !user.isActive ||
+    user.tokenVersion !== session.user.tokenVersion ||
+    !sessionAuthorizationClaimsMatch(user, session.user)
+  ) {
     return null;
   }
 

@@ -3,6 +3,7 @@ import { ClientDataBoundary } from "@/components/shared/ClientDataBoundary";
 import { auth } from "@/lib/auth";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { redirect } from "next/navigation";
+import { isResolutionRequestHead } from "@/features/complaints/services/resolution-request-query.service";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -10,6 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!["administrator", "vpaa", "vpaf", "osas"].includes(session.user.role)) {
     redirect("/dashboard");
   }
+  const canReviewResolutionRequests = await isResolutionRequestHead(session.user);
 
   const cacheScope = [
     session.user.id,
@@ -25,6 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <AdminNav
           userName={session?.user?.name ?? "Admin"}
           role={session?.user?.role ?? "administrator"}
+          canReviewResolutionRequests={canReviewResolutionRequests}
         />
         <main id="main-content" className="workspace">
           {children}

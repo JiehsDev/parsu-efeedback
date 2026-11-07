@@ -15,6 +15,7 @@ import {
   Archive,
   Bell,
   Building2,
+  ClipboardCheck,
   FileBarChart,
   Inbox,
   LayoutGrid,
@@ -44,6 +45,12 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/admin/forwarding-requests", label: "Forwarding Requests", icon: Inbox },
   { href: "/admin/complaints", label: "Complaints", icon: Inbox },
   { href: "/admin/archive-requests", label: "Archive Requests", icon: Archive },
+  {
+    href: "/admin/resolution-requests",
+    label: "Resolution Requests",
+    icon: ClipboardCheck,
+    requiresResolutionHead: true,
+  },
   { href: "/admin/complaints?archived=1", label: "Archived Complaints", icon: Archive },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart },
   { href: "/admin/users", label: "Users", icon: Users },
@@ -82,7 +89,15 @@ function getInitials(name: string) {
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-export function AdminNav({ userName, role }: { userName: string; role: UserRole }) {
+export function AdminNav({
+  userName,
+  role,
+  canReviewResolutionRequests = false,
+}: {
+  userName: string;
+  role: UserRole;
+  canReviewResolutionRequests?: boolean;
+}) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const confirm = useConfirm();
@@ -98,6 +113,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
           "/admin/complaints",
           "/admin/complaints?archived=1",
           "/admin/reports",
+          ...(canReviewResolutionRequests ? ["/admin/resolution-requests"] : []),
         ].includes(item.href);
       if (role === "osas") return !["/admin/users", "/admin/offices"].includes(item.href);
       return true;
@@ -105,6 +121,7 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   );
   const [unreadCount, setUnreadCount] = useState(0);
   const [archiveRequestCount, setArchiveRequestCount] = useState(0);
+  const [resolutionRequestCount, setResolutionRequestCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -124,6 +141,32 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
       )
       .catch(() => setArchiveRequestCount(0));
   }, [role]);
+
+  useEffect(() => {
+    if (!canReviewResolutionRequests) return;
+    let active = true;
+    async function refreshResolutionRequestCount() {
+      try {
+        const response = await clientFetch("/api/resolution-requests");
+        if (!response.ok) throw new Error("Could not load pending resolution requests.");
+        const data = await response.json();
+        if (active) {
+          setResolutionRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
+        }
+      } catch (error) {
+        console.error("Could not refresh resolution request count:", error);
+      }
+    }
+
+    void refreshResolutionRequestCount();
+    const intervalId = window.setInterval(() => {
+      void refreshResolutionRequestCount();
+    }, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [canReviewResolutionRequests]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -147,6 +190,9 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
   }, [menuOpen]);
 
   const initials = getInitials(userName);
+  const visiblePrimaryItems = primaryItems.filter(
+    (item) => !item.requiresResolutionHead || canReviewResolutionRequests,
+  );
 
   async function handleSignOut() {
     const confirmed = await confirm({
@@ -165,7 +211,9 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
       pathname,
       search,
       item.href,
-      [...primaryItems, ...(!isScopedSubAdmin ? CONFIG_NAV_ITEMS : [])].map((entry) => entry.href),
+      [...visiblePrimaryItems, ...(!isScopedSubAdmin ? CONFIG_NAV_ITEMS : [])].map(
+        (entry) => entry.href,
+      ),
     );
     return (
       <Link
@@ -199,8 +247,18 @@ export function AdminNav({ userName, role }: { userName: string; role: UserRole 
         aria-label="Main navigation"
         className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2"
       >
-        {primaryItems.map((item) => {
+        {visiblePrimaryItems.map((item) => {
           const rendered = renderItem(item);
+          if (item.href === "/admin/resolution-requests" && resolutionRequestCount > 0) {
+            return (
+              <div key={item.href} className="relative">
+                {rendered}
+                <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
+                  {resolutionRequestCount > 99 ? "99+" : resolutionRequestCount}
+                </span>
+              </div>
+            );
+          }
           if (item.href !== "/admin/archive-requests" || archiveRequestCount === 0) return rendered;
           return (
             <div key={item.href} className="relative">

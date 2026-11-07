@@ -38,6 +38,13 @@ export const passwordResetRateLimit = new Ratelimit({
   analytics: false,
 });
 
+export const profileSecurityRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "15 m"),
+  prefix: "ratelimit:profile-security",
+  analytics: false,
+});
+
 export const apiMutationRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(30, "1 m"),

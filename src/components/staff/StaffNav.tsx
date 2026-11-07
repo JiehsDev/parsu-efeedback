@@ -14,6 +14,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import {
   Archive,
   Bell,
+  ClipboardCheck,
   Inbox,
   LayoutGrid,
   LogOut,
@@ -34,6 +35,12 @@ const NAV_ITEMS = [
   { href: "/staff/sla", label: "SLA deadlines", icon: Timer },
   { href: "/staff/reports", label: "Reports", icon: FileBarChart },
   { href: "/staff/archive-requests", label: "Archive Requests", icon: Archive, requiresHead: true },
+  {
+    href: "/staff/resolution-requests",
+    label: "Resolution Requests",
+    icon: ClipboardCheck,
+    requiresResolutionHead: true,
+  },
   { href: "/staff/complaints/archived", label: "Archived Complaints", icon: Archive },
 ];
 
@@ -49,17 +56,20 @@ export function StaffNav({
   isOfficeHead = false,
   officeLabel = "OSAS",
   showForwarding = true,
+  canReviewResolutionRequests = false,
 }: {
   userName: string;
   isOfficeHead?: boolean;
   officeLabel?: string;
   showForwarding?: boolean;
+  canReviewResolutionRequests?: boolean;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const confirm = useConfirm();
   const accountId = useId();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [resolutionRequestCount, setResolutionRequestCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -69,6 +79,32 @@ export function StaffNav({
       .then((data) => setUnreadCount(data.unreadCount ?? 0))
       .catch(() => setUnreadCount(0));
   }, []);
+
+  useEffect(() => {
+    if (!canReviewResolutionRequests) return;
+    let active = true;
+    async function refreshResolutionRequestCount() {
+      try {
+        const response = await clientFetch("/api/resolution-requests");
+        if (!response.ok) throw new Error("Could not load pending resolution requests.");
+        const data = await response.json();
+        if (active) {
+          setResolutionRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
+        }
+      } catch (error) {
+        console.error("Could not refresh resolution request count:", error);
+      }
+    }
+
+    void refreshResolutionRequestCount();
+    const intervalId = window.setInterval(() => {
+      void refreshResolutionRequestCount();
+    }, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [canReviewResolutionRequests]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -93,7 +129,10 @@ export function StaffNav({
 
   const initials = getInitials(userName);
   const visibleItems = NAV_ITEMS.filter(
-    (item) => (!item.requiresHead || isOfficeHead) && (!item.requiresOsas || showForwarding),
+    (item) =>
+      (!item.requiresHead || isOfficeHead) &&
+      (!item.requiresOsas || showForwarding) &&
+      (!item.requiresResolutionHead || canReviewResolutionRequests),
   );
   const roleLabel = `${officeLabel} ${isOfficeHead ? "Head" : "Staff"}`;
 
@@ -129,7 +168,7 @@ export function StaffNav({
             item.href,
             visibleItems.map((entry) => entry.href),
           );
-          return (
+          const link = (
             <Link
               key={item.href}
               href={item.href}
@@ -145,6 +184,16 @@ export function StaffNav({
               <item.icon className="h-[17px] w-[17px] shrink-0" />
               <span className="hidden lg:inline">{item.label}</span>
             </Link>
+          );
+          if (item.href !== "/staff/resolution-requests" || resolutionRequestCount === 0)
+            return link;
+          return (
+            <div key={item.href} className="relative">
+              {link}
+              <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
+                {resolutionRequestCount > 99 ? "99+" : resolutionRequestCount}
+              </span>
+            </div>
           );
         })}
       </nav>
