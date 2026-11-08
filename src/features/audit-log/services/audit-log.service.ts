@@ -1,7 +1,7 @@
 // src/features/audit-log/services/audit-log.service.ts
 import { connectToDatabase } from "@/lib/db";
 import { AuditLog } from "@/models/AuditLog";
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 
 interface WriteAuditLogParams {
   actorId: string | null;
@@ -12,11 +12,12 @@ interface WriteAuditLogParams {
   afterState?: unknown;
   ipAddress?: string | null;
   userAgent?: string | null;
+  session?: ClientSession;
 }
 
 export async function writeAuditLog(params: WriteAuditLogParams): Promise<void> {
   await connectToDatabase();
-  await AuditLog.create({
+  const entry = {
     actorRef: params.actorId,
     action: params.action,
     entityType: params.entityType,
@@ -25,5 +26,10 @@ export async function writeAuditLog(params: WriteAuditLogParams): Promise<void> 
     afterState: params.afterState ?? null,
     ipAddress: params.ipAddress ?? null,
     userAgent: params.userAgent ?? null,
-  });
+  };
+  if (params.session) {
+    await AuditLog.create([entry], { session: params.session });
+  } else {
+    await AuditLog.create(entry);
+  }
 }

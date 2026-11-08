@@ -77,6 +77,7 @@ export const TIMELINE_EVENT_TYPES = [
   "closed",
   "rated",
   "edited", // BR-101: student edited title/description/priority pre-pickup
+  "admin_content_corrected",
   "withdrawn", // BR-101
   "information_requested",
   "information_submitted",

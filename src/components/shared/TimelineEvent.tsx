@@ -21,6 +21,7 @@ const EVENT_LABELS: Record<string, string> = {
   closed: "Closed",
   rated: "Rated by student",
   edited: "Details updated by student",
+  admin_content_corrected: "Details corrected by an administrator",
   withdrawn: "Withdrawn by student",
   information_requested: "Additional information requested",
   information_submitted: "Additional information submitted",

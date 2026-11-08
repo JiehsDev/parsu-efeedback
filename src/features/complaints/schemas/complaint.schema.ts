@@ -37,6 +37,12 @@ export const editComplaintSchema = z
     message: "At least one field (title or description) must be provided.",
   });
 
+export const correctComplaintContentSchema = z.object({
+  title: z.string().trim().min(5).max(200),
+  description: z.string().trim().min(20).max(4000),
+  reason: z.string().trim().min(5).max(2000),
+});
+
 export const addNoteSchema = z.object({
   body: z.string().trim().min(1),
 });

@@ -13,6 +13,7 @@ import { ArchiveRequestButton } from "@/components/staff/ArchiveRequestButton";
 import { ArchiveApprovalPanel } from "@/components/staff/ArchiveApprovalPanel";
 import { InformationRequestPanel } from "@/components/staff/InformationRequestPanel";
 import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggle";
+import { AdminComplaintContentCorrection } from "@/components/admin/AdminComplaintContentCorrection";
 import { ReopenComplaintButton } from "./ReopenComplaintButton";
 import { ResolutionApprovalPanel } from "@/components/staff/ResolutionApprovalPanel";
 import { isOfficeHead } from "@/lib/office-head";
@@ -60,8 +61,17 @@ export async function ComplaintActions({
   return (
     <section className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
       <h2 className="text-sm font-semibold">
-        {admin ? "Archive administration" : "Complaint actions"}
+        {admin ? "Administrator actions" : "Complaint actions"}
       </h2>
+      {admin && (
+        <AdminComplaintContentCorrection
+          complaintId={id}
+          ticketNumber={c.ticketNumber}
+          initialTitle={c.title}
+          initialDescription={c.description}
+          isArchived={c.isArchived}
+        />
+      )}
       {c.isArchived ? (
         <>
           <p className="text-sm text-[var(--muted-foreground)]">
