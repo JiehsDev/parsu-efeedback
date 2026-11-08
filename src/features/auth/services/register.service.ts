@@ -7,7 +7,15 @@ import { connectToDatabase } from "@/lib/db";
 import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import type { RegisterInput } from "../schemas/register.schema";
+import { parsuStudentEmailSchema } from "../schemas/register.schema";
 import { hashPassword } from "./password.service";
+
+export class InvalidStudentEmailError extends Error {
+  constructor() {
+    super("Use your ParSU student email address ending in @parsu.edu.ph.");
+    this.name = "InvalidStudentEmailError";
+  }
+}
 
 export class EmailAlreadyRegisteredError extends Error {
   constructor() {
@@ -33,9 +41,16 @@ export class InvalidCollegeError extends Error {
 export async function registerStudent(input: RegisterInput): Promise<{ id: string }> {
   await connectToDatabase();
 
+  const parsedEmail = parsuStudentEmailSchema.safeParse(input.email);
+  if (!parsedEmail.success) throw new InvalidStudentEmailError();
+
   // BR-008: student belongs to exactly one college — must exist and
   // actually be a college office (not a university office).
-  const college = await Office.findOne({ _id: input.collegeId, type: "college_office" });
+  const college = await Office.findOne({
+    _id: input.collegeId,
+    type: "college_office",
+    isActive: true,
+  });
   if (!college) {
     throw new InvalidCollegeError();
   }
@@ -44,7 +59,7 @@ export async function registerStudent(input: RegisterInput): Promise<{ id: strin
   // the real guarantee under race conditions; these checks just produce a
   // friendlier field-specific error in the common case.
   const [existingEmail, existingStudentNumber] = await Promise.all([
-    User.findOne({ email: input.email }),
+    User.findOne({ email: parsedEmail.data }),
     User.findOne({ employeeOrStudentId: input.studentNumber }),
   ]);
   if (existingEmail) throw new EmailAlreadyRegisteredError();
@@ -57,21 +72,36 @@ export async function registerStudent(input: RegisterInput): Promise<{ id: strin
       employeeOrStudentId: input.studentNumber,
       firstName: input.firstName,
       lastName: input.lastName,
-      email: input.email,
+      email: parsedEmail.data,
       passwordHash,
       role: "student",
       collegeRef: college._id,
       isActive: true,
+      emailVerified: false,
     });
 
     return { id: user._id.toString() };
   } catch (error) {
     // Duplicate key race lost between the pre-check and the insert.
     if (isDuplicateKeyError(error)) {
+      if (hasDuplicateKeyFor(error, "employeeOrStudentId")) {
+        throw new StudentNumberAlreadyRegisteredError();
+      }
       throw new EmailAlreadyRegisteredError();
     }
     throw error;
   }
+}
+
+function hasDuplicateKeyFor(error: unknown, key: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "keyPattern" in error &&
+    typeof error.keyPattern === "object" &&
+    error.keyPattern !== null &&
+    key in error.keyPattern
+  );
 }
 
 function isDuplicateKeyError(error: unknown): boolean {

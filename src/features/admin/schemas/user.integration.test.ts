@@ -40,12 +40,25 @@ describe("User creation — BR-001/003/006-009/011", () => {
       employeeOrStudentId: "2026-002",
       firstName: "A",
       lastName: "B",
-      email: "a2@test.com",
+      email: "a2@parsu.edu.ph",
       password: "password1",
       role: "student",
       collegeRef: String(college._id),
     });
     expect(result.success).toBe(true);
+  });
+
+  it("requires the ParSU email domain for student accounts", () => {
+    const result = createUserSchema.safeParse({
+      employeeOrStudentId: "2026-005",
+      firstName: "A",
+      lastName: "B",
+      email: "student@example.com",
+      password: "password1",
+      role: "student",
+      collegeRef: "507f1f77bcf86cd799439011",
+    });
+    expect(result.success).toBe(false);
   });
 
   it("BR-003/006: rejects duplicate email or student number at the DB level", async () => {

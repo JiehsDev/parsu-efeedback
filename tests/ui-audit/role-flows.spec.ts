@@ -72,7 +72,9 @@ async function resolve(page: Page, id: string) {
     .getByPlaceholder("Add a message about this status change")
     .fill("Your concern has been reviewed and addressed.");
   await page.getByRole("button", { name: "Request Resolution Approval", exact: true }).click();
-  await expect(page.getByText("Resolution request sent to the office head for approval.", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Resolution request sent to the office head for approval.", { exact: true }),
+  ).toBeVisible();
   await checkState(page, id, "in_progress");
   await pages.head.goto(`/admin/complaints/${id}`);
   await pages.head.getByRole("button", { name: "Approve resolution", exact: true }).click();
@@ -84,7 +86,7 @@ async function assign(id: string) {
   await head.getByRole("button", { name: "Assign Staff", exact: true }).click();
   const dialog = head.getByRole("dialog", { name: "Assign Staff", exact: true });
   await expect(dialog.getByRole("combobox", { name: "Assigned staff", exact: true })).toBeVisible();
-  await select(head, "Assigned staff", "Miguel Santos");
+  await select(head, "Assigned staff", "OSAS Staff 2");
   await dialog.getByRole("button", { name: "Assign Staff", exact: true }).click();
   const confirmation = head.getByRole("alertdialog");
   await expect(confirmation.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
@@ -457,8 +459,11 @@ test("student submission, head assignment, office-wide reading, information requ
   const removed = await fetch(`${storageUrl}${storageFile.pathname}`, { method: "DELETE" });
   expect(removed.status).toBe(204);
   await attachmentButton.click();
-  await expect(student.locator('[role="alert"]').filter({ hasText: "Couldn’t fetch this attachment" }))
-    .toContainText(/Storage could not return this file|no longer present in storage|AccessDenied|NoSuchKey/i);
+  await expect(
+    student.locator('[role="alert"]').filter({ hasText: "Couldn’t fetch this attachment" }),
+  ).toContainText(
+    /Storage could not return this file|no longer present in storage|AccessDenied|NoSuchKey/i,
+  );
   await assign(complaintId);
   await colleague.goto(`/staff/complaints/${complaintId}`);
   await expect(
@@ -590,7 +595,7 @@ test("student withdrawal, handler release, head review and archive approval", as
     .toBe(true);
   await head.goto(`/admin/complaints/${id}`);
   await head.getByRole("button", { name: "Change Assignee", exact: true }).click();
-  await select(head, "Assigned staff", "Miguel Santos");
+  await select(head, "Assigned staff", "OSAS Staff 2");
   await select(head, "Reason for reassignment", "Workload balancing");
   await head
     .getByRole("dialog")

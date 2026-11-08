@@ -1,68 +1,115 @@
 // src/app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
-import { User } from "@/models/User";
-import { Office } from "@/models/Office";
-import { registerSchema } from "@/features/auth/schemas/register.schema";
-import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
+import { env } from "@/lib/env";
+import { registerSchema } from "@/features/auth/schemas/register.schema";
+import {
+  EmailAlreadyRegisteredError,
+  InvalidCollegeError,
+  InvalidStudentEmailError,
+  registerStudent,
+  StudentNumberAlreadyRegisteredError,
+} from "@/features/auth/services/register.service";
+import {
+  hashVerificationRateLimitKey,
+  sendStudentEmailVerificationCode,
+} from "@/features/auth/services/student-email-verification.service";
+import {
+  checkRateLimitRequired,
+  getRequestIp,
+  RateLimitUnavailableError,
+  registerRateLimit,
+} from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
-  await connectToDatabase();
-
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { confirmPassword, password, studentNumber, collegeId, ...rest } = parsed.data;
-
-  const college = await Office.findOne({
-    _id: collegeId,
-    type: "college_office",
-    isActive: true,
-  }).lean();
-  if (!college) {
-    return NextResponse.json({ error: "Invalid college selected" }, { status: 400 });
-  }
-
-  const existing = await User.findOne({
-    $or: [{ email: rest.email }, { employeeOrStudentId: studentNumber }],
-  });
-  if (existing) {
-    return NextResponse.json(
-      { error: "An account with this email or student number already exists" },
-      { status: 409 },
+  const ip = getRequestIp(req.headers);
+  try {
+    const limit = await checkRateLimitRequired(
+      registerRateLimit,
+      hashVerificationRateLimitKey(ip, "registration"),
     );
+    if (!limit.success) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429 },
+      );
+    }
+  } catch (error) {
+    if (error instanceof RateLimitUnavailableError) {
+      return NextResponse.json(
+        { error: "Registration is temporarily unavailable. Please try again later." },
+        { status: 503 },
+      );
+    }
+    throw error;
   }
 
-  const passwordHash = await hashPassword(password);
-
-  const user = await User.create({
-    ...rest,
-    employeeOrStudentId: studentNumber,
-    collegeRef: collegeId,
-    passwordHash,
-    role: "student",
-    isActive: true,
-  });
+  let result: Awaited<ReturnType<typeof registerStudent>>;
+  try {
+    result = await registerStudent(parsed.data);
+  } catch (error) {
+    if (
+      error instanceof EmailAlreadyRegisteredError ||
+      error instanceof StudentNumberAlreadyRegisteredError
+    ) {
+      return NextResponse.json(
+        { error: "An account already uses that email or student number." },
+        { status: 409 },
+      );
+    }
+    if (error instanceof InvalidCollegeError || error instanceof InvalidStudentEmailError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
+  }
 
   await writeAuditLog({
-    actorId: user._id.toString(),
+    actorId: result.id,
     action: "auth.register_student",
     entityType: "User",
-    entityId: user._id,
+    entityId: result.id,
     afterState: {
       role: "student",
-      email: user.email,
-      employeeOrStudentId: user.employeeOrStudentId,
-      collegeRef: user.collegeRef,
+      email: parsed.data.email,
+      employeeOrStudentId: parsed.data.studentNumber,
+      collegeRef: parsed.data.collegeId,
+      emailVerified: false,
     },
     ipAddress: req.headers.get("x-forwarded-for"),
     userAgent: req.headers.get("user-agent"),
   });
 
-  const { passwordHash: _omit, ...safeUser } = user.toObject();
-  return NextResponse.json({ user: safeUser }, { status: 201 });
+  try {
+    await sendStudentEmailVerificationCode(result.id);
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Your account was created but the verification email could not be sent. Use Resend code to try again.",
+        email: parsed.data.email,
+      },
+      { status: 503 },
+    );
+  }
+
+  return NextResponse.json(
+    {
+      message:
+        env.NODE_ENV === "production"
+          ? "A verification code has been sent to your ParSU student email."
+          : "Check your configured development email inbox for the verification code.",
+    },
+    { status: 201 },
+  );
 }

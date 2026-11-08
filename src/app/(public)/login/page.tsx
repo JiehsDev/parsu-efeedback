@@ -14,6 +14,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   account_locked:
     "This account is locked after too many failed attempts. Try again in a few minutes.",
   account_inactive: "This account is inactive. Ask your administrator for help.",
+  email_not_verified:
+    "Verify your ParSU email before signing in. Use the verification option on the registration page.",
   rate_limited: "Too many sign-in attempts. Wait a moment, then try again.",
 };
 
@@ -30,6 +32,7 @@ export default function LoginPage() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const emailVerified = searchParams.get("verified") === "true";
 
   // Best Practice: Redirect to a unified transition route like "/dashboard".
   // Your server-side middleware will intercept this route and immediately
@@ -90,9 +93,15 @@ function LoginForm() {
   return (
     <main className="w-full max-w-sm">
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-          Sign in
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">Sign in</h1>
+        {emailVerified && (
+          <p
+            role="status"
+            className="mt-3 rounded-[var(--radius)] border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-3 py-2 text-sm text-[var(--foreground)]"
+          >
+            Your ParSU email is verified. You can now sign in.
+          </p>
+        )}
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           Use your ParSU account to open your e-Feedback workspace.
         </p>
@@ -189,6 +198,12 @@ function LoginForm() {
             {isSubmitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
+        <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+          Don’t have an account?{" "}
+          <Link href="/register" className="font-medium text-[var(--primary)] hover:underline">
+            Create one
+          </Link>
+        </p>
       </div>
     </main>
   );

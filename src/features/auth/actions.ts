@@ -1,82 +1,18 @@
 "use server";
 
 import { headers } from "next/headers";
-import { registerSchema } from "./schemas/register.schema";
-import {
-  forgotPasswordSchema,
-  resetPasswordSchema,
-} from "./schemas/password-reset.schema";
-import {
-  registerStudent,
-  EmailAlreadyRegisteredError,
-  StudentNumberAlreadyRegisteredError,
-  InvalidCollegeError,
-} from "./services/register.service";
+import { forgotPasswordSchema, resetPasswordSchema } from "./schemas/password-reset.schema";
 import {
   requestPasswordReset,
   resetPassword,
   InvalidOrExpiredTokenError,
 } from "./services/password-reset.service";
-import {
-  registerRateLimit,
-  passwordResetRateLimit,
-  checkRateLimit,
-  getRequestIp,
-} from "@/lib/rate-limit";
+import { passwordResetRateLimit, checkRateLimit, getRequestIp } from "@/lib/rate-limit";
 
 export interface ActionResult {
   success: boolean;
   message: string;
   fieldErrors?: Record<string, string[]>;
-}
-
-export async function registerAction(
-  _prevState: ActionResult | undefined,
-  formData: FormData,
-): Promise<ActionResult> {
-  const ip = getRequestIp(await headers());
-  const { success: withinLimit } = await checkRateLimit(registerRateLimit, ip);
-  if (!withinLimit) {
-    return {
-      success: false,
-      message: "Too many registration attempts. Please try again later.",
-    };
-  }
-
-  const parsed = registerSchema.safeParse({
-    firstName: formData.get("firstName"),
-    lastName: formData.get("lastName"),
-    email: formData.get("email"),
-    studentNumber: formData.get("studentNumber"),
-    collegeId: formData.get("collegeId"),
-    password: formData.get("password"),
-    confirmPassword: formData.get("confirmPassword"),
-  });
-
-  if (!parsed.success) {
-    return {
-      success: false,
-      message: "Please fix the errors below.",
-      fieldErrors: parsed.error.flatten().fieldErrors,
-    };
-  }
-
-  try {
-    await registerStudent(parsed.data);
-    return {
-      success: true,
-      message: "Account created. You can now sign in.",
-    };
-  } catch (error) {
-    if (
-      error instanceof EmailAlreadyRegisteredError ||
-      error instanceof StudentNumberAlreadyRegisteredError ||
-      error instanceof InvalidCollegeError
-    ) {
-      return { success: false, message: error.message };
-    }
-    throw error;
-  }
 }
 
 export async function forgotPasswordAction(

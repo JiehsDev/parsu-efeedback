@@ -19,6 +19,7 @@ import {
   authenticateUser,
   AccountInactiveError,
   AccountLockedError,
+  EmailNotVerifiedError,
   InvalidCredentialsError,
 } from "@/features/auth/services/auth.service";
 import { loginRateLimit, checkRateLimit, getRequestIp } from "@/lib/rate-limit";
@@ -38,11 +39,19 @@ class AccountLockedSignin extends CredentialsSignin {
 class AccountInactiveSignin extends CredentialsSignin {
   override code = "account_inactive";
 }
+class EmailNotVerifiedSignin extends CredentialsSignin {
+  override code = "email_not_verified";
+}
 class RateLimitedSignin extends CredentialsSignin {
   override code = "rate_limited";
 }
 
-const { handlers, auth: baseAuth, signIn, signOut } = NextAuth({
+const {
+  handlers,
+  auth: baseAuth,
+  signIn,
+  signOut,
+} = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
@@ -84,6 +93,7 @@ const { handlers, auth: baseAuth, signIn, signOut } = NextAuth({
         } catch (error) {
           if (error instanceof AccountLockedError) throw new AccountLockedSignin();
           if (error instanceof AccountInactiveError) throw new AccountInactiveSignin();
+          if (error instanceof EmailNotVerifiedError) throw new EmailNotVerifiedSignin();
           if (error instanceof InvalidCredentialsError) {
             throw new InvalidCredentialsSignin();
           }

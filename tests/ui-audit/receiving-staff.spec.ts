@@ -59,7 +59,7 @@ test("VPAA and VPAF heads assign formally forwarded complaints to their own staf
       const dialog = head.getByRole("dialog");
       await expect(dialog.getByRole("combobox").first()).toBeEnabled();
       await dialog.getByRole("combobox").first().click();
-      const staffName = role === "vpaa" ? "Rafael Mendoza" : "Angela Bautista";
+      const staffName = role === "vpaa" ? "VPAA Staff 1" : "VPAF Staff 1";
       await head.getByRole("option", { name: staffName, exact: true }).click();
       await dialog.getByRole("combobox").nth(1).click();
       await head.getByRole("option", { name: "Workload balancing", exact: true }).click();
@@ -92,9 +92,16 @@ test("VPAA and VPAF heads assign formally forwarded complaints to their own staf
           "The assigned receiving-office staff member reviewed and resolved the reported service concern.",
         );
       await staff.getByRole("button", { name: "Request Resolution Approval", exact: true }).click();
-      const pending = (await (await staff.request.get(`/api/complaints/${complaint._id}/resolution-requests`)).json()).requests;
+      const pending = (
+        await (
+          await staff.request.get(`/api/complaints/${complaint._id}/resolution-requests`)
+        ).json()
+      ).requests;
       expect(pending[0].status).toBe("pending");
-      expect((await (await staff.request.get(`/api/complaints/${complaint._id}`)).json()).complaint.status).toBe("in_progress");
+      expect(
+        (await (await staff.request.get(`/api/complaints/${complaint._id}`)).json()).complaint
+          .status,
+      ).toBe("in_progress");
       await head.goto(`/admin/complaints/${complaint._id}`);
       await head.getByRole("button", { name: "Approve resolution", exact: true }).click();
       expect((await otherStaff.request.get(`/api/complaints/${complaint._id}`)).status()).toBe(403);

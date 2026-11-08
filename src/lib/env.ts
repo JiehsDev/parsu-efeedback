@@ -61,6 +61,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
   RESEND_DEV_TEST_EMAIL: z.string().email(),
+  DEV_TEST_EMAIL_RECIPIENT: z.string().email().optional(),
 
   // --- Rate limiting / Cron (Upstash) ---
   UPSTASH_REDIS_REST_URL: z.string().url(),

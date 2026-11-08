@@ -17,21 +17,88 @@ it("seeds configuration and receiving accounts with zero tickets, and retires ti
     const user = await User.findOne({ role });
     expect(String(office!.headUserRef)).toBe(String(user!._id));
     expect(String(user!.officeRef)).toBe(String(office!._id));
+    expect(`${user!.firstName} ${user!.lastName}`).toBe(`${role.toUpperCase()} Head`);
     for (const number of [1, 2, 3]) {
       const staff = await User.findOne({ email: `${role}.staff${number}@parsu.edu.ph` });
-      expect(staff).toMatchObject({ role: "office_staff", isActive: true });
+      expect(staff).toMatchObject({
+        firstName: `${role.toUpperCase()} Staff`,
+        lastName: String(number),
+        role: "office_staff",
+        isActive: true,
+      });
       expect(String(staff!.officeRef)).toBe(String(office!._id));
     }
   }
   const osas = await Office.findOne({ code: "OSAS" });
+  const osasHead = await User.findOne({ email: "osasdirector@parsu.edu.ph" });
+  expect(`${osasHead!.firstName} ${osasHead!.lastName}`).toBe("OSAS Director");
   for (const email of [
     "osas.staff1@parsu.edu",
     "osas.staff2@parsu.edu.ph",
     "osas.staff3@parsu.edu.ph",
   ]) {
     const staff = await User.findOne({ email });
-    expect(staff).toMatchObject({ role: "office_staff", isActive: true });
+    const number = email.match(/staff(\d+)/)![1];
+    expect(staff).toMatchObject({
+      firstName: "OSAS Staff",
+      lastName: number,
+      role: "office_staff",
+      isActive: true,
+    });
     expect(String(staff!.officeRef)).toBe(String(osas!._id));
+  }
+  const officeRosters = [
+    {
+      code: "OSAS",
+      headEmail: "osasdirector@parsu.edu.ph",
+      headName: "OSAS Director",
+      staffEmails: [
+        "osas.staff1@parsu.edu",
+        "osas.staff2@parsu.edu.ph",
+        "osas.staff3@parsu.edu.ph",
+      ],
+      staffName: "OSAS Staff",
+    },
+    {
+      code: "OVPAA",
+      headEmail: "vpaa@parsu.edu.ph",
+      headName: "VPAA Head",
+      staffEmails: [1, 2, 3].map((number) => `vpaa.staff${number}@parsu.edu.ph`),
+      staffName: "VPAA Staff",
+    },
+    {
+      code: "OVPAF",
+      headEmail: "vpaf@parsu.edu.ph",
+      headName: "VPAF Head",
+      staffEmails: [1, 2, 3].map((number) => `vpaf.staff${number}@parsu.edu.ph`),
+      staffName: "VPAF Staff",
+    },
+    ...["CECS", "CED", "CBM", "COS", "CAH", "ICTO", "HSU"].map((code) => ({
+      code,
+      headEmail: `${code.toLowerCase()}.head@parsu.edu.ph`,
+      headName: `${code} Head`,
+      staffEmails: [1, 2, 3].map((number) => `${code.toLowerCase()}.staff${number}@parsu.edu.ph`),
+      staffName: `${code} Staff`,
+    })),
+  ];
+  for (const roster of officeRosters) {
+    const office = await Office.findOne({ code: roster.code });
+    expect(office).toBeTruthy();
+    const head = await User.findById(office!.headUserRef);
+    expect(head).toMatchObject({
+      email: roster.headEmail,
+      firstName: roster.headName.split(" ")[0],
+      lastName: roster.headName.split(" ").slice(1).join(" "),
+    });
+    const staff = await User.find({
+      email: { $in: roster.staffEmails },
+      officeRef: office!._id,
+      role: "office_staff",
+    }).sort({ email: 1 });
+    expect(staff).toHaveLength(3);
+    expect(staff.map((user) => `${user.firstName} ${user.lastName}`).sort()).toEqual(
+      [1, 2, 3].map((number) => `${roster.staffName} ${number}`).sort(),
+    );
   }
   await expect(seedDemo()).rejects.toThrow("retired");
   expect(await Complaint.countDocuments()).toBe(0);

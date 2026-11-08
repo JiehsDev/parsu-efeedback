@@ -337,6 +337,7 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
               <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 Enter your current password. We’ll update your sign-in email after you confirm the
                 link sent to the new address.
+                {profile.role === "student" && " Student email must end in @parsu.edu.ph."}
               </p>
             </div>
 
@@ -373,6 +374,10 @@ export function ProfileSettingsForm({ roleLabel }: { roleLabel: string }) {
                   id="profile-newEmail"
                   type="email"
                   autoComplete="email"
+                  placeholder={
+                    profile.role === "student" ? "name@parsu.edu.ph" : "name@example.com"
+                  }
+                  pattern={profile.role === "student" ? "^[^@]+@parsu\\.edu\\.ph$" : undefined}
                   required
                   maxLength={254}
                   value={newEmail}

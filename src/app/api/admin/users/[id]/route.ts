@@ -5,6 +5,7 @@ import { requireScopedAdmin } from "@/lib/api-guards";
 import { User } from "@/models/User";
 import { Office } from "@/models/Office";
 import { updateUserSchema } from "@/features/admin/schemas/user.schema";
+import { parsuStudentEmailSchema } from "@/features/auth/schemas/register.schema";
 import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import type { AdminScope } from "@/lib/admin-scope";
@@ -74,6 +75,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const effectiveRole = parsed.data.role ?? (before as any).role;
+  const effectiveEmail = parsed.data.email ?? (before as any).email;
+  if (effectiveRole === "student" && !parsuStudentEmailSchema.safeParse(effectiveEmail).success) {
+    return NextResponse.json(
+      { error: "Student accounts must use an email ending in @parsu.edu.ph." },
+      { status: 400 },
+    );
+  }
+  if (
+    (before as any).role === "student" &&
+    parsed.data.email &&
+    parsed.data.email !== (before as any).email
+  ) {
+    return NextResponse.json(
+      { error: "Student email addresses must be changed through email confirmation." },
+      { status: 400 },
+    );
+  }
+
   if (scope.kind !== "all") {
     const effectiveRole = parsed.data.role ?? (before as any).role;
     const effectiveOfficeRef = parsed.data.officeRef ?? (before as any).officeRef;
@@ -121,7 +141,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     await Office.updateMany({ headUserRef: id }, { $set: { headUserRef: null } });
   }
 
-  const effectiveRole = parsed.data.role ?? (before as any).role;
   const effectiveOfficeRef =
     parsed.data.officeRef !== undefined ? parsed.data.officeRef : (before as any).officeRef;
   const roleOfficeError = await validateRoleOffice(effectiveRole, effectiveOfficeRef);

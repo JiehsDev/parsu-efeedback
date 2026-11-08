@@ -34,6 +34,7 @@ export const proxy = auth((req) => {
     "/reset-password",
     "/email-change/",
     "/api/dev/seed",
+    "/api/dev/test-email",
   ].some((route) => currentPath.startsWith(route));
   const isPublicEmailChangeConfirmation = currentPath === "/api/me/email-change/confirm";
 

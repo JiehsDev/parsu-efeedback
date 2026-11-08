@@ -14,8 +14,15 @@ import InformationRequested from "../../../../emails/InformationRequested";
 import InformationSubmitted from "../../../../emails/InformationSubmitted";
 import EmailChangeConfirmation from "../../../../emails/EmailChangeConfirmation";
 import EmailChangedNotice from "../../../../emails/EmailChangedNotice";
+import StudentEmailVerification from "../../../../emails/StudentEmailVerification";
 
-const EMAIL_SEND_TIMEOUT_MS = env.NODE_ENV === "production" ? 10_000 : 1_000;
+const EMAIL_SEND_TIMEOUT_MS = 15_000;
+class EmailSendTimeoutError extends Error {
+  constructor(provider: string) {
+    super(`${provider} email send timed out; delivery outcome is unknown.`);
+    this.name = "EmailSendTimeoutError";
+  }
+}
 
 export async function sendPasswordResetEmail(params: {
   to: string;
@@ -58,6 +65,19 @@ export async function sendEmailChangedNotice(params: {
   );
 }
 
+export async function sendStudentEmailVerificationEmail(params: {
+  to: string;
+  recipientName: string;
+  code: string;
+}) {
+  await sendEmail(
+    params.to,
+    "Your ParSU e-Feedback verification code",
+    StudentEmailVerification({ recipientName: params.recipientName, code: params.code }),
+    { failOnError: true },
+  );
+}
+
 async function sendEmail(
   to: string,
   subject: string,
@@ -67,30 +87,16 @@ async function sendEmail(
   // Without a verified domain, Resend only delivers to the account's own
   // signup email. Redirect there in dev/test so the pipeline is still
   // exercised honestly, without needing real inboxes for seeded accounts.
-  const actualRecipient = env.NODE_ENV === "production" ? to : env.RESEND_DEV_TEST_EMAIL;
+  const actualRecipient =
+    env.NODE_ENV === "production"
+      ? to
+      : (env.DEV_TEST_EMAIL_RECIPIENT ?? env.RESEND_DEV_TEST_EMAIL);
 
   const actualSubject = env.NODE_ENV === "production" ? subject : `[would go to ${to}] ${subject}`;
 
-  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     const html = await render(react);
-    const result = await Promise.race<Awaited<ReturnType<typeof resend.emails.send>>>([
-      resend.emails.send({
-        from: env.RESEND_FROM_EMAIL,
-        to: actualRecipient,
-        subject: actualSubject,
-        html,
-      }),
-      new Promise<never>((_, reject) => {
-        timeout = setTimeout(
-          () => reject(new Error("Email send timed out")),
-          EMAIL_SEND_TIMEOUT_MS,
-        );
-      }),
-    ]);
-    if (failOnError && result.error) {
-      throw new Error(result.error.message);
-    }
+    await sendWithResend(actualRecipient, actualSubject, html);
   } catch (error) {
     logger.error("Failed to send email", {
       to: actualRecipient,
@@ -99,6 +105,29 @@ async function sendEmail(
       error: error instanceof Error ? error.message : String(error),
     });
     if (failOnError) throw error;
+  }
+}
+
+async function sendWithResend(to: string, subject: string, html: string) {
+  const result = await withTimeout(
+    resend.emails.send({ from: env.RESEND_FROM_EMAIL, to, subject, html }),
+    "Resend",
+  );
+  if (result.error) throw new Error(result.error.message);
+}
+
+async function withTimeout<T>(send: Promise<T>, provider: string): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      send,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new EmailSendTimeoutError(provider)),
+          EMAIL_SEND_TIMEOUT_MS,
+        );
+      }),
+    ]);
   } finally {
     if (timeout) clearTimeout(timeout);
   }

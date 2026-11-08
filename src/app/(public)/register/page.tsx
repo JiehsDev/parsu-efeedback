@@ -42,6 +42,10 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   useEffect(() => {
     clientFetch("/api/colleges")
@@ -67,7 +71,7 @@ export default function RegisterPage() {
       }
     }
 
-    return "We couldn’t create your account. Check your details and try again.";
+    return "Check your details or verification code and try again.";
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -84,16 +88,165 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (typeof data.email === "string") {
+          setVerificationEmail(data.email);
+          setShowVerification(true);
+          setVerificationMessage(data.error ?? "Enter the code sent to your ParSU email.");
+          setIsSubmitting(false);
+          return;
+        }
         setError(extractErrorMessage(data));
         setIsSubmitting(false);
         return;
       }
 
-      router.push("/login?registered=true");
+      setVerificationEmail(form.email.trim().toLowerCase());
+      setShowVerification(true);
+      setVerificationMessage(data.message);
+      setIsSubmitting(false);
     } catch {
       setError("We couldn’t create your account. Try again.");
       setIsSubmitting(false);
     }
+  }
+
+  async function handleVerify(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setVerificationMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const res = await clientFetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verificationEmail, code: verificationCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(extractErrorMessage(data));
+        setIsSubmitting(false);
+        return;
+      }
+      router.push("/login?verified=true");
+    } catch {
+      setError("We couldn’t verify your email. Try again.");
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleResendCode() {
+    setError(null);
+    setVerificationMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const res = await clientFetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verificationEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(typeof data.message === "string" ? data.message : extractErrorMessage(data));
+        setIsSubmitting(false);
+        return;
+      }
+      setVerificationMessage(data.message);
+      setIsSubmitting(false);
+    } catch {
+      setError("We couldn’t request another code. Try again.");
+      setIsSubmitting(false);
+    }
+  }
+
+  if (showVerification) {
+    return (
+      <main className="w-full max-w-md">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl shadow-black/20 sm:p-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+            Verify your ParSU email
+          </h1>
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+            Enter the 6-digit code sent to your student email. The code expires in 10 minutes. In
+            development, it may be redirected to the configured test inbox.
+          </p>
+          {verificationMessage && (
+            <p
+              role="status"
+              className="mt-4 rounded-[var(--radius)] border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-3 py-2 text-sm text-[var(--foreground)]"
+            >
+              {verificationMessage}
+            </p>
+          )}
+          {error && (
+            <div
+              role="alert"
+              className="mt-4 flex items-start gap-2 rounded-[var(--radius)] border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2.5 text-sm text-[var(--destructive)]"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+          <form onSubmit={handleVerify} className="mt-6 space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="verificationEmail" className={labelClass}>
+                ParSU student email
+              </label>
+              <input
+                id="verificationEmail"
+                type="email"
+                autoComplete="email"
+                required
+                value={verificationEmail}
+                onChange={(event) => setVerificationEmail(event.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="verificationCode" className={labelClass}>
+                Verification code
+              </label>
+              <input
+                id="verificationCode"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                value={verificationCode}
+                onChange={(event) =>
+                  setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                className={inputClass}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Verify email
+            </button>
+            <button
+              type="button"
+              onClick={handleResendCode}
+              disabled={isSubmitting}
+              className="w-full rounded-[var(--radius)] border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--foreground)] disabled:opacity-50"
+            >
+              Resend code
+            </button>
+          </form>
+          <p className="mt-5 text-center text-sm text-[var(--muted-foreground)]">
+            Already verified?{" "}
+            <Link href="/login" className="font-medium text-[var(--primary)] hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -103,7 +256,7 @@ export default function RegisterPage() {
           Create a student account
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Register with your ParSU student details.
+          Register with your ParSU student details and an email ending in @parsu.edu.ph.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
@@ -183,6 +336,7 @@ export default function RegisterPage() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 autoComplete="email"
+                placeholder="name@parsu.edu.ph"
                 required
                 value={form.email}
                 onChange={update("email")}
@@ -287,6 +441,18 @@ export default function RegisterPage() {
           Sign in
         </Link>
       </p>
+      <button
+        type="button"
+        onClick={() => {
+          setVerificationEmail(form.email.trim().toLowerCase());
+          setShowVerification(true);
+          setVerificationMessage(null);
+          setError(null);
+        }}
+        className="mt-3 block w-full text-center text-sm text-[var(--primary)] hover:underline"
+      >
+        Need to verify a pending registration?
+      </button>
     </main>
   );
 }

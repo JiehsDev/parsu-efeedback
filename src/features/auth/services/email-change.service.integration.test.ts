@@ -36,7 +36,7 @@ beforeEach(async () => {
 
 describe("email-change.service", () => {
   it("requires the current password and leaves the address unchanged until confirmation", async () => {
-    const user = await createTestUser({ email: "old-email@test.com" });
+    const user = await createTestUser({ email: "old-email@test.com", role: "office_staff" });
 
     await expect(
       requestEmailChange(String(user._id), "new-email@test.com", "wrong-password"),
@@ -53,7 +53,11 @@ describe("email-change.service", () => {
   });
 
   it("confirms once, updates the login email, revokes sessions, and notifies the old address", async () => {
-    const user = await createTestUser({ email: "old-email@test.com", tokenVersion: 3 });
+    const user = await createTestUser({
+      email: "old-email@test.com",
+      role: "office_staff",
+      tokenVersion: 3,
+    });
     await requestEmailChange(String(user._id), "new-email@test.com", "TestPass123!");
     const confirmationUrl = emailMocks.sendConfirmation.mock.calls[0]![0].confirmationUrl;
     const rawToken = confirmationUrl.split("/").at(-1)!;
@@ -74,7 +78,7 @@ describe("email-change.service", () => {
   });
 
   it("rejects an email address already owned by another user", async () => {
-    const user = await createTestUser({ email: "owner@test.com" });
+    const user = await createTestUser({ email: "owner@test.com", role: "office_staff" });
     await createTestUser({ email: "taken@test.com" });
 
     await expect(
@@ -83,8 +87,16 @@ describe("email-change.service", () => {
     expect(await EmailChangeToken.countDocuments()).toBe(0);
   });
 
+  it("keeps student email changes within the ParSU domain", async () => {
+    const user = await createTestUser({ email: "student@parsu.edu.ph", role: "student" });
+    await expect(
+      requestEmailChange(String(user._id), "student@example.com", "TestPass123!"),
+    ).rejects.toMatchObject({ code: "invalid_student_email" });
+    expect(await EmailChangeToken.countDocuments()).toBe(0);
+  });
+
   it("rejects an address claimed after the confirmation request was sent", async () => {
-    const user = await createTestUser({ email: "owner@test.com" });
+    const user = await createTestUser({ email: "owner@test.com", role: "office_staff" });
     await requestEmailChange(String(user._id), "later-taken@test.com", "TestPass123!");
     const rawToken =
       emailMocks.sendConfirmation.mock.calls[0]![0].confirmationUrl.split("/").at(-1)!;
@@ -95,7 +107,7 @@ describe("email-change.service", () => {
   });
 
   it("invalidates the confirmation token if the email service fails", async () => {
-    const user = await createTestUser({ email: "owner@test.com" });
+    const user = await createTestUser({ email: "owner@test.com", role: "office_staff" });
     emailMocks.sendConfirmation.mockRejectedValueOnce(new Error("provider unavailable"));
 
     await expect(
@@ -123,7 +135,7 @@ describe("email-change.service", () => {
   });
 
   it("invalidates earlier pending confirmation links when a newer request is made", async () => {
-    const user = await createTestUser({ email: "old-email@test.com" });
+    const user = await createTestUser({ email: "old-email@test.com", role: "office_staff" });
     await requestEmailChange(String(user._id), "first@test.com", "TestPass123!");
     const firstToken =
       emailMocks.sendConfirmation.mock.calls[0]![0].confirmationUrl.split("/").at(-1)!;

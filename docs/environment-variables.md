@@ -22,28 +22,37 @@ environment (Production / Preview) — see `docs/architecture.md` section 12.
 
 ## Secrets & connection strings
 
-| Variable | Used for | Where to get it |
-|---|---|---|
-| `MONGODB_URI` | Mongoose connection string | Atlas dashboard → Database → **Connect** → Drivers. Use a separate M0 project for dev vs prod. |
-| `AUTH_SECRET` | Signs/encrypts Auth.js JWTs | Generate locally: `npx auth secret` |
-| `AUTH_URL` | Auth.js canonical app URL | `http://localhost:3000` locally; your deployed URL in prod |
-| `R2_ACCOUNT_ID` | Cloudflare R2 (S3-compatible) client | Cloudflare dashboard → R2 → Overview (Account ID in the sidebar) |
-| `R2_ACCESS_KEY_ID` | R2 client auth | Cloudflare dashboard → R2 → **Manage R2 API Tokens** → Create token |
-| `R2_SECRET_ACCESS_KEY` | R2 client auth | Same token creation screen — shown once, copy immediately |
-| `R2_BUCKET_NAME` | Target bucket for attachments | The bucket name you create under R2 → Buckets |
-| `R2_PUBLIC_URL` | Public base URL for stored files | R2 bucket → Settings → Public access (custom domain or `r2.dev` subdomain) |
-| `RESEND_API_KEY` | Sends transactional email | resend.com → API Keys |
-| `RESEND_FROM_EMAIL` | Verified sender address | Must belong to a domain verified under resend.com → Domains |
-| `UPSTASH_REDIS_REST_URL` | Rate limiting + cron trigger backend | console.upstash.com → Redis database → REST API tab |
-| `UPSTASH_REDIS_REST_TOKEN` | Same as above | Same tab |
-| `CRON_SECRET` | Shared secret `/api/cron/sla-check` checks on every hit | Generate any long random string, e.g. `openssl rand -hex 32` |
+| Variable                   | Used for                                                | Where to get it                                                                                             |
+| -------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`              | Mongoose connection string                              | Atlas dashboard → Database → **Connect** → Drivers. Use a separate M0 project for dev vs prod.              |
+| `AUTH_SECRET`              | Signs/encrypts Auth.js JWTs                             | Generate locally: `npx auth secret`                                                                         |
+| `AUTH_URL`                 | Auth.js canonical app URL                               | `http://localhost:3000` locally; your deployed URL in prod                                                  |
+| `R2_ACCOUNT_ID`            | Cloudflare R2 (S3-compatible) client                    | Cloudflare dashboard → R2 → Overview (Account ID in the sidebar)                                            |
+| `R2_ACCESS_KEY_ID`         | R2 client auth                                          | Cloudflare dashboard → R2 → **Manage R2 API Tokens** → Create token                                         |
+| `R2_SECRET_ACCESS_KEY`     | R2 client auth                                          | Same token creation screen — shown once, copy immediately                                                   |
+| `R2_BUCKET_NAME`           | Target bucket for attachments                           | The bucket name you create under R2 → Buckets                                                               |
+| `R2_PUBLIC_URL`            | Public base URL for stored files                        | R2 bucket → Settings → Public access (custom domain or `r2.dev` subdomain)                                  |
+| `RESEND_API_KEY`           | Sends transactional email                               | resend.com → API Keys                                                                                       |
+| `RESEND_FROM_EMAIL`        | Verified sender address                                 | Must belong to a domain verified under resend.com → Domains                                                 |
+| `RESEND_DEV_TEST_EMAIL`    | Development/test email recipient                        | The shared email service redirects non-production mail here; verification codes are not returned by the API |
+| `DEV_TEST_EMAIL_RECIPIENT` | Optional local test email destination                   | Inbox to receive mail from the authenticated development test route                                         |
+| `UPSTASH_REDIS_REST_URL`   | Rate limiting + cron trigger backend                    | console.upstash.com → Redis database → REST API tab                                                         |
+| `UPSTASH_REDIS_REST_TOKEN` | Same as above                                           | Same tab                                                                                                    |
+| `CRON_SECRET`              | Shared secret `/api/cron/sla-check` checks on every hit | Generate any long random string, e.g. `openssl rand -hex 32`                                                |
 
 ## App
 
-| Variable | Used for | Notes |
-|---|---|---|
-| `NODE_ENV` | Standard Node environment flag | `development` \| `test` \| `production` — usually set automatically by the platform in prod |
-| `NEXT_PUBLIC_APP_URL` | Client-visible base URL (emails, absolute links) | `NEXT_PUBLIC_*` vars are bundled into client JS — never put secrets here |
+| Variable              | Used for                                         | Notes                                                                                       |
+| --------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `NODE_ENV`            | Standard Node environment flag                   | `development` \| `test` \| `production` — usually set automatically by the platform in prod |
+| `NEXT_PUBLIC_APP_URL` | Client-visible base URL (emails, absolute links) | `NEXT_PUBLIC_*` vars are bundled into client JS — never put secrets here                    |
+
+Student signup requires an email ending in `@parsu.edu.ph` and a reachable
+Upstash Redis rate limiter. New student accounts must verify a six-digit code
+sent through Resend before signing in. In development, mail is redirected to
+`DEV_TEST_EMAIL_RECIPIENT` when set, otherwise `RESEND_DEV_TEST_EMAIL`. See
+`docs/implementation/student-registration-verification.md` for the code
+lifecycle and development email behavior.
 
 ## Business-rule-driven thresholds
 
@@ -51,14 +60,14 @@ These aren't secrets — they're the configurable numbers business rules call
 for. Full mapping (rule ID → variable → default → consuming phase) lives in
 `docs/business-rules.md`; summary:
 
-| Variable | Business rule | Default |
-|---|---|---|
-| `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` | BR-013 | `5` |
-| `AUTH_LOCKOUT_DURATION_MINUTES` | BR-013 | `15` |
-| `AUTH_SESSION_MAX_AGE_MINUTES` | BR-087 | `60` |
-| `UPLOAD_MAX_FILE_SIZE_MB` | BR-061 | `10` |
-| `UPLOAD_ALLOWED_MIME_TYPES` | BR-060 | see `.env.example` |
-| `TICKET_NUMBER_PREFIX` | BR-036, BR-100 | `PARSU` |
+| Variable                         | Business rule  | Default            |
+| -------------------------------- | -------------- | ------------------ |
+| `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` | BR-013         | `5`                |
+| `AUTH_LOCKOUT_DURATION_MINUTES`  | BR-013         | `15`               |
+| `AUTH_SESSION_MAX_AGE_MINUTES`   | BR-087         | `60`               |
+| `UPLOAD_MAX_FILE_SIZE_MB`        | BR-061         | `10`               |
+| `UPLOAD_ALLOWED_MIME_TYPES`      | BR-060         | see `.env.example` |
+| `TICKET_NUMBER_PREFIX`           | BR-036, BR-100 | `PARSU`            |
 
 ## Validation
 

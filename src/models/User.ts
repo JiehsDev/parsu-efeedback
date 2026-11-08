@@ -19,6 +19,10 @@ const userSchema = new Schema(
     // BR-003: unique email
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
 
+    // Existing and administrator-provisioned accounts remain usable by
+    // default; public student registration explicitly creates this false.
+    emailVerified: { type: Boolean, required: true, default: true },
+
     // BR-004 / BR-086: hashed only, never plaintext. Hashing happens in the
     // auth service (Phase 6) before a document is ever created/updated.
     passwordHash: { type: String, required: true },

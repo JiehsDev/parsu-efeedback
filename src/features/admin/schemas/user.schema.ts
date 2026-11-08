@@ -1,13 +1,16 @@
 // src/features/admin/schemas/user.schema.ts
 import { z } from "zod";
 import { USER_ROLES } from "@/lib/constants";
+import { parsuStudentEmailSchema } from "@/features/auth/schemas/register.schema";
+
+const userEmailSchema = z.string().trim().toLowerCase().email();
 
 export const createUserSchema = z
   .object({
     employeeOrStudentId: z.string().trim().min(1),
     firstName: z.string().trim().min(1),
     lastName: z.string().trim().min(1),
-    email: z.string().trim().toLowerCase().email(),
+    email: userEmailSchema,
     password: z.string().min(8),
     role: z.enum(USER_ROLES),
     officeRef: z.string().nullable().optional(),
@@ -15,6 +18,13 @@ export const createUserSchema = z
     isActive: z.boolean().optional().default(true),
   })
   .superRefine((data, ctx) => {
+    if (data.role === "student" && !parsuStudentEmailSchema.safeParse(data.email).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student accounts must use an email ending in @parsu.edu.ph.",
+        path: ["email"],
+      });
+    }
     // Office staff and scoped administrators are attached to one authoritative
     // office. Their software role remains distinct from the head designation.
     if (["office_staff", "osas"].includes(data.role) && !data.officeRef) {
@@ -37,20 +47,34 @@ export const createUserSchema = z
     // instead (see src/lib/admin-scope.ts), not a single Office document.
   });
 
-export const updateUserSchema = z.object({
-  firstName: z.string().trim().min(1).optional(),
-  lastName: z.string().trim().min(1).optional(),
-  email: z.string().trim().toLowerCase().email().optional(),
-  role: z.enum(USER_ROLES).optional(),
-  officeRef: z.string().nullable().optional(),
-  collegeRef: z.string().nullable().optional(),
-  isActive: z.boolean().optional(),
-  password: z.string().min(8).optional(),
-  // Bumps tokenVersion without touching the password — for invalidating
-  // every JWT already issued to this user (e.g. a lost device) when there's
-  // no reason to also force a password change.
-  forceLogout: z.boolean().optional(),
-});
+export const updateUserSchema = z
+  .object({
+    firstName: z.string().trim().min(1).optional(),
+    lastName: z.string().trim().min(1).optional(),
+    email: userEmailSchema.optional(),
+    role: z.enum(USER_ROLES).optional(),
+    officeRef: z.string().nullable().optional(),
+    collegeRef: z.string().nullable().optional(),
+    isActive: z.boolean().optional(),
+    password: z.string().min(8).optional(),
+    // Bumps tokenVersion without touching the password — for invalidating
+    // every JWT already issued to this user (e.g. a lost device) when there's
+    // no reason to also force a password change.
+    forceLogout: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.role === "student" &&
+      data.email &&
+      !parsuStudentEmailSchema.safeParse(data.email).success
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student accounts must use an email ending in @parsu.edu.ph.",
+        path: ["email"],
+      });
+    }
+  });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

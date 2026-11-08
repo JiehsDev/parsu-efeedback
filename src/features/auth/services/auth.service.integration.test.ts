@@ -8,6 +8,7 @@ import {
   authenticateUser,
   AccountInactiveError,
   AccountLockedError,
+  EmailNotVerifiedError,
   InvalidCredentialsError,
 } from "./auth.service";
 
@@ -70,14 +71,9 @@ describe("authenticateUser — BR-005/012/013", () => {
 
   it("BR-013: lockedUntil is respected on a subsequent attempt even with the correct password", async () => {
     const user = await createTestUser({ email: "locked-correct@test.com", role: "student" });
-    await User.updateOne(
-      { _id: user._id },
-      { lockedUntil: new Date(Date.now() + 15 * 60_000) },
-    );
+    await User.updateOne({ _id: user._id }, { lockedUntil: new Date(Date.now() + 15 * 60_000) });
 
-    await expect(authenticateUser(user.email, "TestPass123!")).rejects.toThrow(
-      AccountLockedError,
-    );
+    await expect(authenticateUser(user.email, "TestPass123!")).rejects.toThrow(AccountLockedError);
   });
 
   it("BR-013: a lockedUntil in the past no longer blocks authentication", async () => {
@@ -100,6 +96,21 @@ describe("authenticateUser — BR-005/012/013", () => {
     );
   });
 
+  it("blocks unverified student accounts from signing in without counting it as a password failure", async () => {
+    const user = await createTestUser({
+      email: "pending@parsu.edu.ph",
+      role: "student",
+      emailVerified: false,
+    });
+
+    await expect(authenticateUser(user.email, "TestPass123!")).rejects.toThrow(
+      EmailNotVerifiedError,
+    );
+    const saved = await User.findById(user._id);
+    expect(saved!.failedLoginAttempts).toBe(0);
+    expect(saved!.lastLoginAt).toBeNull();
+  });
+
   it("BR-012: lastLoginAt is updated on every successful authentication", async () => {
     const user = await createTestUser({ email: "lastlogin@test.com", role: "student" });
     expect(user.lastLoginAt).toBeNull();
@@ -114,10 +125,7 @@ describe("authenticateUser — BR-005/012/013", () => {
 
   it("BR-012/013: a successful login clears failedLoginAttempts and lockedUntil", async () => {
     const user = await createTestUser({ email: "clear-on-success@test.com", role: "student" });
-    await User.updateOne(
-      { _id: user._id },
-      { failedLoginAttempts: 2, lockedUntil: null },
-    );
+    await User.updateOne({ _id: user._id }, { failedLoginAttempts: 2, lockedUntil: null });
 
     await authenticateUser(user.email, "TestPass123!");
 

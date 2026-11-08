@@ -31,6 +31,20 @@ export const registerRateLimit = new Ratelimit({
   analytics: false,
 });
 
+export const studentEmailVerificationRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "15 m"),
+  prefix: "ratelimit:student-email-verification",
+  analytics: false,
+});
+
+export const studentEmailVerificationResendRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, "1 h"),
+  prefix: "ratelimit:student-email-verification-resend",
+  analytics: false,
+});
+
 export const passwordResetRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(5, "1 h"),
@@ -77,6 +91,30 @@ export async function checkRateLimit(limiter: Ratelimit, identifier: string) {
       error: error instanceof Error ? error.message : String(error),
     });
     return { success: true, limit: 0, remaining: 0, reset: 0 };
+  }
+}
+
+export class RateLimitUnavailableError extends Error {
+  constructor() {
+    super("Rate limiting is temporarily unavailable.");
+    this.name = "RateLimitUnavailableError";
+  }
+}
+
+export async function checkRateLimitRequired(limiter: Ratelimit, identifier: string) {
+  try {
+    const result = await limiter.limit(identifier);
+    return {
+      success: result.success,
+      limit: result.limit,
+      remaining: result.remaining,
+      reset: result.reset,
+    };
+  } catch (error) {
+    logger.error("Required rate limiter unavailable; request rejected", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new RateLimitUnavailableError();
   }
 }
 

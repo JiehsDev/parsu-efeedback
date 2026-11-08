@@ -33,7 +33,7 @@ adminTest("centralized OSAS handling and clean oversight views", async ({ browse
   await expect(dialog.getByText("Assigned staff", { exact: false })).toBeVisible();
   const picker = dialog.getByRole("combobox").first();
   await picker.click();
-  await headPage.getByRole("option", { name: "Miguel Santos", exact: true }).click();
+  await headPage.getByRole("option", { name: "OSAS Staff 2", exact: true }).click();
   await dialog.getByRole("button", { name: "Assign Staff", exact: true }).click();
   await headPage.getByRole("button", { name: "Assign Staff", exact: true }).last().click();
   const detail = await (await staff.request.get(`/api/complaints/${id}`)).json();

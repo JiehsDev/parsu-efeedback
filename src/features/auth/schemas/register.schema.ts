@@ -10,6 +10,15 @@ export const passwordSchema = z
   .regex(/[a-zA-Z]/, "Password must include at least one letter")
   .regex(/[0-9]/, "Password must include at least one number");
 
+export const parsuStudentEmailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email("Enter a valid email address")
+  .refine((email) => email.endsWith("@parsu.edu.ph"), {
+    message: "Use your ParSU student email address ending in @parsu.edu.ph.",
+  });
+
 // The public /register page is self-registration for students only
 // (BR-008/015: a student belongs to exactly one college). BR-011
 // ("only administrators may create... user accounts") governs
@@ -20,7 +29,7 @@ export const registerSchema = z
   .object({
     firstName: z.string().trim().min(1, "First name is required"),
     lastName: z.string().trim().min(1, "Last name is required"),
-    email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+    email: parsuStudentEmailSchema,
     // BR-006: unique student number
     studentNumber: z.string().trim().min(1, "Student number is required"),
     // BR-008: student belongs to exactly one college (Office._id where type=college)

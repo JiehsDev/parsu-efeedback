@@ -19,11 +19,16 @@ export class AccountInactiveError extends Error {
   }
 }
 
+export class EmailNotVerifiedError extends Error {
+  constructor() {
+    super("Verify your ParSU email before signing in.");
+    this.name = "EmailNotVerifiedError";
+  }
+}
+
 export class AccountLockedError extends Error {
   constructor(public readonly lockedUntil: Date) {
-    super(
-      `Too many failed login attempts. Try again after ${lockedUntil.toISOString()}.`,
-    );
+    super(`Too many failed login attempts. Try again after ${lockedUntil.toISOString()}.`);
     this.name = "AccountLockedError";
   }
 }
@@ -80,15 +85,17 @@ export async function authenticateUser(
     throw new AccountInactiveError();
   }
 
+  if (user.role === "student" && !user.emailVerified) {
+    throw new EmailNotVerifiedError();
+  }
+
   const passwordMatches = await verifyPassword(password, user.passwordHash);
 
   if (!passwordMatches) {
     user.failedLoginAttempts += 1;
 
     if (user.failedLoginAttempts >= env.AUTH_MAX_FAILED_LOGIN_ATTEMPTS) {
-      user.lockedUntil = new Date(
-        Date.now() + env.AUTH_LOCKOUT_DURATION_MINUTES * 60_000,
-      );
+      user.lockedUntil = new Date(Date.now() + env.AUTH_LOCKOUT_DURATION_MINUTES * 60_000);
       user.failedLoginAttempts = 0; // window resets once locked
       await user.save();
       // BR-013: report the lockout on the exact attempt that triggers it,

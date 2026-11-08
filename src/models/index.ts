@@ -18,6 +18,7 @@ export { Assignment } from "./Assignment";
 export { GeneratedReport } from "./GeneratedReport";
 export { PasswordResetToken } from "./PasswordResetToken"; // added Phase 6 (Authentication)
 export { EmailChangeToken } from "./EmailChangeToken";
+export { StudentEmailVerification } from "./StudentEmailVerification";
 export { InformationRequest } from "./InformationRequest";
 
 export { ForwardingRequest } from "./ForwardingRequest";

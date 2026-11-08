@@ -8,6 +8,7 @@ import {
   sendEmailChangeConfirmation,
   sendEmailChangedNotice,
 } from "@/features/notifications/services/email.service";
+import { parsuStudentEmailSchema } from "../schemas/register.schema";
 
 const EMAIL_CHANGE_TTL_MINUTES = 30;
 
@@ -18,7 +19,12 @@ function hashToken(token: string): string {
 export class EmailChangeError extends Error {
   constructor(
     message: string,
-    public readonly code: "invalid_password" | "email_in_use" | "invalid_token" | "email_unchanged",
+    public readonly code:
+      | "invalid_password"
+      | "email_in_use"
+      | "invalid_token"
+      | "email_unchanged"
+      | "invalid_student_email",
   ) {
     super(message);
     this.name = "EmailChangeError";
@@ -37,7 +43,15 @@ export async function requestEmailChange(
     throw new EmailChangeError("Current password is incorrect.", "invalid_password");
   }
 
-  const newEmail = requestedEmail.trim().toLowerCase();
+  const parsedEmail =
+    user.role === "student" ? parsuStudentEmailSchema.safeParse(requestedEmail) : null;
+  const newEmail = parsedEmail?.success ? parsedEmail.data : requestedEmail.trim().toLowerCase();
+  if (parsedEmail && !parsedEmail.success) {
+    throw new EmailChangeError(
+      "Student accounts must use an email ending in @parsu.edu.ph.",
+      "invalid_student_email",
+    );
+  }
   if (newEmail === user.email) {
     throw new EmailChangeError("Enter a different email address.", "email_unchanged");
   }

@@ -8,6 +8,7 @@ import {
   EmailAlreadyRegisteredError,
   StudentNumberAlreadyRegisteredError,
   InvalidCollegeError,
+  InvalidStudentEmailError,
 } from "./register.service";
 import { registerSchema } from "../schemas/register.schema";
 
@@ -19,7 +20,7 @@ function baseInput(overrides: Partial<any> = {}) {
   return {
     firstName: "New",
     lastName: "Student",
-    email: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+    email: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@parsu.edu.ph`,
     studentNumber: `SN-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     collegeId: "",
     password: "TestPass123!",
@@ -44,12 +45,10 @@ describe("registerStudent — BR-003/006/008/011", () => {
 
   it("BR-003: rejects a duplicate email", async () => {
     const college = await createTestCollege();
-    const existing = await createTestUser({ email: "dup@test.com", role: "student" });
+    const existing = await createTestUser({ email: "dup@parsu.edu.ph", role: "student" });
 
     await expect(
-      registerStudent(
-        baseInput({ email: existing.email, collegeId: String(college._id) }) as any,
-      ),
+      registerStudent(baseInput({ email: existing.email, collegeId: String(college._id) }) as any),
     ).rejects.toThrow(EmailAlreadyRegisteredError);
   });
 
@@ -80,6 +79,22 @@ describe("registerStudent — BR-003/006/008/011", () => {
     expect(saved!.role).toBe("student");
   });
 
+  it("new student accounts remain unverified until the email code is confirmed", async () => {
+    const college = await createTestCollege();
+    const { id } = await registerStudent(baseInput({ collegeId: String(college._id) }) as any);
+    const saved = await User.findById(id);
+    expect(saved!.emailVerified).toBe(false);
+  });
+
+  it("rejects a non-ParSU email even when the service is called directly", async () => {
+    const college = await createTestCollege();
+    await expect(
+      registerStudent(
+        baseInput({ email: "student@example.com", collegeId: String(college._id) }) as any,
+      ),
+    ).rejects.toThrow(InvalidStudentEmailError);
+  });
+
   it("BR-008/015: a successful registration links the student to the given college", async () => {
     const college = await createTestCollege();
     const { id } = await registerStudent(baseInput({ collegeId: String(college._id) }) as any);
@@ -98,12 +113,37 @@ describe("registerSchema — BR-011 (no role field accepted)", () => {
     const result = registerSchema.safeParse({
       firstName: "A",
       lastName: "B",
-      email: "a@test.com",
+      email: "a@parsu.edu.ph",
       studentNumber: "SN-1",
       collegeId: "college-id",
       password: "TestPass123!",
       confirmPassword: "Different123!",
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts only addresses in the ParSU email domain", () => {
+    expect(
+      registerSchema.safeParse({
+        firstName: "A",
+        lastName: "B",
+        email: "rlabellon834.pbox@parsu.edu.ph",
+        studentNumber: "SN-1",
+        collegeId: "college-id",
+        password: "TestPass123!",
+        confirmPassword: "TestPass123!",
+      }).success,
+    ).toBe(true);
+    expect(
+      registerSchema.safeParse({
+        firstName: "A",
+        lastName: "B",
+        email: "student@example.com",
+        studentNumber: "SN-1",
+        collegeId: "college-id",
+        password: "TestPass123!",
+        confirmPassword: "TestPass123!",
+      }).success,
+    ).toBe(false);
   });
 });

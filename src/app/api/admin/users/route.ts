@@ -8,6 +8,8 @@ import { createUserSchema } from "@/features/admin/schemas/user.schema";
 import { hashPassword } from "@/lib/password";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { userFilterForScope } from "@/lib/admin-scope";
+import { sendStudentEmailVerificationCode } from "@/features/auth/services/student-email-verification.service";
+import { logger } from "@/lib/logger";
 
 const SCOPED_ROLE_OFFICE_CODES = { vpaa: "OVPAA", vpaf: "OVPAF", osas: "OSAS" } as const;
 
@@ -127,7 +129,11 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await hashPassword(password);
-  const user = await User.create({ ...rest, passwordHash });
+  const user = await User.create({
+    ...rest,
+    passwordHash,
+    ...(rest.role === "student" ? { emailVerified: false } : {}),
+  });
 
   await writeAuditLog({
     actorId: guard.session.user.id,
@@ -141,5 +147,22 @@ export async function POST(req: NextRequest) {
 
   const { passwordHash: _omit, ...safeUser } = user.toObject();
   void _omit;
+  if (user.role === "student") {
+    try {
+      await sendStudentEmailVerificationCode(user._id.toString());
+    } catch (error) {
+      logger.error("Admin-created student verification email failed", {
+        userId: user._id.toString(),
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return NextResponse.json(
+        {
+          error:
+            "The student account was created, but its verification email could not be sent. Resend a code after the cooldown.",
+        },
+        { status: 503 },
+      );
+    }
+  }
   return NextResponse.json({ user: safeUser }, { status: 201 });
 }
