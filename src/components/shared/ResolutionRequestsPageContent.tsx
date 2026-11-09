@@ -60,12 +60,18 @@ export async function ResolutionRequestsPageContent({ base }: { base: "admin" | 
               key={String(request._id)}
               className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4"
             >
-              <Link
-                href={`${reviewPath}/${request._id}`}
-                className="font-mono text-xs text-[var(--primary)] hover:underline"
-              >
-                {request.complaintRef?.ticketNumber ?? "Complaint"}
-              </Link>
+              {request.complaintRef ? (
+                <Link
+                  href={`${reviewPath}/${request._id}`}
+                  className="font-mono text-xs text-[var(--primary)] hover:underline"
+                >
+                  {request.complaintRef.ticketNumber}
+                </Link>
+              ) : (
+                <span className="font-mono text-xs text-[var(--muted-foreground)]">
+                  Complaint unavailable
+                </span>
+              )}
               <h2 className="mt-1 text-base font-semibold text-[var(--foreground)]">
                 {request.complaintRef?.title ?? "Complaint details unavailable"}
               </h2>
@@ -79,12 +85,14 @@ export async function ResolutionRequestsPageContent({ base }: { base: "admin" | 
                   {request.resolutionSummary}
                 </p>
               )}
-              <Link
-                href={`${reviewPath}/${request._id}`}
-                className="mt-4 inline-flex rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
-              >
-                Review request
-              </Link>
+              {request.complaintRef && (
+                <Link
+                  href={`${reviewPath}/${request._id}`}
+                  className="mt-4 inline-flex rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
+                >
+                  Review request
+                </Link>
+              )}
             </article>
           ))}
         </div>

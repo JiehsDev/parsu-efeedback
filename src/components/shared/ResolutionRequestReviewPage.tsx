@@ -25,7 +25,6 @@ export async function ResolutionRequestReviewPage({
     .lean();
 
   if (!request || !(await isOfficeHead(session.user.id, request.officeRef))) notFound();
-  if (!request.complaintRef) notFound();
 
   const displayRequest = JSON.parse(JSON.stringify(request));
   const complaint = request.complaintRef;
@@ -40,18 +39,24 @@ export async function ResolutionRequestReviewPage({
       </Link>
       <header className="space-y-2 border-b border-[var(--border)] pb-5">
         <p className="font-mono text-xs text-[var(--muted-foreground)]">
-          {complaint.ticketNumber}
+          {complaint?.ticketNumber ?? "Complaint unavailable"}
         </p>
-        <h1 className="text-2xl font-bold">{complaint.title}</h1>
-        <div className="flex items-center gap-3">
-          <StatusBadge status={complaint.status} />
-          <Link
-            href={`/${base}/complaints/${complaint._id}`}
-            className="text-sm text-[var(--primary)] hover:underline"
-          >
-            Open full complaint
-          </Link>
-        </div>
+        <h1 className="text-2xl font-bold">{complaint?.title ?? "Complaint details unavailable"}</h1>
+        {complaint ? (
+          <div className="flex items-center gap-3">
+            <StatusBadge status={complaint.status} />
+            <Link
+              href={`/${base}/complaints/${complaint._id}`}
+              className="text-sm text-[var(--primary)] hover:underline"
+            >
+              Open full complaint
+            </Link>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--destructive)]">
+            This request refers to a complaint that is no longer available, so it cannot be reviewed.
+          </p>
+        )}
       </header>
       <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
         <h2 className="text-sm font-semibold">Requested resolution</h2>
@@ -68,7 +73,7 @@ export async function ResolutionRequestReviewPage({
           {request.requestedByRef?.lastName ?? ""}
         </p>
       </section>
-      <ResolutionApprovalPanel request={displayRequest} canReview />
+      {complaint && <ResolutionApprovalPanel request={displayRequest} canReview />}
     </div>
   );
 }
