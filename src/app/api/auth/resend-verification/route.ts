@@ -3,6 +3,7 @@ import { resendStudentEmailVerificationSchema } from "@/features/auth/schemas/st
 import {
   hashVerificationRateLimitKey,
   hashStudentEmailRateLimitKey,
+  isStudentEmailVerificationInCooldown,
   resendStudentEmailVerificationCode,
   VerificationResendCooldownError,
 } from "@/features/auth/services/student-email-verification.service";
@@ -32,6 +33,16 @@ export async function POST(req: NextRequest) {
 
   const ip = getRequestIp(req.headers);
   try {
+    // The database cooldown is the actual-send guard. Check it before the
+    // hourly request limiter so repeated clicks cannot spend resend slots
+    // when no new email can be sent.
+    if (await isStudentEmailVerificationInCooldown(parsed.data.email)) {
+      return NextResponse.json(
+        { message: GENERIC_MESSAGE },
+        { headers: { "Retry-After": "60" } },
+      );
+    }
+
     const limit = await checkRateLimitRequired(
       studentEmailVerificationResendRateLimit,
       hashStudentEmailRateLimitKey(parsed.data.email),

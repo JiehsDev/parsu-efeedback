@@ -40,7 +40,7 @@ export const studentEmailVerificationRateLimit = new Ratelimit({
 
 export const studentEmailVerificationResendRateLimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(3, "1 h"),
+  limiter: Ratelimit.slidingWindow(5, "1 h"),
   prefix: "ratelimit:student-email-verification-resend",
   analytics: false,
 });

@@ -15,6 +15,7 @@ vi.mock("@/features/notifications/services/email.service", () => ({
 
 import {
   InvalidStudentEmailCodeError,
+  isStudentEmailVerificationInCooldown,
   resendStudentEmailVerificationCode,
   sendStudentEmailVerificationCode,
   VerificationResendCooldownError,
@@ -100,6 +101,10 @@ describe("student email verification", () => {
   it("applies the resend cooldown and gives no account-existence signal", async () => {
     const user = await createUnverifiedStudent();
     await sendStudentEmailVerificationCode(String(user._id));
+    await expect(isStudentEmailVerificationInCooldown(user.email)).resolves.toBe(true);
+    await expect(
+      isStudentEmailVerificationInCooldown("missing@parsu.edu.ph"),
+    ).resolves.toBe(false);
     await expect(resendStudentEmailVerificationCode(user.email)).rejects.toBeInstanceOf(
       VerificationResendCooldownError,
     );

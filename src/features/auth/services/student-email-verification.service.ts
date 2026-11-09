@@ -101,6 +101,26 @@ export async function resendStudentEmailVerificationCode(email: string): Promise
   if (user) await sendStudentEmailVerificationCode(String(user._id));
 }
 
+export async function isStudentEmailVerificationInCooldown(email: string): Promise<boolean> {
+  await connectToDatabase();
+  const user = await User.findOne({
+    email: email.trim().toLowerCase(),
+    role: "student",
+    emailVerified: false,
+    isActive: true,
+  })
+    .select("_id")
+    .lean();
+  if (!user) return false;
+
+  const verification = await StudentEmailVerification.findOne({ userRef: user._id })
+    .select("sentAt")
+    .lean();
+  return Boolean(
+    verification && Date.now() - verification.sentAt.getTime() < RESEND_COOLDOWN_MS,
+  );
+}
+
 export async function verifyStudentEmailCode(email: string, submittedCode: string): Promise<void> {
   await connectToDatabase();
 
