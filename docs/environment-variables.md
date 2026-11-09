@@ -34,8 +34,9 @@ environment (Production / Preview) — see `docs/architecture.md` section 12.
 | `R2_PUBLIC_URL`            | Public base URL for stored files                        | R2 bucket → Settings → Public access (custom domain or `r2.dev` subdomain)                                  |
 | `RESEND_API_KEY`           | Sends transactional email                               | resend.com → API Keys                                                                                       |
 | `RESEND_FROM_EMAIL`        | Verified sender address                                 | Must belong to a domain verified under resend.com → Domains                                                 |
-| `RESEND_DEV_TEST_EMAIL`    | Development/test email recipient                        | The shared email service redirects non-production mail here; verification codes are not returned by the API |
-| `DEV_TEST_EMAIL_RECIPIENT` | Optional local test email destination                   | Inbox to receive mail from the authenticated development test route                                         |
+| `RESEND_DEV_TEST_EMAIL`    | Development email recipient                            | Inbox used when local development email redirection is enabled                                              |
+| `DEV_TEST_EMAIL_RECIPIENT` | Optional development test-email endpoint inbox        | Inbox used by the authenticated development test-email endpoint                                              |
+| `DEV_EMAIL_REDIRECT_ENABLED` | Local email recipient switch                          | Set `true` to redirect app emails only when `NODE_ENV=development`; defaults to `false`                    |
 | `UPSTASH_REDIS_REST_URL`   | Rate limiting + cron trigger backend                    | console.upstash.com → Redis database → REST API tab                                                         |
 | `UPSTASH_REDIS_REST_TOKEN` | Same as above                                           | Same tab                                                                                                    |
 | `CRON_SECRET`              | Shared secret `/api/cron/sla-check` checks on every hit | Generate any long random string, e.g. `openssl rand -hex 32`                                                |
@@ -49,8 +50,10 @@ environment (Production / Preview) — see `docs/architecture.md` section 12.
 
 Student signup requires an email ending in `@parsu.edu.ph` and a reachable
 Upstash Redis rate limiter. New student accounts must verify a six-digit code
-sent through Resend before signing in. In development, mail is redirected to
-`DEV_TEST_EMAIL_RECIPIENT` when set, otherwise `RESEND_DEV_TEST_EMAIL`. See
+sent through Resend before signing in. In local development, set
+`DEV_EMAIL_REDIRECT_ENABLED=true` to send app emails to `RESEND_DEV_TEST_EMAIL`.
+The switch is ignored outside
+`NODE_ENV=development`. See
 `docs/implementation/student-registration-verification.md` for the code
 lifecycle and development email behavior.
 

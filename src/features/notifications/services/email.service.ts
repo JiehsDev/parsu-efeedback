@@ -84,15 +84,13 @@ async function sendEmail(
   react: React.ReactElement,
   { failOnError = false }: { failOnError?: boolean } = {},
 ) {
-  // Without a verified domain, Resend only delivers to the account's own
-  // signup email. Redirect there in dev/test so the pipeline is still
-  // exercised honestly, without needing real inboxes for seeded accounts.
-  const actualRecipient =
-    env.NODE_ENV === "production"
-      ? to
-      : (env.DEV_TEST_EMAIL_RECIPIENT ?? env.RESEND_DEV_TEST_EMAIL);
-
-  const actualSubject = env.NODE_ENV === "production" ? subject : `[would go to ${to}] ${subject}`;
+  // Redirect only when explicitly enabled in local development. Never allow
+  // this switch to change recipients in production or preview deployments.
+  const redirectToDevInbox = env.NODE_ENV === "development" && env.DEV_EMAIL_REDIRECT_ENABLED;
+  const actualRecipient = redirectToDevInbox
+    ? env.RESEND_DEV_TEST_EMAIL
+    : to;
+  const actualSubject = redirectToDevInbox ? `[would go to ${to}] ${subject}` : subject;
 
   try {
     const html = await render(react);

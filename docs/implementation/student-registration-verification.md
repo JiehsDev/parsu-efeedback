@@ -23,12 +23,13 @@ false. Student email changes remain restricted to `@parsu.edu.ph` and use the
 existing confirmation-link flow.
 
 Configure `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (a sender permitted by the
-provider), and `RESEND_DEV_TEST_EMAIL`. In development and tests, delivery is
-redirected to `DEV_TEST_EMAIL_RECIPIENT` when set, otherwise
-`RESEND_DEV_TEST_EMAIL`, and the subject identifies the intended recipient.
-Production sends to the actual recipient. The development test-email endpoint
-is POST-only, requires `DEV_SEED_SECRET`, and sends a non-account test code to
-the configured non-production email recipient.
+provider), and `RESEND_DEV_TEST_EMAIL`. To route local development mail to one
+inbox, set `DEV_EMAIL_REDIRECT_ENABLED=true`; it uses
+`RESEND_DEV_TEST_EMAIL` as the recipient, and the subject identifies the
+intended recipient. The switch only takes effect when
+`NODE_ENV=development`; production and preview deployments always send to the
+actual recipient. The development test-email endpoint is POST-only, requires
+`DEV_SEED_SECRET`, and sends a non-account code to the configured recipient.
 
 Registration is protected by the shared Upstash Redis rate limiter. Configure
 a reachable Redis instance before enabling the flow; signup, code verification,
