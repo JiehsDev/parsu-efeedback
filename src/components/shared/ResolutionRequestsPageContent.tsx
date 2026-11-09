@@ -33,8 +33,7 @@ export async function ResolutionRequestsPageContent({ base }: { base: "admin" | 
 
   const requests = await listPendingResolutionRequestsForHead(session.user);
   const displayRequests = JSON.parse(JSON.stringify(requests)) as ResolutionRequestListItem[];
-  const complaintPath = base === "admin" ? "/admin/complaints" : "/staff/complaints";
-
+  const reviewPath = base === "admin" ? "/admin/resolution-requests" : "/staff/resolution-requests";
   return (
     <div className="workspace-page space-y-6">
       <header>
@@ -62,7 +61,7 @@ export async function ResolutionRequestsPageContent({ base }: { base: "admin" | 
               className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4"
             >
               <Link
-                href={`${complaintPath}/${request.complaintRef?._id}`}
+                href={`${reviewPath}/${request._id}`}
                 className="font-mono text-xs text-[var(--primary)] hover:underline"
               >
                 {request.complaintRef?.ticketNumber ?? "Complaint"}
@@ -81,7 +80,7 @@ export async function ResolutionRequestsPageContent({ base }: { base: "admin" | 
                 </p>
               )}
               <Link
-                href={`${complaintPath}/${request.complaintRef?._id}`}
+                href={`${reviewPath}/${request._id}`}
                 className="mt-4 inline-flex rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
               >
                 Review request
