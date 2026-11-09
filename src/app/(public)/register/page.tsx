@@ -168,8 +168,8 @@ export default function RegisterPage() {
             Verify your ParSU email
           </h1>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-            Enter the 6-digit code sent to your student email. The code expires in 10 minutes. In
-            development, it may be redirected to the configured test inbox.
+            Enter the 6-digit code sent to your email. The code expires in 10 minutes. If it doesn’t
+            arrive, check your spam folder or request another code.
           </p>
           {verificationMessage && (
             <p

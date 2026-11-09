@@ -1,7 +1,6 @@
 // src/app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
-import { env } from "@/lib/env";
 import { registerSchema } from "@/features/auth/schemas/register.schema";
 import {
   EmailAlreadyRegisteredError,
@@ -105,10 +104,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(
     {
-      message:
-        env.NODE_ENV === "production"
-          ? "A verification code has been sent to your ParSU student email."
-          : "Check your configured development email inbox for the verification code.",
+      message: "Check your email for a verification code.",
     },
     { status: 201 },
   );

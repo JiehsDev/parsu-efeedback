@@ -13,12 +13,9 @@ import {
   studentEmailVerificationResendRateLimit,
 } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { env } from "@/lib/env";
 
 const GENERIC_MESSAGE =
-  env.NODE_ENV === "production"
-    ? "If an unverified student account exists for that address, a new code will be sent."
-    : "If an unverified account exists, check the configured development email inbox.";
+  "If an unverified student account exists for that address, a new code will be sent.";
 
 export async function POST(req: NextRequest) {
   let body: unknown;
