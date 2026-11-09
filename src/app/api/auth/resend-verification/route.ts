@@ -16,7 +16,7 @@ import {
 import { logger } from "@/lib/logger";
 
 const GENERIC_MESSAGE =
-  "If an eligible account exists, a code will be sent. If you just requested one, wait 60 seconds before requesting another.";
+  "If your registration is pending, a code has been sent. Check your inbox and spam or junk folder. Codes expire in 10 minutes; wait 60 seconds before requesting another.";
 
 export async function POST(req: NextRequest) {
   let body: unknown;

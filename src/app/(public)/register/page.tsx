@@ -183,6 +183,10 @@ export default function RegisterPage() {
             Verify your ParSU email
           </h1>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+            After a successful send, the confirmation appears below. Check the inbox and spam or
+            junk folder for {verificationEmail}.
+          </p>
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
             Enter the 6-digit code sent to your email. The code expires in 10 minutes. If it doesn’t
             arrive, check your spam folder or request another code.
           </p>

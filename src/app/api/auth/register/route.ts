@@ -112,7 +112,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(
     {
-      message: "Check your email for a verification code.",
+      message:
+        "Verification code sent. Check your ParSU inbox and spam or junk folder. The code expires in 10 minutes.",
     },
     { status: 201 },
   );
