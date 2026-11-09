@@ -15,7 +15,7 @@ import {
 import { logger } from "@/lib/logger";
 
 const GENERIC_MESSAGE =
-  "If an unverified student account exists for that address, a new code will be sent.";
+  "If an eligible account exists, a code will be sent. If you just requested one, wait 60 seconds before requesting another.";
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -45,17 +45,28 @@ export async function POST(req: NextRequest) {
       hashVerificationRateLimitKey(ip, ""),
     );
     if (!limit.success || !pairLimit.success || !ipLimit.success) {
+      const failedLimits = [limit, pairLimit, ipLimit].filter((result) => !result.success);
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((Math.max(...failedLimits.map((result) => result.reset)) - Date.now()) / 1000),
+      );
       return NextResponse.json(
-        { message: "Too many code requests. Please try again later." },
-        { status: 429 },
+        { message: `Too many code requests. Wait ${retryAfterSeconds} seconds before trying again.` },
+        { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
       );
     }
 
     await resendStudentEmailVerificationCode(parsed.data.email);
-    return NextResponse.json({ message: GENERIC_MESSAGE });
+    return NextResponse.json(
+      { message: GENERIC_MESSAGE },
+      { headers: { "Retry-After": "60" } },
+    );
   } catch (error) {
     if (error instanceof VerificationResendCooldownError) {
-      return NextResponse.json({ message: GENERIC_MESSAGE });
+      return NextResponse.json(
+        { message: GENERIC_MESSAGE },
+        { headers: { "Retry-After": "60" } },
+      );
     }
     if (error instanceof RateLimitUnavailableError) {
       return NextResponse.json(

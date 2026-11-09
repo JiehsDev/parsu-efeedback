@@ -41,9 +41,14 @@ export async function POST(req: NextRequest) {
       hashVerificationRateLimitKey(ip, ""),
     );
     if (!limit.success || !pairLimit.success || !ipLimit.success) {
+      const failedLimits = [limit, pairLimit, ipLimit].filter((result) => !result.success);
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((Math.max(...failedLimits.map((result) => result.reset)) - Date.now()) / 1000),
+      );
       return NextResponse.json(
-        { error: "Too many verification attempts. Request a new code and try later." },
-        { status: 429 },
+        { error: `Too many code entries. Wait ${retryAfterSeconds} seconds before trying again.` },
+        { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
       );
     }
     await verifyStudentEmailCode(parsed.data.email, parsed.data.code);

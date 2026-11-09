@@ -46,6 +46,15 @@ export default function RegisterPage() {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
+  const [resendWaitSeconds, setResendWaitSeconds] = useState(0);
+
+  useEffect(() => {
+    if (resendWaitSeconds <= 0) return;
+    const timer = window.setTimeout(() => {
+      setResendWaitSeconds((remaining) => Math.max(0, remaining - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendWaitSeconds]);
 
   useEffect(() => {
     clientFetch("/api/colleges")
@@ -92,6 +101,8 @@ export default function RegisterPage() {
           setVerificationEmail(data.email);
           setShowVerification(true);
           setVerificationMessage(data.error ?? "Enter the code sent to your ParSU email.");
+          const retryAfter = Number(res.headers.get("Retry-After"));
+          if (retryAfter > 0) setResendWaitSeconds(retryAfter);
           setIsSubmitting(false);
           return;
         }
@@ -103,6 +114,8 @@ export default function RegisterPage() {
       setVerificationEmail(form.email.trim().toLowerCase());
       setShowVerification(true);
       setVerificationMessage(data.message);
+      const retryAfter = Number(res.headers.get("Retry-After"));
+      setResendWaitSeconds(retryAfter > 0 ? retryAfter : 60);
       setIsSubmitting(false);
     } catch {
       setError("We couldn’t create your account. Try again.");
@@ -147,6 +160,8 @@ export default function RegisterPage() {
         body: JSON.stringify({ email: verificationEmail }),
       });
       const data = await res.json();
+      const retryAfter = Number(res.headers.get("Retry-After"));
+      if (retryAfter > 0) setResendWaitSeconds(retryAfter);
       if (!res.ok) {
         setError(typeof data.message === "string" ? data.message : extractErrorMessage(data));
         setIsSubmitting(false);
@@ -232,10 +247,12 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={handleResendCode}
-              disabled={isSubmitting}
+              disabled={isSubmitting || resendWaitSeconds > 0}
               className="w-full rounded-[var(--radius)] border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--foreground)] disabled:opacity-50"
             >
-              Resend code
+              {resendWaitSeconds > 0
+                ? `Resend code in ${resendWaitSeconds}s`
+                : "Resend code"}
             </button>
           </form>
           <p className="mt-5 text-center text-sm text-[var(--muted-foreground)]">

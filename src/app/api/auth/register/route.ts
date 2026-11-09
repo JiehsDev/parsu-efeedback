@@ -40,8 +40,16 @@ export async function POST(req: NextRequest) {
     );
     if (!limit.success) {
       return NextResponse.json(
-        { error: "Too many registration attempts. Please try again later." },
-        { status: 429 },
+        {
+          error:
+            "Too many registration attempts. If you already submitted your details, use the pending verification option to request a code. Otherwise, wait before trying again.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))),
+          },
+        },
       );
     }
   } catch (error) {
@@ -98,7 +106,7 @@ export async function POST(req: NextRequest) {
           "Your account was created but the verification email could not be sent. Use Resend code to try again.",
         email: parsed.data.email,
       },
-      { status: 503 },
+      { status: 503, headers: { "Retry-After": "60" } },
     );
   }
 
