@@ -41,6 +41,7 @@ const positiveInt = z.coerce.number().int().positive();
 const envSchema = z.object({
   // --- App ---
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
   NEXT_PUBLIC_APP_URL: z.string().url(),
 
   // --- Database (MongoDB Atlas M0) ---

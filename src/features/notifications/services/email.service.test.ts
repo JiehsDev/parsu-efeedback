@@ -6,9 +6,11 @@ vi.mock("@/lib/env", () => ({
   env: {
     NEXT_PUBLIC_APP_URL: "https://parsu.example",
     NODE_ENV: "production",
+    VERCEL_ENV: undefined,
     RESEND_FROM_EMAIL: "no-reply@parsu.example",
     RESEND_DEV_TEST_EMAIL: "test@parsu.example",
     DEV_TEST_EMAIL_RECIPIENT: undefined,
+    DEV_EMAIL_REDIRECT_ENABLED: false,
   },
 }));
 vi.mock("@/lib/resend", () => ({
@@ -24,7 +26,9 @@ import {
 beforeEach(() => {
   mocks.send.mockReset();
   env.NODE_ENV = "production";
+  env.VERCEL_ENV = undefined;
   env.DEV_TEST_EMAIL_RECIPIENT = undefined;
+  env.DEV_EMAIL_REDIRECT_ENABLED = false;
 });
 
 describe("complaintUrlForRole", () => {
@@ -105,9 +109,11 @@ describe("sendStudentEmailVerificationEmail", () => {
     ).rejects.toThrow("provider rejected message");
   });
 
-  it("uses the configured test recipient for non-production email", async () => {
+  it("redirects development email to the Resend inbox when the switch is enabled", async () => {
     env.NODE_ENV = "development";
-    env.DEV_TEST_EMAIL_RECIPIENT = "recipient@parsu.edu.ph";
+    env.VERCEL_ENV = "development";
+    env.DEV_EMAIL_REDIRECT_ENABLED = true;
+    env.DEV_TEST_EMAIL_RECIPIENT = "different-inbox@example.com";
     mocks.send.mockResolvedValue({ data: { id: "email-id" }, error: null });
 
     await sendStudentEmailVerificationEmail({
@@ -118,9 +124,43 @@ describe("sendStudentEmailVerificationEmail", () => {
 
     expect(mocks.send).toHaveBeenCalledWith(
       expect.objectContaining({
-        to: "recipient@parsu.edu.ph",
+        to: "test@parsu.example",
         subject: expect.stringContaining("student@parsu.edu.ph"),
       }),
+    );
+  });
+
+  it("redirects Preview email to the Resend inbox when the switch is enabled", async () => {
+    env.NODE_ENV = "production";
+    env.VERCEL_ENV = "preview";
+    env.DEV_EMAIL_REDIRECT_ENABLED = true;
+    mocks.send.mockResolvedValue({ data: { id: "email-id" }, error: null });
+
+    await sendStudentEmailVerificationEmail({
+      to: "student@parsu.edu.ph",
+      recipientName: "Test Student",
+      code: "482913",
+    });
+
+    expect(mocks.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "test@parsu.example" }),
+    );
+  });
+
+  it("keeps production email directed to the actual recipient when the switch is enabled", async () => {
+    env.NODE_ENV = "production";
+    env.VERCEL_ENV = "production";
+    env.DEV_EMAIL_REDIRECT_ENABLED = true;
+    mocks.send.mockResolvedValue({ data: { id: "email-id" }, error: null });
+
+    await sendStudentEmailVerificationEmail({
+      to: "student@parsu.edu.ph",
+      recipientName: "Test Student",
+      code: "482913",
+    });
+
+    expect(mocks.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "student@parsu.edu.ph" }),
     );
   });
 });
