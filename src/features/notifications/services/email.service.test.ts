@@ -9,7 +9,6 @@ vi.mock("@/lib/env", () => ({
     VERCEL_ENV: undefined,
     RESEND_FROM_EMAIL: "no-reply@parsu.example",
     RESEND_DEV_TEST_EMAIL: "test@parsu.example",
-    DEV_TEST_EMAIL_RECIPIENT: undefined,
     DEV_EMAIL_REDIRECT_ENABLED: false,
   },
 }));
@@ -27,7 +26,6 @@ beforeEach(() => {
   mocks.send.mockReset();
   env.NODE_ENV = "production";
   env.VERCEL_ENV = undefined;
-  env.DEV_TEST_EMAIL_RECIPIENT = undefined;
   env.DEV_EMAIL_REDIRECT_ENABLED = false;
 });
 
@@ -113,7 +111,6 @@ describe("sendStudentEmailVerificationEmail", () => {
     env.NODE_ENV = "development";
     env.VERCEL_ENV = "development";
     env.DEV_EMAIL_REDIRECT_ENABLED = true;
-    env.DEV_TEST_EMAIL_RECIPIENT = "different-inbox@example.com";
     mocks.send.mockResolvedValue({ data: { id: "email-id" }, error: null });
 
     await sendStudentEmailVerificationEmail({

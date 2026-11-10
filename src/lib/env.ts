@@ -62,7 +62,6 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
   RESEND_DEV_TEST_EMAIL: z.string().email(),
-  DEV_TEST_EMAIL_RECIPIENT: z.string().email().optional(),
   DEV_EMAIL_REDIRECT_ENABLED: z
     .enum(["true", "false"])
     .default("false")

@@ -35,7 +35,6 @@ environment (Production / Preview) — see `docs/architecture.md` section 12.
 | `RESEND_API_KEY`           | Sends transactional email                               | resend.com → API Keys                                                                                       |
 | `RESEND_FROM_EMAIL`        | Verified sender address                                 | Must belong to a domain verified under resend.com → Domains                                                 |
 | `RESEND_DEV_TEST_EMAIL`    | Development email recipient                            | Inbox used when local development email redirection is enabled                                              |
-| `DEV_TEST_EMAIL_RECIPIENT` | Optional development test-email endpoint inbox        | Inbox used by the authenticated development test-email endpoint                                              |
 | `DEV_EMAIL_REDIRECT_ENABLED` | Development/Preview email recipient switch           | Set `true` to redirect local development or Vercel Preview emails; production is always excluded           |
 | `UPSTASH_REDIS_REST_URL`   | Rate limiting + cron trigger backend                    | console.upstash.com → Redis database → REST API tab                                                         |
 | `UPSTASH_REDIS_REST_TOKEN` | Same as above                                           | Same tab                                                                                                    |

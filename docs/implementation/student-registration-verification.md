@@ -27,8 +27,9 @@ provider), and `RESEND_DEV_TEST_EMAIL`. To route local development or Vercel
 Preview mail to one inbox, set `DEV_EMAIL_REDIRECT_ENABLED=true`; it uses
 `RESEND_DEV_TEST_EMAIL` as the recipient, and the subject identifies the
 intended recipient. On Vercel, scope the switch to Preview only. Production
-always sends to the actual recipient. The development test-email endpoint is POST-only, requires
-`DEV_SEED_SECRET`, and sends a non-account code to the configured recipient.
+always sends to the actual recipient. The test-email endpoint is POST-only,
+requires `DEV_SEED_SECRET`, and accepts Vercel Preview only when the redirect
+switch is enabled.
 
 Registration is protected by the shared Upstash Redis rate limiter. Configure
 a reachable Redis instance before enabling the flow; signup, code verification,
