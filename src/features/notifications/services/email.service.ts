@@ -84,9 +84,9 @@ async function sendEmail(
   react: React.ReactElement,
   { failOnError = false }: { failOnError?: boolean } = {},
 ) {
-  // Redirect only when explicitly enabled in local development. Never allow
-  // this switch to change recipients in production or preview deployments.
-  const redirectToDevInbox = env.NODE_ENV === "development" && env.DEV_EMAIL_REDIRECT_ENABLED;
+  // This explicit switch is authoritative in every environment, including
+  // production, so deployments can be placed into test-email mode.
+  const redirectToDevInbox = env.DEV_EMAIL_REDIRECT_ENABLED;
   const actualRecipient = redirectToDevInbox
     ? env.RESEND_DEV_TEST_EMAIL
     : to;
