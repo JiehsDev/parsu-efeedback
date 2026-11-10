@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <ClientDataBoundary key={cacheScope} scope={cacheScope}>
-      <div className="app-shell flex bg-[var(--background)]">
+      <div className="app-shell flex overflow-hidden bg-[var(--background)]">
         <AdminNav
           userName={session?.user?.name ?? "Admin"}
           role={session?.user?.role ?? "administrator"}
