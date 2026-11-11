@@ -9,7 +9,12 @@ import { Office } from "@/models/Office";
 import { OfficeReturnRequest } from "@/models/OfficeReturnRequest";
 import { ResolutionRequest } from "@/models/ResolutionRequest";
 import { User } from "@/models/User";
-import { canProcessComplaint, isOsasHead, refId } from "@/lib/osas-operations";
+import {
+  canManageOfficeAssignments,
+  canProcessComplaint,
+  isOsasHead,
+  refId,
+} from "@/lib/osas-operations";
 import {
   notifyOfficeReturnDecision,
   notifyOfficeReturnRequested,
@@ -47,7 +52,7 @@ export async function requestReturnToOsas(params: {
 }) {
   const { session } = params;
   if (!session?.user || !["vpaa", "vpaf"].includes(session.user.role))
-    throw new OfficeReturnError("Only the assigned VPAA/VPAF handler may request a return to OSAS.", 403);
+    throw new OfficeReturnError("Only the assigned VPAA/VPAF handler or receiving-office Head may request a return to OSAS.", 403);
 
   const complaint = await Complaint.findById(params.complaintId);
   if (!complaint) throw new OfficeReturnError("Complaint not found.", 404);
@@ -56,10 +61,9 @@ export async function requestReturnToOsas(params: {
   if (
     complaint.forwardedToRole !== session.user.role ||
     !complaint.forwardedAt ||
-    !complaint.assignedStaffRef ||
-    !(await canProcessComplaint(session, complaint))
+    !complaint.assignedStaffRef
   )
-    throw new OfficeReturnError("Only the assigned handler in the receiving office may request a return.", 403);
+    throw new OfficeReturnError("Only an active forwarded complaint can be returned to OSAS.", 403);
 
   const [sourceOffice, osas] = await Promise.all([
     Office.findById(complaint.assignedOfficeRef),
@@ -68,6 +72,9 @@ export async function requestReturnToOsas(params: {
   const expectedSourceCode = session.user.role === "vpaa" ? "OVPAA" : "OVPAF";
   if (!sourceOffice || sourceOffice.code !== expectedSourceCode)
     throw new OfficeReturnError("The complaint is not assigned to its recorded receiving office.", 409);
+  const receivingOfficeHead = await canManageOfficeAssignments(session, sourceOffice);
+  if (!receivingOfficeHead && !(await canProcessComplaint(session, complaint)))
+    throw new OfficeReturnError("Only the assigned handler or receiving-office Head may request a return.", 403);
   if (!osas) throw new OfficeReturnError("OSAS is unavailable. Contact an administrator.", 503);
   const osasHead = osas.headUserRef
     ? await User.findOne({ _id: osas.headUserRef, isActive: true }).select("_id").lean()
@@ -91,12 +98,19 @@ export async function requestReturnToOsas(params: {
   try {
     await dbSession.withTransaction(async () => {
       const freshComplaint = await Complaint.findById(complaint._id).session(dbSession);
+      const freshSourceOffice = await Office.findById(sourceOffice._id).session(dbSession);
+      const isCurrentOfficeHead = Boolean(
+        freshSourceOffice?.isActive &&
+        freshSourceOffice.code === expectedSourceCode &&
+        refId(freshSourceOffice.headUserRef) === session.user.id &&
+        session.user.role === (expectedSourceCode === "OVPAA" ? "vpaa" : "vpaf"),
+      );
       if (
         !freshComplaint ||
         freshComplaint.isArchived ||
         freshComplaint.status !== complaint.status ||
         refId(freshComplaint.assignedOfficeRef) !== refId(sourceOffice._id) ||
-        refId(freshComplaint.assignedStaffRef) !== session.user.id ||
+        (!isCurrentOfficeHead && refId(freshComplaint.assignedStaffRef) !== session.user.id) ||
         freshComplaint.forwardedToRole !== session.user.role ||
         !freshComplaint.forwardedAt ||
         freshComplaint.forwardedAt.getTime() !== complaint.forwardedAt!.getTime()

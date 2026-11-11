@@ -69,7 +69,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const changing = Boolean(
     complaint.assignedStaffRef && refId(complaint.assignedStaffRef) !== refId(staff._id),
   );
-  if (changing && !parsed.data.message?.trim())
+  const headHandlingPersonally = isHeadTarget && refId(staff._id) === session.user.id;
+  if (changing && !headHandlingPersonally && !parsed.data.message?.trim())
     return NextResponse.json(
       { error: "A reason is required to change assignee." },
       { status: 400 },

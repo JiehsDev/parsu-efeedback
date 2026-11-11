@@ -24,7 +24,11 @@ import { AssignmentHistoryPanel } from "./AssignmentHistoryPanel";
 import { SlaDetails } from "./SlaDetails";
 import { ForwardingPanel } from "./ForwardingPanel";
 import { ForwardingRequest } from "@/models/ForwardingRequest";
-import { canProcessComplaint, isOsasComplaint } from "@/lib/osas-operations";
+import {
+  canManageOfficeAssignments,
+  canProcessComplaint,
+  isOsasComplaint,
+} from "@/lib/osas-operations";
 import { ComplaintActions } from "./ComplaintActions";
 import { OfficeReturnToOsasPanel } from "./OfficeReturnToOsasPanel";
 const plain = (value: any) => JSON.parse(JSON.stringify(value));
@@ -85,13 +89,16 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     ) &&
     (await isOsasComplaint(c)) &&
     (forwardingHead || (await canProcessComplaint(session, c)));
+  const isReceivingOfficeHead = office
+    ? await canManageOfficeAssignments(session, office)
+    : false;
   const canRequestReturnToOsas =
     !c.isArchived &&
     ["vpaa", "vpaf"].includes(session.user.role) &&
     c.forwardedToRole === session.user.role &&
     Boolean(c.forwardedAt) &&
     ["in_progress", "pending_information"].includes(c.status) &&
-    (await canProcessComplaint(session, c));
+    (isReceivingOfficeHead || (await canProcessComplaint(session, c)));
   const readOnly = !(await canWriteInternalComplaintNotes(session, c));
   const viewOnly =
     ["office_staff", "osas"].includes(session.user.role) &&

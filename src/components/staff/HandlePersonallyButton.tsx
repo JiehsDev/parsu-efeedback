@@ -13,7 +13,6 @@ export function HandlePersonallyButton({
   needsReason: boolean;
 }) {
   const router = useRouter();
-  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function handle() {
@@ -25,7 +24,7 @@ export function HandlePersonallyButton({
         body: JSON.stringify({
           action: needsReason ? "reassign" : "assign",
           assignedStaffRef: headId,
-          message: reason || "Office Head handling personally.",
+          message: "Office Head handling personally.",
         }),
       });
       const data = await response.json();
@@ -42,17 +41,6 @@ export function HandlePersonallyButton({
   }
   return (
     <div className="space-y-2">
-      {needsReason && (
-        <label className="block text-sm">
-          Reason for handling personally
-          <input
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            required
-            className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] p-2"
-          />
-        </label>
-      )}
       {error && (
         <p role="alert" className="text-sm text-[var(--destructive)]">
           {error}
@@ -60,7 +48,7 @@ export function HandlePersonallyButton({
       )}
       <button
         onClick={handle}
-        disabled={busy || (needsReason && !reason.trim())}
+        disabled={busy}
         className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold disabled:opacity-50"
       >
         {busy ? "Assigning..." : "Handle Personally"}
