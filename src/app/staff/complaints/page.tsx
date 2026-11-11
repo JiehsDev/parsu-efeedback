@@ -309,7 +309,7 @@ export default async function StaffComplaintsPage({
     hrefFor({ ...preserved, status: validStatus, ...values });
   const emptyMessage =
     params.sla === "overdue"
-      ? "No overdue complaints in your queue."
+      ? "No overdue complaints."
       : isMine
         ? "You currently have no assigned complaints."
         : hasFilters
@@ -330,10 +330,10 @@ export default async function StaffComplaintsPage({
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-wide text-[var(--primary)] uppercase">
-            Operations · Office queue
+            Office complaints
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--foreground)] sm:text-3xl">
-            Complaint Queue
+            Complaints
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {isHead
@@ -342,7 +342,7 @@ export default async function StaffComplaintsPage({
           </p>
         </div>
         <p className="text-xs text-[var(--muted-foreground)]">
-          {totalOpen} open complaint{totalOpen === 1 ? "" : "s"} in your queue
+          {totalOpen} open complaint{totalOpen === 1 ? "" : "s"} in your office
         </p>
       </header>
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -373,7 +373,7 @@ export default async function StaffComplaintsPage({
         <Metric
           label="Total Open"
           value={totalOpen}
-          hint="Currently in the queue"
+          hint="Currently open"
           href={filterHref({ status: undefined, assignee: undefined, sla: undefined })}
           icon={ListChecks}
           tone="neutral"
@@ -496,12 +496,12 @@ export default async function StaffComplaintsPage({
       ) : (
         <section
           className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]"
-          aria-labelledby="queue-heading"
+          aria-labelledby="complaints-heading"
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
             <div>
-              <h2 id="queue-heading" className="text-sm font-semibold text-[var(--foreground)]">
-                Work queue
+              <h2 id="complaints-heading" className="text-sm font-semibold text-[var(--foreground)]">
+                Complaint list
               </h2>
               <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                 Showing {firstShown}–{lastShown} of {totalFiltered} complaints · prioritized by

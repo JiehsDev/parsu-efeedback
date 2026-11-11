@@ -24,7 +24,7 @@ import {
 const NAV_ITEMS = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/student/complaints", label: "My Complaints", icon: Inbox },
-  { href: "/student/complaints/new", label: "Submit", icon: ClipboardList },
+  { href: "/student/complaints/new", label: "Submit Complaint", icon: ClipboardList },
   { href: "/student/feedback/new", label: "Feedback", icon: MessageSquarePlus },
 ];
 

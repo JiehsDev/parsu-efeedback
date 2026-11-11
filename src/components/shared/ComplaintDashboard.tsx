@@ -95,7 +95,6 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
     categories,
     priorities,
     domains,
-    oversight,
     role,
   } = data;
   const now = new Date();
@@ -146,8 +145,8 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {data.receivingOffice
-              ? "See your office’s queue, deadlines, and assigned complaints."
-              : "See the complaint queue, deadlines, and current assignments."}
+              ? "View your office’s complaints, deadlines, and assignments."
+              : "View complaints, deadlines, and current assignments."}
           </p>
         </div>
         <Link
@@ -169,7 +168,7 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
             href={`/${base}/complaints`}
             className="flex items-center justify-between border-t border-current/20 pt-2 text-xs font-medium hover:underline"
           >
-            View complaint queue <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            View complaints <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </section>
 
@@ -234,8 +233,12 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
           className={`${panel} col-span-2 flex min-h-[320px] flex-col md:col-span-4 xl:col-span-7`}
         >
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">Complaint trends</h2>
-            <span className="text-xs text-[var(--muted-foreground)]">Monthly activity</span>
+            <div>
+              <h2 className="text-sm font-semibold">Complaint trends</h2>
+              <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                Shows monthly complaint volume and SLA compliance.
+              </p>
+            </div>
           </div>
           <div className="h-64 min-h-64 flex-1">
             {trends.length ? (
@@ -250,12 +253,12 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
 
         <section
           className={`${panel} col-span-2 flex min-h-[320px] flex-col md:col-span-4 xl:col-span-5`}
-          aria-labelledby="dashboard-queue-title"
+          aria-labelledby="dashboard-complaints-title"
         >
           <div className="mb-2 flex items-start justify-between gap-2">
             <div>
-              <h2 id="dashboard-queue-title" className="text-sm font-semibold">
-                {oversight ? "Open complaints" : "Action queue"}
+              <h2 id="dashboard-complaints-title" className="text-sm font-semibold">
+                Open complaints
               </h2>
               <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                 {unassigned > 0 ? `${unassigned} awaiting assignment. ` : ""}Earliest deadlines
@@ -321,7 +324,12 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
 
         <section className={`${panel} col-span-2 md:col-span-4 xl:col-span-5`}>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">Top categories</h2>
+            <div>
+              <h2 className="text-sm font-semibold">Top complaint categories</h2>
+              <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                Shows which categories receive the most complaints.
+              </p>
+            </div>
             <span className="text-xs text-[var(--muted-foreground)]">
               {Math.min(5, categories.length)} of {categories.length}
             </span>
@@ -334,7 +342,12 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         </section>
 
         <section className={`${panel} col-span-2 xl:col-span-4`}>
-          <h2 className="mb-3 text-sm font-semibold">Service domains</h2>
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold">Service domains</h2>
+            <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+              Shows complaints grouped by university service area.
+            </p>
+          </div>
           <div className="h-[160px] space-y-3 overflow-y-auto overscroll-contain pr-1">
             {domains.map((row) => (
               <div key={row.domain}>
@@ -355,7 +368,12 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
         </section>
 
         <section className={`${panel} col-span-2 xl:col-span-3`}>
-          <h2 className="mb-2 text-sm font-semibold">Priority mix</h2>
+          <div className="mb-2">
+            <h2 className="text-sm font-semibold">Priority mix</h2>
+            <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+              Shows how complaints are distributed across priority levels.
+            </p>
+          </div>
           {priorities.length ? (
             <PriorityPieChart data={priorities} heightClassName="h-[164px]" />
           ) : (

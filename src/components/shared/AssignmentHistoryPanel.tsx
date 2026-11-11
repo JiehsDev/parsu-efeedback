@@ -74,7 +74,7 @@ export function AssignmentHistoryPanel({
                       ? `${entry.kind === "forwarding" ? "Forwarded" : "Reassigned"} from ${entry.sourceOfficeName} to `
                       : "Assigned to "}
                     {entry.kind === "release"
-                      ? "Complaint returned to office queue"
+                      ? "Released for reassignment"
                       : (entry.destinationOfficeName ?? "unassigned office")}
                   </p>
                 )}

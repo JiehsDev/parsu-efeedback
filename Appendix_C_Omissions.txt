@@ -1,0 +1,7 @@
+﻿Omitted Figures C.2–C.13
+
+Only the public student registration page was accessible for this capture. The local application environment uses a MongoDB target that could not be verified as a test-only database, and no safe authenticated test account was established. To avoid creating accounts, sending verification mail, or modifying complaint, forwarding, notification, and report records in an unknown data environment, no forms were submitted and no authenticated workflow was exercised.
+
+Figure C.1 shows fictional sample values entered into the actual registration form. The form was not submitted; no account or transaction was created. The password fields remain masked.
+
+The email verification interface (C.2), complaint and feedback forms (C.3–C.4), forwarding request and approval (C.5, C.8), generated ticket and activity history (C.6–C.7), resolution and notification (C.9–C.10), complaint summary and SLA reports (C.11–C.12), and institutional analytics report (C.13) are omitted because they require a safe authenticated test environment and actual test records. No downloadable report could be generated safely.

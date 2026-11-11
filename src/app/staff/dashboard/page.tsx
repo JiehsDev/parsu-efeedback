@@ -81,7 +81,7 @@ export default async function StaffDashboardPage() {
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-3.5 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
         >
           <Inbox className="h-4 w-4" />
-          Open office queue
+          View office complaints
         </Link>
       </header>
 
@@ -124,14 +124,14 @@ export default async function StaffDashboardPage() {
             <div>
               <p className="text-sm font-medium text-[var(--foreground)]">No complaints assigned to you yet</p>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Open the office queue or ask your office head to assign a complaint.
+                View office complaints or ask your office head to assign one to you.
               </p>
             </div>
             <Link
               href="/staff/complaints"
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)]/50"
             >
-              Go to queue <ArrowRight className="h-4 w-4" />
+              View complaints <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         )}

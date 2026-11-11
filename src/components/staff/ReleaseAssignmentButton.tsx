@@ -37,7 +37,7 @@ export function ReleaseAssignmentButton({ complaintId }: { complaintId: string }
     }
     setIsOpen(false);
     setReason("");
-    showToast("Complaint returned to the office queue");
+    showToast("Complaint released for reassignment.");
     router.refresh();
   }
 
@@ -58,7 +58,7 @@ export function ReleaseAssignmentButton({ complaintId }: { complaintId: string }
         <Modal title="Release Assignment" onClose={() => !isSubmitting && setIsOpen(false)}>
           <div className="space-y-4">
             <p className="text-sm text-[var(--muted-foreground)]">
-              This returns the complaint to your office&apos;s Submitted queue for reassignment.
+              This releases the complaint to your office for reassignment.
             </p>
             {error && (
               <div className="flex items-start gap-2 rounded-2xl border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">

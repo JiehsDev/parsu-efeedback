@@ -25,7 +25,7 @@ import {
 
 const NAV_ITEMS = [
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { href: "/staff/complaints", label: "Queue", icon: Inbox },
+  { href: "/staff/complaints", label: "Complaints", icon: Inbox },
   {
     href: "/staff/forwarding-requests",
     label: "Forwarding Requests",

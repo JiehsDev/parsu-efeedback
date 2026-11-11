@@ -174,7 +174,7 @@ export function StudentComplaintsSkeleton() {
 
 export function StaffQueueSkeleton({ sla = false }: { sla?: boolean }) {
   return (
-    <SkeletonPage label={sla ? "Loading SLA tracker" : "Loading complaint queue"}>
+    <SkeletonPage label={sla ? "Loading SLA tracker" : "Loading complaints"}>
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <Skeleton className="h-4 w-48" />

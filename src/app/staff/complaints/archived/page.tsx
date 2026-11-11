@@ -49,7 +49,7 @@ export default async function StaffArchivedComplaintsPage({
         className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Back to queue
+        Back to complaints
       </Link>
       <header>
         <p className="text-xs font-semibold tracking-wide text-[var(--primary)] uppercase">
@@ -60,7 +60,7 @@ export default async function StaffArchivedComplaintsPage({
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           Complaints retained for record purposes. Archived complaints are no longer part of the
-          active processing queue.
+          active complaint list.
         </p>
       </header>
       <section className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:flex-row sm:items-center sm:justify-between">

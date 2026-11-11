@@ -200,7 +200,7 @@ export async function notifyAssignmentReleased(params: {
   await createNotification({
     userRef: String(headUserId),
     type: "assignment_released",
-    title: "Complaint returned to your queue",
+    title: "Complaint released for reassignment",
     body: `Complaint ${params.ticketNumber} was released by its assigned staff member and is awaiting reassignment. Reason: ${params.reason}`,
     relatedComplaintRef: params.complaintId,
   });

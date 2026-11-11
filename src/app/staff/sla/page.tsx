@@ -182,7 +182,7 @@ function EmptyQueue({ view }: { view: View }) {
       <div>
         <p className="text-sm font-semibold text-[var(--foreground)]">{message}</p>
         <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-          Your queue is clear for this view.
+          No complaints need attention in this view.
         </p>
       </div>
     </div>
@@ -274,7 +274,7 @@ export default async function StaffSlaPage({
             SLA Tracker
           </h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Start with the most urgent complaints in your office and work down the queue.
+            Review the most urgent complaints in your office first.
           </p>
         </div>
         <p className="text-xs text-[var(--muted-foreground)]">
@@ -378,12 +378,12 @@ export default async function StaffSlaPage({
       ) : (
         <section
           className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]"
-          aria-labelledby="sla-queue-heading"
+          aria-labelledby="sla-complaints-heading"
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
             <div>
-              <h2 id="sla-queue-heading" className="text-sm font-semibold text-[var(--foreground)]">
-                Work queue
+              <h2 id="sla-complaints-heading" className="text-sm font-semibold text-[var(--foreground)]">
+                Complaints by deadline
               </h2>
               <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                 Prioritized by deadline. Open a complaint to take action.
