@@ -583,6 +583,36 @@ export async function notifyResolutionDecision(params: {
   });
 }
 
+export async function notifyOfficeReturnRequested(params: {
+  userId: string;
+  ticketNumber: string;
+  sourceOffice: string;
+  reason: string;
+}) {
+  await createNotification({
+    userRef: params.userId,
+    type: "office_return_request",
+    title: "Complaint return request",
+    body: `${params.ticketNumber} was referred back from ${params.sourceOffice} for OSAS review. Reason: ${params.reason}`,
+  });
+}
+
+export async function notifyOfficeReturnDecision(params: {
+  userId: string;
+  ticketNumber: string;
+  approved: boolean;
+  reason?: string;
+}) {
+  await createNotification({
+    userRef: params.userId,
+    type: "office_return_decision",
+    title: params.approved ? "Complaint returned to OSAS" : "OSAS declined the return request",
+    body: params.approved
+      ? `${params.ticketNumber} was returned to OSAS for reassignment.`
+      : `${params.ticketNumber} will remain with the receiving office.${params.reason ? ` OSAS note: ${params.reason}` : ""}`,
+  });
+}
+
 export async function notifyComplaintRestored(params: {
   studentId: string;
   ticketNumber: string;

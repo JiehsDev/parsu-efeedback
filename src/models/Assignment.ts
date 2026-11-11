@@ -42,6 +42,7 @@ const assignmentSchema = new Schema(
         "sla_escalation",
         "office_reassignment",
         "forward",
+        "return_to_osas",
       ],
       default: "assign",
     },

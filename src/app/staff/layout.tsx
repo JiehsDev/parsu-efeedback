@@ -41,6 +41,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           officeLabel={officeLabel}
           showForwarding={office?.code === "OSAS"}
           canReviewResolutionRequests={canReviewResolutionRequests}
+          canReviewOfficeReturnRequests={isOfficeHead}
         />
         <main id="main-content" className="workspace">
           {children}

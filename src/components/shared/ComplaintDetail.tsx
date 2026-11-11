@@ -11,6 +11,7 @@ import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { ResolutionRequest } from "@/models/ResolutionRequest";
+import { OfficeReturnRequest } from "@/models/OfficeReturnRequest";
 import { InformationRequest } from "@/models/InformationRequest";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
 import { StatusBadge } from "./StatusBadge";
@@ -25,6 +26,7 @@ import { ForwardingPanel } from "./ForwardingPanel";
 import { ForwardingRequest } from "@/models/ForwardingRequest";
 import { canProcessComplaint, isOsasComplaint } from "@/lib/osas-operations";
 import { ComplaintActions } from "./ComplaintActions";
+import { OfficeReturnToOsasPanel } from "./OfficeReturnToOsasPanel";
 const plain = (value: any) => JSON.parse(JSON.stringify(value));
 export async function ComplaintDetail({ id, base }: { id: string; base: "admin" | "staff" }) {
   const session = await auth();
@@ -40,7 +42,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     })
     .lean();
   if (!c || !(await canAccessComplaint(session, c))) notFound();
-  const [timeline, notes, office, staff, history, requests, archives, resolutionRequests] = await Promise.all([
+  const [timeline, notes, office, staff, history, requests, archives, resolutionRequests, returnRequests] = await Promise.all([
     ComplaintTimeline.find({ complaintRef: id })
       .sort({ createdAt: 1 })
       .populate("actorRef", "firstName lastName role employeeOrStudentId")
@@ -66,6 +68,10 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
       .sort({ createdAt: -1 })
       .populate("requestedByRef reviewedByRef", "firstName lastName role")
       .lean(),
+    OfficeReturnRequest.find({ complaintRef: id })
+      .sort({ requestedAt: -1 })
+      .populate("requestedByUserRef reviewedByUserRef sourceOfficeRef", "firstName lastName name code")
+      .lean(),
   ]);
   const forwarding = await ForwardingRequest.find({ complaintRef: id })
     .sort({ requestedAt: -1 })
@@ -79,6 +85,13 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     ) &&
     (await isOsasComplaint(c)) &&
     (forwardingHead || (await canProcessComplaint(session, c)));
+  const canRequestReturnToOsas =
+    !c.isArchived &&
+    ["vpaa", "vpaf"].includes(session.user.role) &&
+    c.forwardedToRole === session.user.role &&
+    Boolean(c.forwardedAt) &&
+    ["in_progress", "pending_information"].includes(c.status) &&
+    (await canProcessComplaint(session, c));
   const readOnly = !(await canWriteInternalComplaintNotes(session, c));
   const viewOnly =
     ["office_staff", "osas"].includes(session.user.role) &&
@@ -161,6 +174,13 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
             canRequest={canRequestForwarding}
             requests={plain(forwarding)}
           />
+          {c.forwardedAt && ["vpaa", "vpaf"].includes(c.forwardedToRole) && (
+            <OfficeReturnToOsasPanel
+              complaintId={id}
+              canRequest={canRequestReturnToOsas}
+              requests={plain(returnRequests)}
+            />
+          )}
           <ComplaintActions
             session={session}
             complaint={c}

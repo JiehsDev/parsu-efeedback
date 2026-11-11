@@ -276,9 +276,9 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
             {queue.length ? (
               <ul className="divide-y divide-[var(--border)]">
                 {queue.map((complaint) => {
-                  const deadline = complaint.assignedStaffRef
-                    ? complaint.slaResolutionDueAt
-                    : complaint.slaResponseDueAt;
+                  const deadline = complaint.status === "submitted"
+                    ? complaint.slaResponseDueAt
+                    : complaint.slaResolutionDueAt;
                   const late = complaint.isOverdue || (deadline && new Date(deadline) <= now);
                   return (
                     <li key={complaint._id}>

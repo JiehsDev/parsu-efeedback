@@ -16,6 +16,7 @@ import {
   Bell,
   Building2,
   ClipboardCheck,
+  CornerUpLeft,
   FileBarChart,
   Inbox,
   LayoutGrid,
@@ -50,6 +51,12 @@ const PRIMARY_NAV_ITEMS = [
     label: "Resolution Requests",
     icon: ClipboardCheck,
     requiresResolutionHead: true,
+  },
+  {
+    href: "/admin/office-return-requests",
+    label: "Return to OSAS",
+    icon: CornerUpLeft,
+    requiresOfficeReturnHead: true,
   },
   { href: "/admin/complaints?archived=1", label: "Archived Complaints", icon: Archive },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart },
@@ -93,10 +100,12 @@ export function AdminNav({
   userName,
   role,
   canReviewResolutionRequests = false,
+  canReviewOfficeReturnRequests = false,
 }: {
   userName: string;
   role: UserRole;
   canReviewResolutionRequests?: boolean;
+  canReviewOfficeReturnRequests?: boolean;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -122,6 +131,7 @@ export function AdminNav({
   const [unreadCount, setUnreadCount] = useState(0);
   const [archiveRequestCount, setArchiveRequestCount] = useState(0);
   const [resolutionRequestCount, setResolutionRequestCount] = useState(0);
+  const [officeReturnRequestCount, setOfficeReturnRequestCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +179,28 @@ export function AdminNav({
   }, [canReviewResolutionRequests]);
 
   useEffect(() => {
+    if (!canReviewOfficeReturnRequests) return;
+    let active = true;
+    async function refreshOfficeReturnRequestCount() {
+      try {
+        const response = await clientFetch("/api/office-return-requests");
+        if (!response.ok) throw new Error("Could not load OSAS return requests.");
+        const data = await response.json();
+        if (active)
+          setOfficeReturnRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
+      } catch (error) {
+        console.error("Could not refresh OSAS return request count:", error);
+      }
+    }
+    void refreshOfficeReturnRequestCount();
+    const intervalId = window.setInterval(() => void refreshOfficeReturnRequestCount(), 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [canReviewOfficeReturnRequests]);
+
+  useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -191,7 +223,9 @@ export function AdminNav({
 
   const initials = getInitials(userName);
   const visiblePrimaryItems = primaryItems.filter(
-    (item) => !item.requiresResolutionHead || canReviewResolutionRequests,
+    (item) =>
+      (!item.requiresResolutionHead || canReviewResolutionRequests) &&
+      (!item.requiresOfficeReturnHead || canReviewOfficeReturnRequests),
   );
 
   async function handleSignOut() {
@@ -255,6 +289,16 @@ export function AdminNav({
                 {rendered}
                 <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
                   {resolutionRequestCount > 99 ? "99+" : resolutionRequestCount}
+                </span>
+              </div>
+            );
+          }
+          if (item.href === "/admin/office-return-requests" && officeReturnRequestCount > 0) {
+            return (
+              <div key={item.href} className="relative">
+                {rendered}
+                <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
+                  {officeReturnRequestCount > 99 ? "99+" : officeReturnRequestCount}
                 </span>
               </div>
             );

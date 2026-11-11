@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   LogOut,
   FileBarChart,
+  CornerUpLeft,
   Timer,
   UserRound,
 } from "lucide-react";
@@ -26,6 +27,12 @@ import {
 const NAV_ITEMS = [
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/staff/complaints", label: "Complaints", icon: Inbox },
+  {
+    href: "/staff/office-return-requests",
+    label: "Return to OSAS",
+    icon: CornerUpLeft,
+    requiresOfficeReturnHead: true,
+  },
   {
     href: "/staff/forwarding-requests",
     label: "Forwarding Requests",
@@ -57,12 +64,14 @@ export function StaffNav({
   officeLabel = "OSAS",
   showForwarding = true,
   canReviewResolutionRequests = false,
+  canReviewOfficeReturnRequests = false,
 }: {
   userName: string;
   isOfficeHead?: boolean;
   officeLabel?: string;
   showForwarding?: boolean;
   canReviewResolutionRequests?: boolean;
+  canReviewOfficeReturnRequests?: boolean;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -70,6 +79,7 @@ export function StaffNav({
   const accountId = useId();
   const [unreadCount, setUnreadCount] = useState(0);
   const [resolutionRequestCount, setResolutionRequestCount] = useState(0);
+  const [officeReturnRequestCount, setOfficeReturnRequestCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -107,6 +117,27 @@ export function StaffNav({
   }, [canReviewResolutionRequests]);
 
   useEffect(() => {
+    if (!canReviewOfficeReturnRequests) return;
+    let active = true;
+    async function refreshCount() {
+      try {
+        const response = await clientFetch("/api/office-return-requests");
+        if (!response.ok) throw new Error("Could not load OSAS return requests.");
+        const data = await response.json();
+        if (active) setOfficeReturnRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
+      } catch (error) {
+        console.error("Could not refresh OSAS return request count:", error);
+      }
+    }
+    void refreshCount();
+    const intervalId = window.setInterval(() => void refreshCount(), 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [canReviewOfficeReturnRequests]);
+
+  useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -132,6 +163,7 @@ export function StaffNav({
     (item) =>
       (!item.requiresHead || isOfficeHead) &&
       (!item.requiresOsas || showForwarding) &&
+      (!item.requiresOfficeReturnHead || canReviewOfficeReturnRequests) &&
       (!item.requiresResolutionHead || canReviewResolutionRequests),
   );
   const roleLabel = `${officeLabel} ${isOfficeHead ? "Head" : "Staff"}`;
@@ -185,13 +217,20 @@ export function StaffNav({
               <span className="hidden lg:inline">{item.label}</span>
             </Link>
           );
-          if (item.href !== "/staff/resolution-requests" || resolutionRequestCount === 0)
+          if (
+            (item.href !== "/staff/resolution-requests" || resolutionRequestCount === 0) &&
+            (item.href !== "/staff/office-return-requests" || officeReturnRequestCount === 0)
+          )
             return link;
+          const badgeCount =
+            item.href === "/staff/office-return-requests"
+              ? officeReturnRequestCount
+              : resolutionRequestCount;
           return (
             <div key={item.href} className="relative">
               {link}
               <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
-                {resolutionRequestCount > 99 ? "99+" : resolutionRequestCount}
+                {badgeCount > 99 ? "99+" : badgeCount}
               </span>
             </div>
           );

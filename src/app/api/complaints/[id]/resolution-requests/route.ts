@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { Office } from "@/models/Office";
 import { ResolutionRequest } from "@/models/ResolutionRequest";
+import { OfficeReturnRequest } from "@/models/OfficeReturnRequest";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { resolutionRequestSchema } from "@/features/complaints/schemas/complaint.schema";
 import { canProcessComplaint, refId } from "@/lib/osas-operations";
@@ -61,6 +62,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "This office has no designated head to review the request." }, { status: 409 });
   if (await ResolutionRequest.exists({ complaintRef: id, status: "pending" }))
     return NextResponse.json({ error: "A resolution request is already awaiting head approval." }, { status: 409 });
+  if (await OfficeReturnRequest.exists({ complaintRef: id, status: "pending" }))
+    return NextResponse.json({ error: "A return-to-OSAS request is awaiting review." }, { status: 409 });
 
   let request: any;
   try {

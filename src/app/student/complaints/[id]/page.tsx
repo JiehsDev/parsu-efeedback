@@ -70,7 +70,14 @@ export default async function ComplaintDetailPage({
       .lean(),
   ]);
   const timeline = (timelineEvents as any[]).filter(
-    (event) => !["resolution_requested", "resolution_rejected"].includes(event.eventType),
+    (event) =>
+      ![
+        "resolution_requested",
+        "resolution_rejected",
+        "office_return_requested",
+        "office_return_rejected",
+        "complaint_returned_to_osas",
+      ].includes(event.eventType),
   );
   const firstResponseAt =
     assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;

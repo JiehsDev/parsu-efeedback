@@ -42,7 +42,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const safeTimeline =
     session.user.role === "student"
       ? timeline.filter(
-          (event: any) => !["resolution_requested", "resolution_rejected"].includes(event.eventType),
+          (event: any) =>
+            ![
+              "resolution_requested",
+              "resolution_rejected",
+              "office_return_requested",
+              "office_return_rejected",
+              "complaint_returned_to_osas",
+            ].includes(event.eventType),
         )
       : timeline.map((event: any) => {
           if (event.actorRef?.role !== "student") return event;
