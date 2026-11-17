@@ -16,6 +16,8 @@ vi.mock("@/features/notifications/services/notification.service", () => ({
   notifyManualEscalation: vi.fn(),
   notifyResolutionRequest: vi.fn(),
   notifyResolutionDecision: vi.fn(),
+  notifyOfficeReturnRequested: vi.fn(),
+  notifyOfficeReturnDecision: vi.fn(),
 }));
 import { Complaint, Office, Assignment, ForwardingRequest, User } from "@/models";
 import { createTestOffice, createTestUser, createTestCategory } from "@/test/fixtures";
@@ -31,6 +33,8 @@ import { GET as roster } from "@/app/api/offices/[id]/staff/route";
 import { GET as list } from "@/app/api/complaints/route";
 import { POST as requestResolution } from "@/app/api/complaints/[id]/resolution-requests/route";
 import { PATCH as decideResolution } from "@/app/api/resolution-requests/[id]/route";
+import { POST as requestReturnToOsas } from "@/app/api/complaints/[id]/return-to-osas/route";
+import { PATCH as decideReturnToOsas } from "@/app/api/office-return-requests/[id]/route";
 import { POST as addNote } from "@/app/api/complaints/[id]/notes/route";
 import { POST as requestInformation } from "@/app/api/complaints/[id]/information-request/route";
 import { POST as respondInformation } from "@/app/api/complaints/[id]/information-response/route";
@@ -164,6 +168,10 @@ describe.each(["vpaa", "vpaf"] as const)("%s receiving staff", (role) => {
     ).toBe(200);
     d.login(d.staff);
     const saved = (await Complaint.findById(d.complaint._id))!;
+    expect(saved.status).toBe("assigned");
+    expect(
+      (await updateStatus(request({ status: "in_progress" }, "PATCH"), context(saved._id))).status,
+    ).toBe(200);
     expect(await canProcessComplaint(session(d.staff), saved)).toBe(true);
     expect(await canAttachToComplaint(session(d.staff), saved)).toBe(true);
     expect((await (await list(request({}, "GET"))).json()).total).toBe(1);
@@ -201,7 +209,8 @@ describe.each(["vpaa", "vpaf"] as const)("%s receiving staff", (role) => {
     d.login(d.staff);
     const submittedResolution = await requestResolution(
       request({
-        resolutionSummary: "The receiving office reviewed the supporting details and resolved the concern.",
+        resolutionSummary:
+          "The receiving office reviewed the supporting details and resolved the concern.",
         message: "The concern is ready for head review.",
       }),
       context(saved._id),
@@ -326,6 +335,75 @@ describe.each(["vpaa", "vpaf"] as const)("%s receiving staff", (role) => {
         )
       ).status,
     ).toBe(400);
+  });
+  it("allows the receiving-office Head to request return for a complaint assigned to another handler", async () => {
+    const d = await setup(role);
+    const forwarded = await d.forward();
+    d.login(d.receivingHead);
+    expect(
+      (
+        await assign(
+          request({
+            action: "reassign",
+            assignedStaffRef: String(d.staff._id),
+            message: "Assign to the designated receiving handler.",
+          }),
+          context(forwarded._id),
+        )
+      ).status,
+    ).toBe(200);
+
+    const before = (await Complaint.findById(forwarded._id))!;
+    const requested = await requestReturnToOsas(
+      request({ reason: "This concern belongs with OSAS rather than our office." }),
+      context(forwarded._id),
+    );
+    expect(requested.status).toBe(201);
+    const requestBody = await requested.json();
+    expect(String(requestBody.request.requestedByUserRef)).toBe(String(d.receivingHead._id));
+    expect(String(requestBody.request.assignedStaffRef)).toBe(String(d.staff._id));
+
+    d.login(d.head);
+    const decided = await decideReturnToOsas(
+      request({ action: "approve" }, "PATCH"),
+      context(requestBody.request._id),
+    );
+    expect(decided.status).toBe(200);
+    const returned = (await Complaint.findById(forwarded._id))!;
+    expect(String(returned.assignedOfficeRef)).toBe(String(d.osas._id));
+    expect(returned.assignedStaffRef).toBeNull();
+    expect(before.status).toBe("assigned");
+    expect(returned.status).toBe("submitted");
+    expect(returned.slaResponseDueAt).toEqual(before.slaResponseDueAt);
+    expect(returned.slaResolutionDueAt).toEqual(before.slaResolutionDueAt);
+  });
+  it("lets a receiving-office Head take personal ownership without entering a reason", async () => {
+    const d = await setup(role);
+    const forwarded = await d.forward();
+    d.login(d.receivingHead);
+    expect(
+      (
+        await assign(
+          request({
+            action: "reassign",
+            assignedStaffRef: String(d.staff._id),
+            message: "Assign to another handler first.",
+          }),
+          context(forwarded._id),
+        )
+      ).status,
+    ).toBe(200);
+    const response = await assign(
+      request({ action: "reassign", assignedStaffRef: String(d.receivingHead._id) }),
+      context(forwarded._id),
+    );
+    expect(response.status).toBe(200);
+    expect(String((await Complaint.findById(forwarded._id))!.assignedStaffRef)).toBe(
+      String(d.receivingHead._id),
+    );
+    expect(
+      (await Assignment.findOne({ complaintRef: forwarded._id }).sort({ createdAt: -1 }))?.reason,
+    ).toBe("");
   });
   it.each(["no-marker", "wrong-marker", "no-date", "inactive-office"])(
     "excludes %s records even if their office or assignee matches",

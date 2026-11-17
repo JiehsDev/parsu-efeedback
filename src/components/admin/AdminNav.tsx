@@ -31,6 +31,7 @@ import {
   Users,
 } from "lucide-react";
 import type { UserRole } from "@/lib/constants";
+import { QueueBadge, queueKeyForHref, useQueueBadges } from "@/components/shared/useQueueBadges";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   student: "Student",
@@ -129,11 +130,9 @@ export function AdminNav({
     },
   );
   const [unreadCount, setUnreadCount] = useState(0);
-  const [archiveRequestCount, setArchiveRequestCount] = useState(0);
-  const [resolutionRequestCount, setResolutionRequestCount] = useState(0);
-  const [officeReturnRequestCount, setOfficeReturnRequestCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { counts: queueCounts, markChecked } = useQueueBadges();
 
   useEffect(() => {
     clientFetch("/api/notifications?unreadOnly=true")
@@ -141,64 +140,6 @@ export function AdminNav({
       .then((data) => setUnreadCount(data.unreadCount ?? 0))
       .catch(() => setUnreadCount(0));
   }, []);
-
-  useEffect(() => {
-    if (["vpaa", "vpaf"].includes(role)) return;
-    clientFetch("/api/archive-requests")
-      .then((res) => (res.ok ? res.json() : { requests: [] }))
-      .then((data) =>
-        setArchiveRequestCount(Array.isArray(data.requests) ? data.requests.length : 0),
-      )
-      .catch(() => setArchiveRequestCount(0));
-  }, [role]);
-
-  useEffect(() => {
-    if (!canReviewResolutionRequests) return;
-    let active = true;
-    async function refreshResolutionRequestCount() {
-      try {
-        const response = await clientFetch("/api/resolution-requests");
-        if (!response.ok) throw new Error("Could not load pending resolution requests.");
-        const data = await response.json();
-        if (active) {
-          setResolutionRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
-        }
-      } catch (error) {
-        console.error("Could not refresh resolution request count:", error);
-      }
-    }
-
-    void refreshResolutionRequestCount();
-    const intervalId = window.setInterval(() => {
-      void refreshResolutionRequestCount();
-    }, 60_000);
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
-    };
-  }, [canReviewResolutionRequests]);
-
-  useEffect(() => {
-    if (!canReviewOfficeReturnRequests) return;
-    let active = true;
-    async function refreshOfficeReturnRequestCount() {
-      try {
-        const response = await clientFetch("/api/office-return-requests");
-        if (!response.ok) throw new Error("Could not load OSAS return requests.");
-        const data = await response.json();
-        if (active)
-          setOfficeReturnRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
-      } catch (error) {
-        console.error("Could not refresh OSAS return request count:", error);
-      }
-    }
-    void refreshOfficeReturnRequestCount();
-    const intervalId = window.setInterval(() => void refreshOfficeReturnRequestCount(), 60_000);
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
-    };
-  }, [canReviewOfficeReturnRequests]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -249,22 +190,29 @@ export function AdminNav({
         (entry) => entry.href,
       ),
     );
+    const queueKey = queueKeyForHref(item.href);
     return (
-      <Link
-        key={item.href}
-        href={item.href}
-        title={item.label}
-        aria-label={item.label}
-        aria-current={active ? "page" : undefined}
-        className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-all ${
-          active
-            ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
-            : "font-medium text-white hover:bg-black/10 hover:text-white"
-        }`}
-      >
-        <item.icon className="h-[17px] w-[17px] shrink-0" />
-        <span className="hidden lg:inline">{item.label}</span>
-      </Link>
+      <div key={item.href} className="relative">
+        <Link
+          href={item.href}
+          onClick={() => {
+            if (queueKey && queueKeyForHref(`${pathname}?${search}`) === queueKey)
+              void markChecked(queueKey);
+          }}
+          title={item.label}
+          aria-label={item.label}
+          aria-current={active ? "page" : undefined}
+          className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-all ${queueKey && queueCounts[queueKey] ? "pr-12" : ""} ${
+            active
+              ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
+              : "font-medium text-white hover:bg-black/10 hover:text-white"
+          }`}
+        >
+          <item.icon className="h-[17px] w-[17px] shrink-0" />
+          <span className="hidden lg:inline">{item.label}</span>
+        </Link>
+        <QueueBadge count={queueKey ? queueCounts[queueKey] : 0} />
+      </div>
     );
   }
 
@@ -282,36 +230,7 @@ export function AdminNav({
         className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2"
       >
         {visiblePrimaryItems.map((item) => {
-          const rendered = renderItem(item);
-          if (item.href === "/admin/resolution-requests" && resolutionRequestCount > 0) {
-            return (
-              <div key={item.href} className="relative">
-                {rendered}
-                <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
-                  {resolutionRequestCount > 99 ? "99+" : resolutionRequestCount}
-                </span>
-              </div>
-            );
-          }
-          if (item.href === "/admin/office-return-requests" && officeReturnRequestCount > 0) {
-            return (
-              <div key={item.href} className="relative">
-                {rendered}
-                <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
-                  {officeReturnRequestCount > 99 ? "99+" : officeReturnRequestCount}
-                </span>
-              </div>
-            );
-          }
-          if (item.href !== "/admin/archive-requests" || archiveRequestCount === 0) return rendered;
-          return (
-            <div key={item.href} className="relative">
-              {rendered}
-              <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
-                {archiveRequestCount > 99 ? "99+" : archiveRequestCount}
-              </span>
-            </div>
-          );
+          return renderItem(item);
         })}
 
         {/* Categories/Routing/SLA Rules/Announcements/Audit Logs/Settings

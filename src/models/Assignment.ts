@@ -56,6 +56,7 @@ const assignmentSchema = new Schema(
 assignmentSchema.plugin(refIntegrityPlugin); // BR-099
 
 assignmentSchema.index({ complaintRef: 1, createdAt: 1 });
+assignmentSchema.index({ destinationOfficeRef: 1, createdAt: -1, actionType: 1 });
 
 export type AssignmentDocument = InferSchemaType<typeof assignmentSchema>;
 export const Assignment: Model<AssignmentDocument> =

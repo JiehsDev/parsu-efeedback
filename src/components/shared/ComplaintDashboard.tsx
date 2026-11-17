@@ -38,7 +38,9 @@ export function ComplaintDashboard({ base }: { base: "admin" | "staff" }) {
       })
       .catch((reason) => {
         if (active)
-          setError(reason instanceof Error ? reason.message : "We couldn’t load the dashboard. Try again.");
+          setError(
+            reason instanceof Error ? reason.message : "We couldn’t load the dashboard. Try again.",
+          );
       });
     window.addEventListener(CLIENT_DATA_REFRESH_EVENT, reload);
     return () => {
@@ -276,9 +278,11 @@ function DashboardView({ data, base }: { data: DashboardPayload; base: "admin" |
             {queue.length ? (
               <ul className="divide-y divide-[var(--border)]">
                 {queue.map((complaint) => {
-                  const deadline = complaint.status === "submitted"
-                    ? complaint.slaResponseDueAt
-                    : complaint.slaResolutionDueAt;
+                  const deadline =
+                    ["submitted", "assigned"].includes(complaint.status) &&
+                    !complaint.firstResponseAt
+                      ? complaint.slaResponseDueAt
+                      : complaint.slaResolutionDueAt;
                   const late = complaint.isOverdue || (deadline && new Date(deadline) <= now);
                   return (
                     <li key={complaint._id}>

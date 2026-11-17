@@ -18,14 +18,6 @@ export const assignComplaintSchema = z
   .refine((data) => data.action === "escalate" || Boolean(data.assignedStaffRef), {
     message: "Select a staff member to assign this complaint to.",
     path: ["assignedStaffRef"],
-  })
-  .refine(
-    (data) =>
-      (data.action !== "reassign" && data.action !== "escalate") || Boolean(data.message?.trim()),
-    {
-      message: "A reason is required for reassignment or escalation",
-      path: ["message"],
-    },
-  );
+  });
 
 export type AssignComplaintInput = z.infer<typeof assignComplaintSchema>;

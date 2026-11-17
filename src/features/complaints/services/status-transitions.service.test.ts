@@ -8,7 +8,7 @@ describe("status-transitions.service — BR-040/041/043", () => {
     expect(isValidTransition("assigned", "in_progress")).toBe(true);
     expect(isValidTransition("in_progress", "pending_information")).toBe(true);
     expect(isValidTransition("in_progress", "resolved")).toBe(true);
-    expect(isValidTransition("submitted", "in_progress")).toBe(true);
+    expect(isValidTransition("submitted", "in_progress")).toBe(false);
     expect(isValidTransition("resolved", "closed")).toBe(false);
   });
 

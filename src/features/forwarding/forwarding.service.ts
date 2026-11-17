@@ -190,6 +190,20 @@ export async function changeForwarding(
               "Configure a receiving office head or exactly one active receiving account.",
             );
           const previousStaff = complaint.assignedStaffRef;
+          if (
+            !complaint.firstResponseAt &&
+            ["in_progress", "pending_information", "escalated"].includes(complaint.status)
+          ) {
+            const firstStart = await ComplaintTimeline.findOne({
+              complaintRef: complaint._id,
+              toValue: "in_progress",
+            })
+              .sort({ createdAt: 1 })
+              .select("createdAt")
+              .session(dbSession)
+              .lean();
+            complaint.firstResponseAt = firstStart?.createdAt ?? complaint.updatedAt ?? new Date();
+          }
           complaint.initialOfficeRef ??= osas._id;
           complaint.assignedOfficeRef = destination._id;
           // Existing VPAA/VPAF accounts are the receiving handlers; no duplicate staff accounts.
@@ -197,7 +211,7 @@ export async function changeForwarding(
           complaint.forwardedToRole = request.requestedDestination;
           complaint.forwardedAt = request.reviewedAt;
           complaint.status =
-            complaint.status === "pending_information" ? "pending_information" : "in_progress";
+            complaint.status === "pending_information" ? "pending_information" : "assigned";
           complaint.supervisorReviewRequired = false;
           await Assignment.create(
             [

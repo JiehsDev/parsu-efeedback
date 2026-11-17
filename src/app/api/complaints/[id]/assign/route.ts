@@ -80,9 +80,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     assignedStaffRef: complaint.assignedStaffRef,
     assignedOfficeRef: complaint.assignedOfficeRef,
   };
+  if (
+    !complaint.firstResponseAt &&
+    ["in_progress", "pending_information", "escalated"].includes(complaint.status)
+  ) {
+    const firstStart = await ComplaintTimeline.findOne({
+      complaintRef: complaint._id,
+      toValue: "in_progress",
+    })
+      .sort({ createdAt: 1 })
+      .select("createdAt")
+      .lean();
+    complaint.firstResponseAt = firstStart?.createdAt ?? complaint.updatedAt ?? new Date();
+  }
   complaint.assignedStaffRef = staff._id;
   complaint.supervisorReviewRequired = false;
-  if (complaint.status !== "pending_information") complaint.status = "in_progress";
+  if (complaint.status !== "pending_information") complaint.status = "assigned";
   await complaint.save();
   await Assignment.create({
     complaintRef: complaint._id,
@@ -102,8 +115,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     message:
       parsed.data.message ||
       (refId(staff._id) === session.user.id
-        ? "Office Head is handling this complaint personally."
-        : "Assigned to office staff. Processing started."),
+        ? "Assigned to the Office Head, awaiting processing."
+        : "Assigned to office staff, awaiting processing."),
   });
   await writeAuditLog({
     actorId: session.user.id,

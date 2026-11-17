@@ -21,13 +21,17 @@ export async function getDashboardData(session: Session) {
     session.user.role === "office_staff"
       ? await staffComplaintFilter(session)
       : await complaintFilterForScope(getAdminScope(session.user.role));
-  const open = {
+  const open: Record<string, unknown> = {
     ...filter,
     isArchived: false,
     status: { $nin: ["closed", "resolved", "withdrawn"] as const },
   };
   const now = new Date();
   const nextDay = new Date(now.getTime() + 86400000);
+  const awaitingFirstResponse = {
+    status: { $in: ["submitted", "assigned"] },
+    firstResponseAt: null,
+  };
   const [
     summary,
     trends,
@@ -47,23 +51,23 @@ export async function getDashboardData(session: Session) {
       ...open,
       $or: [
         { isOverdue: true },
-        { assignedStaffRef: null, slaResponseDueAt: { $ne: null, $lte: now } },
-        { assignedStaffRef: { $ne: null }, slaResolutionDueAt: { $ne: null, $lte: now } },
+        { ...awaitingFirstResponse, slaResponseDueAt: { $ne: null, $lte: now } },
+        { $nor: [awaitingFirstResponse], slaResolutionDueAt: { $ne: null, $lte: now } },
       ],
-    }),
+    } as any),
     Complaint.countDocuments({ ...open, assignedStaffRef: null }),
     Complaint.countDocuments({
       ...open,
       $or: [
-        { assignedStaffRef: null, slaResponseDueAt: { $gt: now, $lte: nextDay } },
-        { assignedStaffRef: { $ne: null }, slaResolutionDueAt: { $gt: now, $lte: nextDay } },
+        { ...awaitingFirstResponse, slaResponseDueAt: { $gt: now, $lte: nextDay } },
+        { $nor: [awaitingFirstResponse], slaResolutionDueAt: { $gt: now, $lte: nextDay } },
       ],
-    }),
+    } as any),
     Complaint.find(open)
       .sort({ isOverdue: -1, slaResolutionDueAt: 1, submittedAt: 1 })
       .limit(6)
       .select(
-        "ticketNumber title status priority isOverdue assignedStaffRef slaResponseDueAt slaResolutionDueAt",
+        "ticketNumber title status priority isOverdue assignedStaffRef firstResponseAt slaResponseDueAt slaResolutionDueAt",
       )
       .lean(),
     getCategoryBreakdown({ ...filter, isArchived: false }),
@@ -117,6 +121,7 @@ export async function getDashboardData(session: Session) {
       status: complaint.status,
       isOverdue: complaint.isOverdue,
       assignedStaffRef: complaint.assignedStaffRef ? String(complaint.assignedStaffRef) : null,
+      firstResponseAt: complaint.firstResponseAt?.toISOString() ?? null,
       slaResponseDueAt: complaint.slaResponseDueAt?.toISOString() ?? null,
       slaResolutionDueAt: complaint.slaResolutionDueAt?.toISOString() ?? null,
     })),

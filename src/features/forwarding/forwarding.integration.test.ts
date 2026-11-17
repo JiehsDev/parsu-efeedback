@@ -249,6 +249,11 @@ describe("OSAS-controlled forwarding", () => {
         await queryReportData({}, await reportComplaintScope(session(otherReceiver))),
       ).toHaveLength(0);
       d.login(receiver);
+      expect(saved.status).toBe("assigned");
+      expect(
+        (await updateStatus(request({ status: "in_progress" }, "PATCH"), context(saved._id)))
+          .status,
+      ).toBe(200);
       expect(
         (await addNote(request({ body: "Receiving office note" }), context(saved._id))).status,
       ).toBe(201);

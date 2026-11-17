@@ -180,9 +180,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const fromStatus = complaint.status as ComplaintStatus;
   const toStatus = parsed.data.status;
-  if (toStatus === "resolved" && !(await isOfficeHead(session.user.id, complaint.assignedOfficeRef)))
+  if (
+    toStatus === "resolved" &&
+    !(await isOfficeHead(session.user.id, complaint.assignedOfficeRef))
+  )
     return NextResponse.json(
-      { error: "Staff must submit a resolution request for approval by the responsible office head." },
+      {
+        error:
+          "Staff must submit a resolution request for approval by the responsible office head.",
+      },
       { status: 403 },
     );
   if (toStatus === "assigned") {
@@ -239,6 +245,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   complaint.status = toStatus;
+  if (toStatus === "in_progress" && !complaint.firstResponseAt)
+    complaint.firstResponseAt = new Date();
   if (toStatus === "resolved") {
     complaint.resolutionSummary = parsed.data.resolutionSummary ?? "";
     complaint.resolvedAt = new Date();

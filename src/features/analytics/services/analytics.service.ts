@@ -1,7 +1,7 @@
 // src/features/analytics/services/analytics.service.ts
 import { elapsedSlaMs } from "@/lib/sla-calendar";
 import { Complaint } from "@/models/Complaint";
-import { Assignment } from "@/models/Assignment";
+import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Types } from "mongoose";
 import type { PipelineStage } from "mongoose";
 
@@ -64,7 +64,9 @@ export async function getAnalyticsSummary(
 
   const [complaints, byStatus, officePerformance, closureStats] = await Promise.all([
     Complaint.find(match)
-      .select("_id submittedAt resolvedAt slaResolutionDueAt status isOverdue slaPolicy")
+      .select(
+        "_id submittedAt resolvedAt firstResponseAt slaResolutionDueAt status isOverdue slaPolicy",
+      )
       .lean(),
     Complaint.aggregate([
       { $match: match },
@@ -96,22 +98,24 @@ export async function getAnalyticsSummary(
     .filter((ms) => ms >= 0);
 
   const complaintIds = complaints.map((c: any) => c._id);
-  const firstHumanAssignments = await Assignment.aggregate([
+  const firstStarts = await ComplaintTimeline.aggregate([
     {
       $match: {
         complaintRef: { $in: complaintIds },
-        assignedByRef: { $ne: null },
+        toValue: "in_progress",
       },
     },
     { $sort: { createdAt: 1 } },
     { $group: { _id: "$complaintRef", firstResponseAt: { $first: "$createdAt" } } },
   ]);
-  const submittedById = new Map(complaints.map((c: any) => [String(c._id), c]));
-  const firstResponseDurations = firstHumanAssignments
-    .map((a: any) => {
-      const complaint = submittedById.get(String(a._id));
-      return complaint
-        ? elapsedSlaMs(complaint.submittedAt, a.firstResponseAt, complaint.slaPolicy)
+  const startedById = new Map(
+    firstStarts.map((start: any) => [String(start._id), start.firstResponseAt]),
+  );
+  const firstResponseDurations = complaints
+    .map((complaint: any) => {
+      const firstResponseAt = complaint.firstResponseAt ?? startedById.get(String(complaint._id));
+      return complaint.submittedAt && firstResponseAt
+        ? elapsedSlaMs(complaint.submittedAt, firstResponseAt as Date, complaint.slaPolicy)
         : -1;
     })
     .filter((ms: number) => ms >= 0);

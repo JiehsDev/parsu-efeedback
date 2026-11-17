@@ -193,7 +193,7 @@ describe("centralized OSAS architecture", () => {
       (await assign(request({ action: "assign", assignedStaffRef: String(d.staff._id) }), ctx))
         .status,
     ).toBe(200);
-    expect((await Complaint.findById(d.complaint._id))!.status).toBe("in_progress");
+    expect((await Complaint.findById(d.complaint._id))!.status).toBe("assigned");
     expect(
       (await assign(request({ action: "assign", assignedStaffRef: String(d.other._id) }), ctx))
         .status,
@@ -226,7 +226,7 @@ describe("centralized OSAS architecture", () => {
       ).status,
     ).toBe(200);
     const saved = (await Complaint.findById(d.complaint._id))!;
-    expect(saved.status).toBe("in_progress");
+    expect(saved.status).toBe("assigned");
     expect(String(saved.assignedStaffRef)).toBe(String(d.head._id));
   });
   it("prevents ordinary staff pickup and restricts processing and viewing to their assignments", async () => {
@@ -310,7 +310,7 @@ describe("centralized OSAS architecture", () => {
     const saved = (await Complaint.findById(d.complaint._id))!;
     expect(String(saved.assignedOfficeRef)).toBe(String(d.osas._id));
     expect(String(saved.assignedStaffRef)).toBe(String(d.head._id));
-    expect(saved.status).toBe("in_progress");
+    expect(saved.status).toBe("assigned");
     expect(saved.supervisorReviewRequired).toBe(true);
   });
   it("ignores legacy cross-office escalation configuration on SLA breach", async () => {
@@ -329,7 +329,7 @@ describe("centralized OSAS architecture", () => {
     const saved = (await Complaint.findById(d.complaint._id))!;
     expect(String(saved.assignedOfficeRef)).toBe(String(d.osas._id));
     expect(saved.supervisorReviewRequired).toBe(true);
-    expect(saved.status).toBe("in_progress");
+    expect(saved.status).toBe("assigned");
   });
   it("disables office reassignment for every user", async () => {
     const d = await setup();

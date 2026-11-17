@@ -37,12 +37,12 @@ export function StatusUpdateForm({
   const [statusError, setStatusError] = useState<string | null>(null);
 
   const options = ALLOWED_TRANSITIONS_CLIENT[currentStatus] ?? [];
-  const requestingResolution =
-    requiresResolutionApproval && nextStatus === "resolved";
+  const selectedStatus = currentStatus === "assigned" ? "in_progress" : nextStatus;
+  const requestingResolution = requiresResolutionApproval && selectedStatus === "resolved";
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!nextStatus) {
+    if (!selectedStatus) {
       setStatusError("Please select the new complaint status.");
       const formElement = event.currentTarget;
       requestAnimationFrame(() => focusFirstInvalid(formElement));
@@ -59,17 +59,18 @@ export function StatusUpdateForm({
           ? `/api/complaints/${complaintId}/resolution-requests`
           : `/api/complaints/${complaintId}`,
         {
-        method: requestingResolution ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          requestingResolution
-            ? { resolutionSummary }
-            : {
-                status: nextStatus,
-                ...(nextStatus === "resolved" ? { resolutionSummary } : {}),
-              },
-        ),
-      });
+          method: requestingResolution ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            requestingResolution
+              ? { resolutionSummary }
+              : {
+                  status: selectedStatus,
+                  ...(selectedStatus === "resolved" ? { resolutionSummary } : {}),
+                },
+          ),
+        },
+      );
       if (!res.ok) {
         const data = await res.json();
         setError(typeof data.error === "string" ? data.error : "Could not update status.");
@@ -80,7 +81,9 @@ export function StatusUpdateForm({
       showToast(
         requestingResolution
           ? "Resolution request sent to the office head for approval."
-          : `Status updated to ${STATUS_LABELS[nextStatus as ComplaintStatus]}`,
+          : currentStatus === "assigned"
+            ? "Complaint processing started."
+            : `Status updated to ${STATUS_LABELS[selectedStatus as ComplaintStatus]}`,
       );
       setResolutionSummary("");
       setNextStatus("");
@@ -106,7 +109,9 @@ export function StatusUpdateForm({
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/15 text-[var(--primary)]">
           <RefreshCw className="h-[18px] w-[18px]" />
         </span>
-        <p className="text-sm font-semibold text-[var(--foreground)]">Update status</p>
+        <p className="text-sm font-semibold text-[var(--foreground)]">
+          {currentStatus === "assigned" ? "Start processing" : "Update status"}
+        </p>
       </div>
 
       {error && (
@@ -116,37 +121,43 @@ export function StatusUpdateForm({
         </div>
       )}
 
-      <div className="mt-3">
-        <Select
-          value={nextStatus}
-          onValueChange={(value) => {
-            setNextStatus(value);
-            setResolutionError(null);
-          }}
-          disabled={isSubmitting}
-        >
-          <FieldLabel htmlFor="status-update-status" required>
-            Status
-          </FieldLabel>
-          <SelectTrigger
-            id="status-update-status"
-            aria-invalid={!!statusError}
-            aria-describedby="status-update-status-error"
+      {currentStatus === "assigned" ? (
+        <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+          Start processing when you begin work on this complaint.
+        </p>
+      ) : (
+        <div className="mt-3">
+          <Select
+            value={nextStatus}
+            onValueChange={(value) => {
+              setNextStatus(value);
+              setResolutionError(null);
+            }}
+            disabled={isSubmitting}
           >
-            <SelectValue placeholder="Change to…" />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((status) => (
-              <SelectItem key={status} value={status}>
-                {STATUS_LABELS[status]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <FieldError id="status-update-status-error" message={statusError} />
-      </div>
+            <FieldLabel htmlFor="status-update-status" required>
+              Status
+            </FieldLabel>
+            <SelectTrigger
+              id="status-update-status"
+              aria-invalid={!!statusError}
+              aria-describedby="status-update-status-error"
+            >
+              <SelectValue placeholder="Change to…" />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {STATUS_LABELS[status]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FieldError id="status-update-status-error" message={statusError} />
+        </div>
+      )}
 
-      {nextStatus === "resolved" && (
+      {selectedStatus === "resolved" && (
         <div className="mt-3 space-y-1.5">
           {requiresResolutionApproval && (
             <p className="rounded-lg border border-[var(--qa-amber)]/40 bg-[var(--qa-amber-soft)] px-3 py-2 text-xs text-[var(--qa-amber-strong)]">
@@ -180,17 +191,21 @@ export function StatusUpdateForm({
 
       <button
         type="submit"
-        disabled={isSubmitting || !nextStatus}
+        disabled={isSubmitting || !selectedStatus}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
       >
         {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-        {isSubmitting
-          ? requiresResolutionApproval && nextStatus === "resolved"
-            ? "Sending request…"
-            : "Updating…"
-          : requiresResolutionApproval && nextStatus === "resolved"
-            ? "Request Resolution Approval"
-            : "Update Status"}
+        {currentStatus === "assigned"
+          ? isSubmitting
+            ? "Starting…"
+            : "Start Processing"
+          : isSubmitting
+            ? requiresResolutionApproval && nextStatus === "resolved"
+              ? "Sending request…"
+              : "Updating…"
+            : requiresResolutionApproval && nextStatus === "resolved"
+              ? "Request Resolution Approval"
+              : "Update Status"}
       </button>
     </form>
   );

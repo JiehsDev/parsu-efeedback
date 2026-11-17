@@ -10,6 +10,7 @@ import { BrandLogo } from "@/components/shared/BrandLogo";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOutWithCacheReset } from "@/lib/client-sign-out";
+import { QueueBadge, queueKeyForHref, useQueueBadges } from "@/components/shared/useQueueBadges";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   Archive,
@@ -78,10 +79,9 @@ export function StaffNav({
   const confirm = useConfirm();
   const accountId = useId();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [resolutionRequestCount, setResolutionRequestCount] = useState(0);
-  const [officeReturnRequestCount, setOfficeReturnRequestCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { counts: queueCounts, markChecked } = useQueueBadges();
 
   useEffect(() => {
     clientFetch("/api/notifications?unreadOnly=true")
@@ -89,53 +89,6 @@ export function StaffNav({
       .then((data) => setUnreadCount(data.unreadCount ?? 0))
       .catch(() => setUnreadCount(0));
   }, []);
-
-  useEffect(() => {
-    if (!canReviewResolutionRequests) return;
-    let active = true;
-    async function refreshResolutionRequestCount() {
-      try {
-        const response = await clientFetch("/api/resolution-requests");
-        if (!response.ok) throw new Error("Could not load pending resolution requests.");
-        const data = await response.json();
-        if (active) {
-          setResolutionRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
-        }
-      } catch (error) {
-        console.error("Could not refresh resolution request count:", error);
-      }
-    }
-
-    void refreshResolutionRequestCount();
-    const intervalId = window.setInterval(() => {
-      void refreshResolutionRequestCount();
-    }, 60_000);
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
-    };
-  }, [canReviewResolutionRequests]);
-
-  useEffect(() => {
-    if (!canReviewOfficeReturnRequests) return;
-    let active = true;
-    async function refreshCount() {
-      try {
-        const response = await clientFetch("/api/office-return-requests");
-        if (!response.ok) throw new Error("Could not load OSAS return requests.");
-        const data = await response.json();
-        if (active) setOfficeReturnRequestCount(Array.isArray(data.requests) ? data.requests.length : 0);
-      } catch (error) {
-        console.error("Could not refresh OSAS return request count:", error);
-      }
-    }
-    void refreshCount();
-    const intervalId = window.setInterval(() => void refreshCount(), 60_000);
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
-    };
-  }, [canReviewOfficeReturnRequests]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -200,14 +153,19 @@ export function StaffNav({
             item.href,
             visibleItems.map((entry) => entry.href),
           );
+          const queueKey = queueKeyForHref(item.href);
           const link = (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => {
+                if (queueKey && queueKeyForHref(`${pathname}?${search}`) === queueKey)
+                  void markChecked(queueKey);
+              }}
               title={item.label}
               aria-label={item.label}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-all ${
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-all ${queueKey && queueCounts[queueKey] ? "pr-12" : ""} ${
                 active
                   ? "bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]"
                   : "font-medium text-white hover:bg-black/10 hover:text-white"
@@ -217,21 +175,11 @@ export function StaffNav({
               <span className="hidden lg:inline">{item.label}</span>
             </Link>
           );
-          if (
-            (item.href !== "/staff/resolution-requests" || resolutionRequestCount === 0) &&
-            (item.href !== "/staff/office-return-requests" || officeReturnRequestCount === 0)
-          )
-            return link;
-          const badgeCount =
-            item.href === "/staff/office-return-requests"
-              ? officeReturnRequestCount
-              : resolutionRequestCount;
+          if (!queueKey || !queueCounts[queueKey]) return link;
           return (
             <div key={item.href} className="relative">
               {link}
-              <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-[var(--destructive)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--destructive-foreground)] lg:right-3">
-                {badgeCount > 99 ? "99+" : badgeCount}
-              </span>
+              <QueueBadge count={queueCounts[queueKey]} />
             </div>
           );
         })}

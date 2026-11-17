@@ -17,12 +17,12 @@ export default function ComplaintAssigned({
   isStaffRecipient,
 }: Props) {
   return (
-    <EmailLayout previewTitle={isStaffRecipient ? "Complaint Assigned" : "Complaint Under Review"}>
+    <EmailLayout previewTitle="Complaint Assigned">
       <Text>Hi {recipientName},</Text>
       <Text>
         {isStaffRecipient
           ? `Complaint ${ticketNumber} has been assigned to you for handling.`
-          : `Your complaint ${ticketNumber} is now under review.`}
+          : `Your complaint ${ticketNumber} has been assigned to a handler.`}
       </Text>
       <Button
         href={complaintUrl}

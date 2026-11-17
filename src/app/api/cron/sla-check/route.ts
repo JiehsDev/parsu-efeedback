@@ -61,8 +61,20 @@ async function checkDeadline(
     const update: Record<string, unknown> = { isOverdue: true, supervisorReviewRequired: true };
     if (target) {
       update.assignedStaffRef = target.staff._id;
-      if (["submitted", "assigned", "escalated"].includes(complaint.status))
-        update.status = "in_progress";
+      if (
+        !complaint.firstResponseAt &&
+        ["in_progress", "pending_information", "escalated"].includes(complaint.status)
+      ) {
+        const firstStart = await ComplaintTimeline.findOne({
+          complaintRef: complaint._id,
+          toValue: "in_progress",
+        })
+          .sort({ createdAt: 1 })
+          .select("createdAt")
+          .lean();
+        update.firstResponseAt = firstStart?.createdAt ?? complaint.updatedAt ?? now;
+      }
+      if (complaint.status !== "pending_information") update.status = "assigned";
     }
 
     // Atomic claim: the `isOverdue: false` condition is re-checked here at
@@ -229,7 +241,10 @@ async function runSlaCheck(req: NextRequest) {
 
     // BR-030 first-response deadline — a separate clock from resolution,
     // only meaningful if nobody has actually picked the complaint up yet.
-    if (!(complaint as any).assignedStaffRef) {
+    if (
+      !(complaint as any).firstResponseAt &&
+      ["submitted", "assigned"].includes(complaint.status)
+    ) {
       const responseResult = await checkDeadline(
         complaint,
         (complaint as any).slaResponseDueAt,

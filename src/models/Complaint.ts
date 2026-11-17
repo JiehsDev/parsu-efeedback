@@ -55,6 +55,7 @@ const complaintSchema = new Schema(
     // time by the SLA service (Phase 10) from sla_rules
     slaResponseDueAt: { type: Date, default: null },
     slaResolutionDueAt: { type: Date, default: null },
+    firstResponseAt: { type: Date, default: null },
     slaCalendarRevision: { type: String, default: null },
     // Snapshot: calendar edits must not silently change existing SLA results.
     slaPolicy: {

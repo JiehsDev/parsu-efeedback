@@ -103,8 +103,8 @@ export async function notifyComplaintAssigned(params: {
   await createNotification({
     userRef: params.studentId,
     type: "complaint_assigned",
-    title: "Complaint under review",
-    body: `Your complaint ${params.ticketNumber} is now under review.`,
+    title: "Complaint assigned",
+    body: `Your complaint ${params.ticketNumber} has been assigned to a handler.`,
     relatedComplaintRef: params.complaintId,
   });
 

@@ -46,7 +46,17 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     })
     .lean();
   if (!c || !(await canAccessComplaint(session, c))) notFound();
-  const [timeline, notes, office, staff, history, requests, archives, resolutionRequests, returnRequests] = await Promise.all([
+  const [
+    timeline,
+    notes,
+    office,
+    staff,
+    history,
+    requests,
+    archives,
+    resolutionRequests,
+    returnRequests,
+  ] = await Promise.all([
     ComplaintTimeline.find({ complaintRef: id })
       .sort({ createdAt: 1 })
       .populate("actorRef", "firstName lastName role employeeOrStudentId")
@@ -74,7 +84,10 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
       .lean(),
     OfficeReturnRequest.find({ complaintRef: id })
       .sort({ requestedAt: -1 })
-      .populate("requestedByUserRef reviewedByUserRef sourceOfficeRef", "firstName lastName name code")
+      .populate(
+        "requestedByUserRef reviewedByUserRef sourceOfficeRef",
+        "firstName lastName name code",
+      )
       .lean(),
   ]);
   const forwarding = await ForwardingRequest.find({ complaintRef: id })
@@ -89,15 +102,13 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     ) &&
     (await isOsasComplaint(c)) &&
     (forwardingHead || (await canProcessComplaint(session, c)));
-  const isReceivingOfficeHead = office
-    ? await canManageOfficeAssignments(session, office)
-    : false;
+  const isReceivingOfficeHead = office ? await canManageOfficeAssignments(session, office) : false;
   const canRequestReturnToOsas =
     !c.isArchived &&
     ["vpaa", "vpaf"].includes(session.user.role) &&
     c.forwardedToRole === session.user.role &&
     Boolean(c.forwardedAt) &&
-    ["in_progress", "pending_information"].includes(c.status) &&
+    ["assigned", "in_progress", "pending_information"].includes(c.status) &&
     (isReceivingOfficeHead || (await canProcessComplaint(session, c)));
   const readOnly = !(await canWriteInternalComplaintNotes(session, c));
   const viewOnly =
@@ -199,7 +210,11 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
           />
           <SlaDetails
             complaint={c}
-            firstResponseAt={history.find((entry) => entry.assignedByName)?.createdAt ?? null}
+            firstResponseAt={
+              c.firstResponseAt ??
+              timeline.find((event: any) => event.toValue === "in_progress")?.createdAt ??
+              null
+            }
             events={timeline as any}
           />
         </aside>

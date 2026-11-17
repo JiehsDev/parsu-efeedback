@@ -20,10 +20,13 @@ import {
   notifyOfficeReturnRequested,
 } from "@/features/notifications/services/notification.service";
 
-const RECEIVING_STATUS = ["in_progress", "pending_information"];
+const RECEIVING_STATUS = ["assigned", "in_progress", "pending_information"];
 
 export class OfficeReturnError extends Error {
-  constructor(message: string, public status = 409) {
+  constructor(
+    message: string,
+    public status = 409,
+  ) {
     super(message);
     this.name = "OfficeReturnError";
   }
@@ -52,7 +55,10 @@ export async function requestReturnToOsas(params: {
 }) {
   const { session } = params;
   if (!session?.user || !["vpaa", "vpaf"].includes(session.user.role))
-    throw new OfficeReturnError("Only the assigned VPAA/VPAF handler or receiving-office Head may request a return to OSAS.", 403);
+    throw new OfficeReturnError(
+      "Only the assigned VPAA/VPAF handler or receiving-office Head may request a return to OSAS.",
+      403,
+    );
 
   const complaint = await Complaint.findById(params.complaintId);
   if (!complaint) throw new OfficeReturnError("Complaint not found.", 404);
@@ -71,25 +77,38 @@ export async function requestReturnToOsas(params: {
   ]);
   const expectedSourceCode = session.user.role === "vpaa" ? "OVPAA" : "OVPAF";
   if (!sourceOffice || sourceOffice.code !== expectedSourceCode)
-    throw new OfficeReturnError("The complaint is not assigned to its recorded receiving office.", 409);
+    throw new OfficeReturnError(
+      "The complaint is not assigned to its recorded receiving office.",
+      409,
+    );
   const receivingOfficeHead = await canManageOfficeAssignments(session, sourceOffice);
   if (!receivingOfficeHead && !(await canProcessComplaint(session, complaint)))
-    throw new OfficeReturnError("Only the assigned handler or receiving-office Head may request a return.", 403);
+    throw new OfficeReturnError(
+      "Only the assigned handler or receiving-office Head may request a return.",
+      403,
+    );
   if (!osas) throw new OfficeReturnError("OSAS is unavailable. Contact an administrator.", 503);
   const osasHead = osas.headUserRef
     ? await User.findOne({ _id: osas.headUserRef, isActive: true }).select("_id").lean()
     : null;
   if (!osasHead)
-    throw new OfficeReturnError("OSAS must have an active Office Head before a return can be requested.", 409);
+    throw new OfficeReturnError(
+      "OSAS must have an active Office Head before a return can be requested.",
+      409,
+    );
 
   const [pendingReturn, pendingArchive, pendingResolution] = await Promise.all([
     OfficeReturnRequest.exists({ complaintRef: complaint._id, status: "pending" }),
     ArchiveRequest.exists({ complaintRef: complaint._id, status: "pending" }),
     ResolutionRequest.exists({ complaintRef: complaint._id, status: "pending" }),
   ]);
-  if (pendingReturn) throw new OfficeReturnError("A return request is already pending for this complaint.", 409);
+  if (pendingReturn)
+    throw new OfficeReturnError("A return request is already pending for this complaint.", 409);
   if (pendingArchive || pendingResolution)
-    throw new OfficeReturnError("Decide the pending complaint review request before requesting a return.", 409);
+    throw new OfficeReturnError(
+      "Decide the pending complaint review request before requesting a return.",
+      409,
+    );
 
   await initializeModels();
   const now = new Date();
@@ -115,9 +134,15 @@ export async function requestReturnToOsas(params: {
         !freshComplaint.forwardedAt ||
         freshComplaint.forwardedAt.getTime() !== complaint.forwardedAt!.getTime()
       )
-        throw new OfficeReturnError("The complaint changed while the return request was being prepared.", 409);
+        throw new OfficeReturnError(
+          "The complaint changed while the return request was being prepared.",
+          409,
+        );
       if (!freshComplaint.assignedStaffRef || !freshComplaint.forwardedAt)
-        throw new OfficeReturnError("The complaint no longer has an assigned receiving-office handler.", 409);
+        throw new OfficeReturnError(
+          "The complaint no longer has an assigned receiving-office handler.",
+          409,
+        );
 
       const createdRequests = await OfficeReturnRequest.create(
         [
@@ -220,7 +245,11 @@ export async function decideReturnToOsas(params: {
         isActive: true,
         headUserRef: session.user.id,
       }).session(dbSession);
-      if (!osas) throw new OfficeReturnError("Only the active OSAS Office Head may decide this request.", 403);
+      if (!osas)
+        throw new OfficeReturnError(
+          "Only the active OSAS Office Head may decide this request.",
+          403,
+        );
 
       const snapshotMatches =
         !complaint.isArchived &&
@@ -257,13 +286,23 @@ export async function decideReturnToOsas(params: {
       }
 
       if (!snapshotMatches)
-        throw new OfficeReturnError("The complaint status or assignment changed. This request cannot be approved.", 409);
+        throw new OfficeReturnError(
+          "The complaint status or assignment changed. This request cannot be approved.",
+          409,
+        );
       const [pendingArchive, pendingResolution] = await Promise.all([
-        ArchiveRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(dbSession),
-        ResolutionRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(dbSession),
+        ArchiveRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(
+          dbSession,
+        ),
+        ResolutionRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(
+          dbSession,
+        ),
       ]);
       if (pendingArchive || pendingResolution)
-        throw new OfficeReturnError("Decide the other pending complaint review request before approving this return.", 409);
+        throw new OfficeReturnError(
+          "Decide the other pending complaint review request before approving this return.",
+          409,
+        );
 
       const beforeState = {
         assignedOfficeRef: complaint.assignedOfficeRef,
@@ -273,8 +312,14 @@ export async function decideReturnToOsas(params: {
         status: complaint.status,
       };
       const sourceOffice = await Office.findById(request.sourceOfficeRef).session(dbSession);
-      if (!sourceOffice || sourceOffice.code !== (request.forwardedToRole === "vpaa" ? "OVPAA" : "OVPAF"))
-        throw new OfficeReturnError("The receiving office is unavailable or does not match this request.", 409);
+      if (
+        !sourceOffice ||
+        sourceOffice.code !== (request.forwardedToRole === "vpaa" ? "OVPAA" : "OVPAF")
+      )
+        throw new OfficeReturnError(
+          "The receiving office is unavailable or does not match this request.",
+          409,
+        );
 
       complaint.initialOfficeRef ??= osas._id;
       complaint.assignedOfficeRef = osas._id;
@@ -282,7 +327,22 @@ export async function decideReturnToOsas(params: {
       complaint.forwardedToRole = null;
       complaint.forwardedAt = null;
       complaint.supervisorReviewRequired = false;
-      // Keep the current active status and SLA timestamps; only ownership changes.
+      // The returned complaint has no handler until OSAS assigns it again.
+      // Preserve an outstanding student information request and the SLA timestamps.
+      if (complaint.status !== "pending_information") {
+        if (!complaint.firstResponseAt && complaint.status === "in_progress") {
+          const firstStart = await ComplaintTimeline.findOne({
+            complaintRef: complaint._id,
+            toValue: "in_progress",
+          })
+            .sort({ createdAt: 1 })
+            .select("createdAt")
+            .session(dbSession)
+            .lean();
+          complaint.firstResponseAt = firstStart?.createdAt ?? complaint.updatedAt;
+        }
+        complaint.status = "submitted";
+      }
       await complaint.save({ session: dbSession });
 
       request.status = "approved";

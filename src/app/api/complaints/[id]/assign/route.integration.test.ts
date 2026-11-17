@@ -16,6 +16,7 @@ import { Assignment } from "@/models/Assignment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Office } from "@/models/Office";
 import { POST } from "./route";
+import { PATCH as updateStatus } from "../route";
 
 beforeAll(connectTestDb);
 afterAll(disconnectTestDb);
@@ -109,14 +110,46 @@ describe("assignment requires a target", () => {
       ).status,
     ).toBe(200);
     const saved = (await Complaint.findById(complaint._id))!;
-    expect(saved.status).toBe("in_progress");
+    expect(saved.status).toBe("assigned");
+    expect(saved.firstResponseAt).toBeNull();
     expect(String(saved.assignedStaffRef)).toBe(String(staff._id));
     const history = (await Assignment.findOne({ complaintRef: complaint._id }))!;
     expect(String(history.assignedToRef)).toBe(String(staff._id));
     expect(history.reason).toBe("Please inspect the room.");
     expect((await ComplaintTimeline.findOne({ complaintRef: complaint._id }))!.toValue).toBe(
-      "in_progress",
+      "assigned",
     );
+  });
+
+  it("starts processing only when the assigned handler requests it", async () => {
+    const { office, staff, complaint, assign } = await setup();
+    expect((await assign({ assignedStaffRef: String(staff._id) })).status).toBe(200);
+    const start = () =>
+      updateStatus(
+        new NextRequest("http://localhost/api/complaints/test", {
+          method: "PATCH",
+          body: JSON.stringify({ status: "in_progress" }),
+          headers: { "Content-Type": "application/json" },
+        }),
+        { params: Promise.resolve({ id: String(complaint._id) }) },
+      );
+    expect((await start()).status).toBe(403);
+    expect((await Complaint.findById(complaint._id))!.status).toBe("assigned");
+    mocks.auth.mockResolvedValue({
+      user: { id: String(staff._id), role: "office_staff", officeRef: String(office._id) },
+    });
+    expect((await start()).status).toBe(200);
+    const saved = (await Complaint.findById(complaint._id))!;
+    expect(saved.status).toBe("in_progress");
+    expect(saved.firstResponseAt).toBeInstanceOf(Date);
+    expect(
+      await ComplaintTimeline.countDocuments({
+        complaintRef: complaint._id,
+        fromValue: "assigned",
+        toValue: "in_progress",
+        actorRef: staff._id,
+      }),
+    ).toBe(1);
   });
 
   it("rejects ordinary staff self-pickup", async () => {

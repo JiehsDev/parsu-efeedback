@@ -53,7 +53,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Reopening never sends a forwarded complaint back to OSAS.
   complaint.assignedOfficeRef = officeId;
   if (!handler) complaint.assignedStaffRef = null;
-  complaint.status = handler ? "in_progress" : "submitted";
+  if (!complaint.firstResponseAt) {
+    const firstStart = await ComplaintTimeline.findOne({
+      complaintRef: complaint._id,
+      toValue: "in_progress",
+    })
+      .sort({ createdAt: 1 })
+      .select("createdAt")
+      .lean();
+    complaint.firstResponseAt =
+      firstStart?.createdAt ?? complaint.resolvedAt ?? complaint.updatedAt;
+  }
+  complaint.status = handler ? "assigned" : "submitted";
   complaint.reopenCount += 1;
   await complaint.save();
 

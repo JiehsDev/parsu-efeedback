@@ -58,17 +58,18 @@ export default async function ComplaintDetailPage({
   }
 
   const c = complaint as any;
-  const [timelineEvents, assignedOffice, assignmentHistory, openInformationRequest] = await Promise.all([
-    ComplaintTimeline.find({ complaintRef: id })
-      .sort({ createdAt: 1 })
-      .populate("actorRef", "firstName lastName role employeeOrStudentId")
-      .lean(),
-    c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).select("name").lean() : null,
-    getAssignmentHistoryEntries(id),
-    InformationRequest.findOne({ complaintRef: id, status: "open" })
-      .sort({ requestedAt: -1 })
-      .lean(),
-  ]);
+  const [timelineEvents, assignedOffice, assignmentHistory, openInformationRequest] =
+    await Promise.all([
+      ComplaintTimeline.find({ complaintRef: id })
+        .sort({ createdAt: 1 })
+        .populate("actorRef", "firstName lastName role employeeOrStudentId")
+        .lean(),
+      c.assignedOfficeRef ? Office.findById(c.assignedOfficeRef).select("name").lean() : null,
+      getAssignmentHistoryEntries(id),
+      InformationRequest.findOne({ complaintRef: id, status: "open" })
+        .sort({ requestedAt: -1 })
+        .lean(),
+    ]);
   const timeline = (timelineEvents as any[]).filter(
     (event) =>
       ![
@@ -80,7 +81,9 @@ export default async function ComplaintDetailPage({
       ].includes(event.eventType),
   );
   const firstResponseAt =
-    assignmentHistory.find((entry) => entry.assignedByName)?.createdAt ?? null;
+    c.firstResponseAt ??
+    (timeline as any[]).find((event) => event.toValue === "in_progress")?.createdAt ??
+    null;
   const resolutionEvent = [...(timeline as any[])]
     .reverse()
     .find((event) => event.toValue === "resolved");
@@ -104,9 +107,15 @@ export default async function ComplaintDetailPage({
           role="alert"
           className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-[var(--foreground)]"
         >
-          <p className="font-medium">Your complaint was submitted, but an attachment could not be added.</p>
-          <p className="mt-1 break-words text-[var(--muted-foreground)]">{query.attachmentWarning}</p>
-          <p className="mt-1 text-[var(--muted-foreground)]">You can try attaching the file again later.</p>
+          <p className="font-medium">
+            Your complaint was submitted, but an attachment could not be added.
+          </p>
+          <p className="mt-1 break-words text-[var(--muted-foreground)]">
+            {query.attachmentWarning}
+          </p>
+          <p className="mt-1 text-[var(--muted-foreground)]">
+            You can try attaching the file again later.
+          </p>
         </div>
       )}
 

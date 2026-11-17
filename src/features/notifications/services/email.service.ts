@@ -87,9 +87,7 @@ async function sendEmail(
   // This explicit switch is authoritative in every environment, including
   // production, so deployments can be placed into test-email mode.
   const redirectToDevInbox = env.DEV_EMAIL_REDIRECT_ENABLED;
-  const actualRecipient = redirectToDevInbox
-    ? env.RESEND_DEV_TEST_EMAIL
-    : to;
+  const actualRecipient = redirectToDevInbox ? env.RESEND_DEV_TEST_EMAIL : to;
   const actualSubject = redirectToDevInbox ? `[would go to ${to}] ${subject}` : subject;
 
   try {
@@ -166,7 +164,7 @@ export async function sendComplaintAssignedEmail(params: {
 }) {
   await sendEmail(
     params.to,
-    `Complaint ${params.ticketNumber} ${params.isStaffRecipient ? "assigned" : "under review"}`,
+    `Complaint ${params.ticketNumber} assigned`,
     ComplaintAssigned({
       recipientName: params.recipientName,
       ticketNumber: params.ticketNumber,

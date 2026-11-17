@@ -20,6 +20,7 @@ import {
   MessageSquarePlus,
   UserRound,
 } from "lucide-react";
+import { QueueBadge, useQueueBadges } from "@/components/shared/useQueueBadges";
 
 const NAV_ITEMS = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutGrid },
@@ -43,6 +44,7 @@ export function StudentNav({ userName }: { userName: string }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { counts: queueCounts, markChecked } = useQueueBadges();
 
   useEffect(() => {
     clientFetch("/api/notifications?unreadOnly=true")
@@ -105,22 +107,28 @@ export function StudentNav({ userName }: { userName: string }) {
                 item.href,
                 NAV_ITEMS.map((entry) => entry.href),
               );
+              const badgeKey = item.href === "/student/complaints" ? "complaints" : "";
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={item.label}
-                  aria-label={item.label}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium transition-all sm:px-3.5 sm:py-2 ${
-                    active
-                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
-                      : "text-white hover:bg-black/10 hover:text-white"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </Link>
+                <div key={item.href} className="relative">
+                  <Link
+                    href={item.href}
+                    onClick={() => {
+                      if (badgeKey && pathname === item.href) void markChecked(badgeKey);
+                    }}
+                    title={item.label}
+                    aria-label={item.label}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium transition-all sm:px-3.5 sm:py-2 ${badgeKey && queueCounts[badgeKey] ? "pr-8 sm:pr-9" : ""} ${
+                      active
+                        ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
+                        : "text-white hover:bg-black/10 hover:text-white"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{item.label}</span>
+                  </Link>
+                  <QueueBadge count={queueCounts[badgeKey]} />
+                </div>
               );
             })}
           </nav>

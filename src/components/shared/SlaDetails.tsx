@@ -8,6 +8,7 @@ type SlaDetailsProps = {
     slaPolicy?: SlaPolicy | null;
     submittedAt?: Date | string | null;
     resolvedAt?: Date | string | null;
+    firstResponseAt?: Date | string | null;
     slaResponseDueAt?: Date | string | null;
     slaResolutionDueAt?: Date | string | null;
     lastWarningNotifiedAt?: Date | string | null;
@@ -49,9 +50,14 @@ export function SlaDetails({
   const resolutionDue = complaint.slaResolutionDueAt
     ? new Date(complaint.slaResolutionDueAt)
     : null;
+  const waitingForResponse =
+    ["submitted", "assigned"].includes(complaint.status) && !firstResponseAt;
+  const activeDue =
+    waitingForResponse && complaint.slaResponseDueAt
+      ? new Date(complaint.slaResponseDueAt)
+      : resolutionDue;
   const overdue =
-    Boolean(complaint.isOverdue) ||
-    Boolean(active && resolutionDue && resolutionDue.getTime() < now);
+    Boolean(complaint.isOverdue) || Boolean(active && activeDue && activeDue.getTime() < now);
   const warningReached = Boolean(
     complaint.lastWarningNotifiedAt || complaint.lastResponseWarningNotifiedAt,
   );

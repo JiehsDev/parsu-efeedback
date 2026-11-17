@@ -65,8 +65,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   complaint.assignedOfficeRef = (target.office as any)._id;
   complaint.assignedStaffRef = (target.staff as any)._id;
   complaint.supervisorReviewRequired = true;
-  if (["submitted", "assigned", "escalated"].includes(complaint.status))
-    complaint.status = "in_progress";
+  if (
+    !complaint.firstResponseAt &&
+    ["in_progress", "pending_information", "escalated"].includes(complaint.status)
+  ) {
+    const firstStart = await ComplaintTimeline.findOne({
+      complaintRef: complaint._id,
+      toValue: "in_progress",
+    })
+      .sort({ createdAt: 1 })
+      .select("createdAt")
+      .lean();
+    complaint.firstResponseAt = firstStart?.createdAt ?? complaint.updatedAt ?? new Date();
+  }
+  if (complaint.status !== "pending_information") complaint.status = "assigned";
   await complaint.save();
 
   await Assignment.create({
