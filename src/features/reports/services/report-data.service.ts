@@ -40,6 +40,8 @@ export interface ReportRow {
   submittedAt: string;
   resolvedAt: string;
   resolutionSummary: string;
+  dismissedAt?: string;
+  dismissalReason?: string;
   slaCalendar: string;
   slaCompliant: string;
 }
@@ -119,7 +121,7 @@ export async function queryReportData(
     };
     const now = new Date();
     const soon = new Date(now.getTime() + 86400000);
-    match.status = { $nin: ["closed", "resolved", "withdrawn"] };
+    match.status = { $nin: ["closed", "resolved", "withdrawn", "dismissed"] };
     if (filters.status) match.status = filters.status;
     match.$expr =
       filters.slaState === "overdue"
@@ -187,6 +189,10 @@ export async function queryReportData(
         ? new Date(c.resolvedAt).toLocaleDateString("en-PH", { timeZone: SLA_TIME_ZONE })
         : "—",
       domain: c.category?.domain ?? "other",
+      dismissedAt: c.dismissedAt
+        ? new Date(c.dismissedAt).toLocaleDateString("en-PH", { timeZone: SLA_TIME_ZONE })
+        : "",
+      dismissalReason: c.status === "dismissed" ? (c.dismissalReason ?? "") : "",
       responseHours: c.firstAssignment?.[0]?.createdAt
         ? (
             elapsedSlaMs(c.submittedAt, c.firstAssignment[0].createdAt, c.slaPolicy) / 3600000

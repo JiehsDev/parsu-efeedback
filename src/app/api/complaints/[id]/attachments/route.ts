@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (["closed", "withdrawn"].includes(complaint.status))
+  if (["closed", "withdrawn", "dismissed"].includes(complaint.status))
     return NextResponse.json(
       { error: "Closed and withdrawn complaints are read-only." },
       { status: 403 },

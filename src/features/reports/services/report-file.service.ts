@@ -18,6 +18,8 @@ const COLUMNS = [
   { key: "submittedAt", label: "Submitted" },
   { key: "resolvedAt", label: "Resolved" },
   { key: "resolutionSummary", label: "Resolution details" },
+  { key: "dismissedAt", label: "Dismissed" },
+  { key: "dismissalReason", label: "Dismissal reason" },
   { key: "slaCompliant", label: "SLA Met" },
   { key: "slaCalendar", label: "SLA Calendar" },
   { key: "forwardedTo", label: "Forwarded to" },

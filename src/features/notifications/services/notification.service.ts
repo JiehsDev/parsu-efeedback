@@ -16,6 +16,7 @@ import {
   sendEscalationEmail,
   sendInformationRequestedEmail,
   sendInformationSubmittedEmail,
+  sendComplaintDismissedEmail,
 } from "./email.service";
 
 async function getRecipient(userId: string, complaintId?: string | null) {
@@ -581,6 +582,62 @@ export async function notifyResolutionDecision(params: {
       : `Your resolution request for ${params.ticketNumber} was not approved${params.reason ? `: ${params.reason}` : "."}`,
     relatedComplaintRef: params.complaintId,
   });
+}
+
+export async function notifyDismissalRequested(params: {
+  userId: string;
+  ticketNumber: string;
+  complaintId: string;
+}) {
+  await createNotification({
+    userRef: params.userId,
+    type: "dismissal_request",
+    title: "Dismissal request needs review",
+    body: `Review the dismissal request for ${params.ticketNumber}.`,
+    relatedComplaintRef: params.complaintId,
+  });
+}
+
+export async function notifyDismissalDecision(params: {
+  userId: string;
+  ticketNumber: string;
+  complaintId: string;
+  approved: boolean;
+  reason: string;
+}) {
+  await createNotification({
+    userRef: params.userId,
+    type: "dismissal_decision",
+    title: params.approved ? "Dismissal approved" : "Dismissal request rejected",
+    body: params.approved
+      ? `Your dismissal request for ${params.ticketNumber} was approved.`
+      : `Your dismissal request for ${params.ticketNumber} was rejected. Reason: ${params.reason}`,
+    relatedComplaintRef: params.complaintId,
+  });
+}
+
+export async function notifyComplaintDismissed(params: {
+  studentId: string;
+  ticketNumber: string;
+  complaintId: string;
+  reason: string;
+}) {
+  await createNotification({
+    userRef: params.studentId,
+    type: "complaint_dismissed",
+    title: "Complaint dismissed",
+    body: `Your complaint ${params.ticketNumber} was dismissed. Reason: ${params.reason}`,
+    relatedComplaintRef: params.complaintId,
+  });
+  const student = await getRecipient(params.studentId, params.complaintId);
+  if (student)
+    await sendComplaintDismissedEmail({
+      to: student.email,
+      recipientName: student.name,
+      ticketNumber: params.ticketNumber,
+      complaintId: params.complaintId,
+      reason: params.reason,
+    });
 }
 
 export async function notifyOfficeReturnRequested(params: {

@@ -210,7 +210,7 @@ export default async function StaffSlaPage({
   const search = params.q?.trim();
   const complaintFilter: Record<string, unknown> = {
     ...(await staffComplaintFilter(session)),
-    status: { $nin: ["resolved", "closed", "withdrawn"] },
+    status: { $nin: ["resolved", "closed", "withdrawn", "dismissed"] },
     isArchived: false,
     ...(params.priority ? { priority: params.priority } : {}),
     ...(params.status ? { status: params.status } : {}),
@@ -382,7 +382,10 @@ export default async function StaffSlaPage({
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
             <div>
-              <h2 id="sla-complaints-heading" className="text-sm font-semibold text-[var(--foreground)]">
+              <h2
+                id="sla-complaints-heading"
+                className="text-sm font-semibold text-[var(--foreground)]"
+              >
                 Complaints by deadline
               </h2>
               <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">

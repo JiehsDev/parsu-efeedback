@@ -8,6 +8,7 @@ import { connectToDatabase } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { Complaint } from "@/models/Complaint";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { hasPendingDismissal } from "@/features/complaints/services/dismissal-guard";
 import {
   updateComplaintStatusSchema,
   editComplaintSchema,
@@ -49,6 +50,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
               "office_return_requested",
               "office_return_rejected",
               "complaint_returned_to_osas",
+              "dismissal_requested",
+              "dismissal_rejected",
             ].includes(event.eventType),
         )
       : timeline.map((event: any) => {
@@ -79,6 +82,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json(
       { error: "Archived complaints are read-only until restored." },
       { status: 403 },
+    );
+  if (await hasPendingDismissal(complaint._id))
+    return NextResponse.json(
+      { error: "Decide the pending dismissal request first." },
+      { status: 409 },
     );
 
   const body = await req.json();

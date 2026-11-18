@@ -14,8 +14,8 @@ export function actionLabel(value: string | null | undefined): string {
   const labels: Record<string, string> = {
     "user.update": "User Updated",
     "user.create": "User Created",
-    "office_head_assigned": "Office Head Assigned",
-    "office_head_removed": "Office Head Removed",
+    office_head_assigned: "Office Head Assigned",
+    office_head_removed: "Office Head Removed",
     "complaint.sla_escalate": "Automatically Escalated for SLA Breach",
     "complaint.manual_escalate": "Manually Escalated",
     "report.generate": "Report Generated",
@@ -32,6 +32,7 @@ export const STATUS_LABELS: Record<ComplaintStatus, string> = {
   resolved: "Resolved",
   closed: "Closed",
   withdrawn: "Withdrawn",
+  dismissed: "Dismissed",
 };
 
 export function statusLabel(value: string | null | undefined): string {

@@ -53,6 +53,11 @@ const STATUS_STYLES: Record<
     className: "border border-dashed border-[var(--border)] text-[var(--muted-foreground)]",
     dotClassName: "bg-[var(--qa-slate)]",
   },
+  dismissed: {
+    label: "Dismissed",
+    className: "border border-[var(--qa-rose)]/50 text-[var(--qa-rose-strong)]",
+    dotClassName: "bg-[var(--qa-rose)]",
+  },
 };
 
 export function StatusBadge({ status }: { status: ComplaintStatus }) {

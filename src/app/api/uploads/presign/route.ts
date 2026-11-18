@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
   }
 
-  if (["closed", "withdrawn"].includes(complaint.status))
+  if (["closed", "withdrawn", "dismissed"].includes(complaint.status))
     return NextResponse.json(
       { error: "Closed and withdrawn complaints are read-only." },
       { status: 403 },

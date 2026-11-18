@@ -23,6 +23,7 @@ export const DONE_STATUSES = [
   "resolved",
   "closed",
   "withdrawn",
+  "dismissed",
 ] as const satisfies readonly ComplaintStatus[];
 
 // Priority is shown by exception only. Every complaint has one, but "low"

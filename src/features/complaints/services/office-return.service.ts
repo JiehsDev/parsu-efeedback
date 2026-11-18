@@ -8,6 +8,7 @@ import { Notification } from "@/models/Notification";
 import { Office } from "@/models/Office";
 import { OfficeReturnRequest } from "@/models/OfficeReturnRequest";
 import { ResolutionRequest } from "@/models/ResolutionRequest";
+import { DismissalRequest } from "@/models/DismissalRequest";
 import { User } from "@/models/User";
 import {
   canManageOfficeAssignments,
@@ -97,14 +98,15 @@ export async function requestReturnToOsas(params: {
       409,
     );
 
-  const [pendingReturn, pendingArchive, pendingResolution] = await Promise.all([
+  const [pendingReturn, pendingArchive, pendingResolution, pendingDismissal] = await Promise.all([
     OfficeReturnRequest.exists({ complaintRef: complaint._id, status: "pending" }),
     ArchiveRequest.exists({ complaintRef: complaint._id, status: "pending" }),
     ResolutionRequest.exists({ complaintRef: complaint._id, status: "pending" }),
+    DismissalRequest.exists({ complaintRef: complaint._id, status: "pending" }),
   ]);
   if (pendingReturn)
     throw new OfficeReturnError("A return request is already pending for this complaint.", 409);
-  if (pendingArchive || pendingResolution)
+  if (pendingArchive || pendingResolution || pendingDismissal)
     throw new OfficeReturnError(
       "Decide the pending complaint review request before requesting a return.",
       409,
@@ -290,15 +292,18 @@ export async function decideReturnToOsas(params: {
           "The complaint status or assignment changed. This request cannot be approved.",
           409,
         );
-      const [pendingArchive, pendingResolution] = await Promise.all([
+      const [pendingArchive, pendingResolution, pendingDismissal] = await Promise.all([
         ArchiveRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(
           dbSession,
         ),
         ResolutionRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(
           dbSession,
         ),
+        DismissalRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(
+          dbSession,
+        ),
       ]);
-      if (pendingArchive || pendingResolution)
+      if (pendingArchive || pendingResolution || pendingDismissal)
         throw new OfficeReturnError(
           "Decide the other pending complaint review request before approving this return.",
           409,

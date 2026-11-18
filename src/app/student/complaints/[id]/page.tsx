@@ -75,6 +75,8 @@ export default async function ComplaintDetailPage({
       ![
         "resolution_requested",
         "resolution_rejected",
+        "dismissal_requested",
+        "dismissal_rejected",
         "office_return_requested",
         "office_return_rejected",
         "complaint_returned_to_osas",
@@ -169,6 +171,17 @@ export default async function ComplaintDetailPage({
             resolvedAt={c.resolvedAt}
             resolverName={resolverName}
           />
+          {c.status === "dismissed" && (
+            <section className="rounded-lg border border-[var(--qa-rose)]/40 bg-[var(--qa-rose-soft)] p-5">
+              <h2 className="text-sm font-semibold">Complaint dismissed</h2>
+              <p className="mt-2 text-sm break-words whitespace-pre-wrap">{c.dismissalReason}</p>
+              {c.dismissedAt && (
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                  Decided {new Date(c.dismissedAt).toLocaleString()}
+                </p>
+              )}
+            </section>
+          )}
 
           {c.status === "resolved" && <ResolutionActions complaintId={String(c._id)} />}
 

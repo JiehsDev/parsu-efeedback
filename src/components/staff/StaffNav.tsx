@@ -49,6 +49,12 @@ const NAV_ITEMS = [
     icon: ClipboardCheck,
     requiresResolutionHead: true,
   },
+  {
+    href: "/staff/dismissal-requests",
+    label: "Dismissal Requests",
+    icon: ClipboardCheck,
+    requiresResolutionHead: true,
+  },
   { href: "/staff/complaints/archived", label: "Archived Complaints", icon: Archive },
 ];
 

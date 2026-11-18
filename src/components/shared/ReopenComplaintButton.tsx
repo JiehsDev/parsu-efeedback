@@ -51,7 +51,7 @@ export function ReopenComplaintButton({ complaintId }: { complaintId: string }) 
         <p className="text-sm font-semibold text-[var(--qa-amber-strong)]">Reopen Complaint</p>
       </div>
       <p className="mt-1 text-xs text-[var(--qa-amber-strong)]/80">
-        Reopening returns this complaint to In Progress and is recorded in the audit trail.
+        Reopening returns this complaint to its handling queue and is recorded in the audit trail.
       </p>
       {error && (
         <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[var(--destructive)]">

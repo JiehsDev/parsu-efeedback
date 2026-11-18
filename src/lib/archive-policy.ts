@@ -1,15 +1,5 @@
-// Archiving is a record-retention flag, independent from the complaint
-// lifecycle. Withdrawn records are also retained and may be archived.
-export const ARCHIVABLE_STATUSES = new Set([
-  "submitted",
-  "assigned",
-  "in_progress",
-  "pending_information",
-  "escalated",
-  "resolved",
-  "closed",
-  "withdrawn",
-]);
+// Archiving is record retention after handling has ended.
+export const ARCHIVABLE_STATUSES = new Set(["resolved", "closed", "withdrawn", "dismissed"]);
 
 export function archiveEligibility(status: string) {
   if (ARCHIVABLE_STATUSES.has(status)) return null;
@@ -17,6 +7,8 @@ export function archiveEligibility(status: string) {
 }
 
 export const ARCHIVE_REASON_CODES = [
+  "routine_retention",
+  "administrative_retention",
   "duplicate",
   "invalid",
   "irrelevant",

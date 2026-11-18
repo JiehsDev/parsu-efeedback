@@ -85,8 +85,7 @@ export function ArchiveComplaintToggle({
         className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
       />
       <p className="text-[11px] text-[var(--muted-foreground)]">
-        Suggested: Complaint completed · Duplicate complaint · No further action required ·
-        Administrative closure · Other
+        Suggested: Routine record retention · Administrative record retention · Other
       </p>
       {reason === "Other" && (
         <textarea

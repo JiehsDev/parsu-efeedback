@@ -6,6 +6,7 @@ import { Complaint } from "@/models/Complaint";
 import { Assignment } from "@/models/Assignment";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { ResolutionRequest } from "@/models/ResolutionRequest";
+import { DismissalRequest } from "@/models/DismissalRequest";
 import { ForwardingRequest } from "@/models/ForwardingRequest";
 import { OfficeReturnRequest } from "@/models/OfficeReturnRequest";
 import { Feedback } from "@/models/Feedback";
@@ -26,6 +27,7 @@ const KEYS = [
   "forwarding",
   "archive",
   "resolution",
+  "dismissal",
   "return",
 ] as const;
 type Key = (typeof KEYS)[number];
@@ -51,6 +53,7 @@ async function canView(user: any, key: Key) {
       ((role === "office_staff" || role === "osas") && (await isOsasHead({ user })))
     );
   if (key === "resolution") return isResolutionRequestHead(user);
+  if (key === "dismissal") return isResolutionRequestHead(user);
   if (key === "return") return isOsasHead({ user });
   return false;
 }
@@ -142,6 +145,20 @@ async function countFor(user: any, key: Key, since: Date) {
     return officeIds.length
       ? ResolutionRequest.countDocuments({
           officeRef: { $in: officeIds },
+          status: "pending",
+          createdAt: { $gt: since },
+        })
+      : 0;
+  }
+  if (key === "dismissal") {
+    if (!(await isResolutionRequestHead(user))) return 0;
+    const officeFilter = resolutionRequestOfficeFilter(user);
+    const offices = officeFilter
+      ? await Office.find({ ...officeFilter, headUserRef: user.id, isActive: true }).distinct("_id")
+      : [];
+    return offices.length
+      ? DismissalRequest.countDocuments({
+          officeRef: { $in: offices },
           status: "pending",
           createdAt: { $gt: since },
         })

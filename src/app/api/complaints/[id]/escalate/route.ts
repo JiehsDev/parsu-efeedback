@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
+import { hasPendingDismissal } from "@/features/complaints/services/dismissal-guard";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { Assignment } from "@/models/Assignment";
 import { manualEscalationSchema } from "@/features/complaints/schemas/complaint.schema";
@@ -32,14 +33,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
+  if (await hasPendingDismissal(complaint._id))
+    return NextResponse.json(
+      { error: "Decide the pending dismissal request first." },
+      { status: 409 },
+    );
   if (complaint.isArchived)
     return NextResponse.json(
       { error: "Archived complaints are read-only until restored." },
       { status: 403 },
     );
-  if (["withdrawn", "resolved", "closed"].includes(complaint.status)) {
+  if (["withdrawn", "resolved", "closed", "dismissed"].includes(complaint.status)) {
     return NextResponse.json(
-      { error: "Resolved, closed, and withdrawn complaints cannot be escalated." },
+      { error: "Finished complaints cannot be escalated." },
       { status: 400 },
     );
   }

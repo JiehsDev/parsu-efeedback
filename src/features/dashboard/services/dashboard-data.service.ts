@@ -24,7 +24,7 @@ export async function getDashboardData(session: Session) {
   const open: Record<string, unknown> = {
     ...filter,
     isArchived: false,
-    status: { $nin: ["closed", "resolved", "withdrawn"] as const },
+    status: { $nin: ["closed", "resolved", "withdrawn", "dismissed"] as const },
   };
   const now = new Date();
   const nextDay = new Date(now.getTime() + 86400000);

@@ -8,6 +8,7 @@ import { Assignment } from "@/models/Assignment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { AuditLog } from "@/models/AuditLog";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
+import { DismissalRequest } from "@/models/DismissalRequest";
 import { Notification } from "@/models/Notification";
 import { canProcessComplaint, getStaffOffice, isOsasHead, refId } from "@/lib/osas-operations";
 
@@ -78,6 +79,13 @@ export async function changeForwarding(
         creating ? input.complaintId : request.complaintRef,
       ).session(dbSession);
       if (!complaint) throw new ForwardingError("Not found", 404);
+      if (
+        (creating || data.action === "approve") &&
+        (await DismissalRequest.exists({ complaintRef: complaint._id, status: "pending" }).session(
+          dbSession,
+        ))
+      )
+        throw new ForwardingError("Decide the pending dismissal request before forwarding.");
       const osas = await Office.findOne({ code: "OSAS", isActive: true }).session(dbSession);
       const head = Boolean(osas && refId(osas.headUserRef) === session.user.id);
       if (!osas || refId(complaint.assignedOfficeRef) !== refId(osas._id))

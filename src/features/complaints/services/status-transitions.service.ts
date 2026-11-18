@@ -21,6 +21,7 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   // must be a separately audited action, not a generic status update.
   closed: [],
   withdrawn: [], // terminal — a withdrawn complaint is not reopened, resubmit instead
+  dismissed: [],
 };
 
 export function isValidTransition(from: ComplaintStatus, to: ComplaintStatus): boolean {

@@ -6,6 +6,7 @@ import { User } from "@/models/User";
 import { Office } from "@/models/Office";
 import { Assignment } from "@/models/Assignment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { hasPendingDismissal } from "@/features/complaints/services/dismissal-guard";
 import { assignComplaintSchema } from "@/features/complaints/schemas/assign.schema";
 import { canAssignComplaint, refId } from "@/lib/osas-operations";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
@@ -30,6 +31,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id);
   if (!complaint) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (await hasPendingDismissal(complaint._id))
+    return NextResponse.json(
+      { error: "Decide the pending dismissal request first." },
+      { status: 409 },
+    );
   if (!(await canAssignComplaint(session, complaint)))
     return NextResponse.json(
       {
@@ -39,7 +45,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       { status: 403 },
     );
   const office = (await Office.findById(complaint.assignedOfficeRef).lean())!;
-  if (complaint.isArchived || ["resolved", "closed", "withdrawn"].includes(complaint.status))
+  if (
+    complaint.isArchived ||
+    ["resolved", "closed", "withdrawn", "dismissed"].includes(complaint.status)
+  )
     return NextResponse.json({ error: "This complaint is read-only." }, { status: 403 });
   if (parsed.data.assignedOfficeRef && parsed.data.assignedOfficeRef !== refId(office._id))
     return NextResponse.json(

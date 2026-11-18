@@ -88,7 +88,11 @@ export async function getAnalyticsSummary(
   const totalComplaints = complaints.length;
   const resolved = complaints.filter((c: any) => c.status === "resolved" || c.status === "closed");
   const unresolvedComplaints = complaints.filter(
-    (c: any) => c.status !== "resolved" && c.status !== "closed" && c.status !== "withdrawn",
+    (c: any) =>
+      c.status !== "resolved" &&
+      c.status !== "closed" &&
+      c.status !== "withdrawn" &&
+      c.status !== "dismissed",
   ).length;
   const overdueComplaints = complaints.filter((c: any) => c.isOverdue).length;
 

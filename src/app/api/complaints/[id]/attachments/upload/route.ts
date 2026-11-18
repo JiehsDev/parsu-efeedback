@@ -38,7 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (String(complaint.studentRef) !== session.user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (["closed", "withdrawn"].includes(complaint.status))
+  if (["closed", "withdrawn", "dismissed"].includes(complaint.status))
     return NextResponse.json(
       { error: "Closed and withdrawn complaints are read-only." },
       { status: 403 },

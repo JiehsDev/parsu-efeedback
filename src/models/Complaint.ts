@@ -88,6 +88,10 @@ const complaintSchema = new Schema(
     lastResponseWarningNotifiedAt: { type: Date, default: null },
 
     resolutionSummary: { type: String, default: "" },
+    dismissedAt: { type: Date, default: null },
+    dismissedByRef: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    dismissalReasonCode: { type: String, default: null },
+    dismissalReason: { type: String, default: "" },
 
     // BR-067..BR-070: one rating per complaint, student-only, post-resolution
     studentRating: { type: Number, min: 1, max: 5, default: null },

@@ -16,6 +16,8 @@ import { ArchiveComplaintToggle } from "@/components/admin/ArchiveComplaintToggl
 import { AdminComplaintContentCorrection } from "@/components/admin/AdminComplaintContentCorrection";
 import { ReopenComplaintButton } from "./ReopenComplaintButton";
 import { ResolutionApprovalPanel } from "@/components/staff/ResolutionApprovalPanel";
+import { DismissalForm } from "@/components/staff/DismissalForm";
+import { DismissalDecisionPanel } from "@/components/staff/DismissalDecisionPanel";
 import { isOfficeHead } from "@/lib/office-head";
 export async function ComplaintActions({
   session,
@@ -25,6 +27,7 @@ export async function ComplaintActions({
   requests,
   archives,
   resolutionRequests,
+  dismissalRequests,
 }: {
   session: any;
   complaint: any;
@@ -33,6 +36,7 @@ export async function ComplaintActions({
   requests: any[];
   archives: any[];
   resolutionRequests: any[];
+  dismissalRequests: any[];
 }) {
   const receiving = ["OVPAA", "OVPAF"].includes(office?.code);
   const head = await canSuperviseComplaint(session, c);
@@ -40,10 +44,12 @@ export async function ComplaintActions({
   const canAssign = await canAssignComplaint(session, c);
   const mine = await canProcessComplaint(session, c);
   const admin = session.user.role === "administrator";
-  const terminal = ["resolved", "closed", "withdrawn"].includes(c.status);
+  const terminal = ["resolved", "closed", "withdrawn", "dismissed"].includes(c.status);
   const id = refId(c._id);
   const pending = archives.find((r) => r.status === "pending");
   const pendingResolution = resolutionRequests.find((r) => r.status === "pending");
+  const pendingDismissal = dismissalRequests.find((r) => r.status === "pending");
+  const dismissalBlocked = Boolean(pendingDismissal);
   const latestResolutionRequest = resolutionRequests[0];
   const target =
     !admin && !receiving && mine && !head && !terminal && !c.isArchived
@@ -89,12 +95,26 @@ export async function ComplaintActions({
       ) : (
         <>
           {latestResolutionRequest && (
-            <ResolutionApprovalPanel
-              request={latestResolutionRequest}
-              canReview={officeHead}
-            />
+            <ResolutionApprovalPanel request={latestResolutionRequest} canReview={officeHead} />
           )}
-          {canAssign && !terminal && (
+          {pendingDismissal && (
+            <DismissalDecisionPanel request={pendingDismissal} canReview={officeHead} />
+          )}
+          {dismissalRequests.length > 0 && (
+            <details className="rounded-xl border border-[var(--border)] p-3 text-sm">
+              <summary className="cursor-pointer font-semibold">Dismissal request history</summary>
+              <ul className="mt-2 space-y-2">
+                {dismissalRequests.map((request) => (
+                  <li key={request._id}>
+                    {request.status}: {request.reasonCode?.replaceAll("_", " ")} —{" "}
+                    {request.reasonText}
+                    {request.rejectionReason && ` (rejected: ${request.rejectionReason})`}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {canAssign && !terminal && !dismissalBlocked && (
             <>
               <AssignmentDialog
                 {...assignmentProps}
@@ -110,7 +130,7 @@ export async function ComplaintActions({
               )}
             </>
           )}
-          {!admin && mine && !terminal && (
+          {!admin && mine && !terminal && !dismissalBlocked && (
             <>
               {!pendingResolution && (
                 <StatusUpdateForm
@@ -121,33 +141,51 @@ export async function ComplaintActions({
               )}
               <InformationRequestPanel complaintId={id} status={c.status} requests={requests} />
               {!receiving && <ReleaseAssignmentButton complaintId={id} />}
-              {!receiving && !head && !pending && <ArchiveRequestButton complaintId={id} />}
+              {["assigned", "in_progress"].includes(c.status) && !pendingResolution && !pending && (
+                <DismissalForm complaintId={id} direct={officeHead} />
+              )}
             </>
           )}
-          {target && (
+          {!receiving &&
+            !head &&
+            session.user.role === "office_staff" &&
+            mine &&
+            terminal &&
+            !pending && <ArchiveRequestButton complaintId={id} />}
+          {target && !dismissalBlocked && (
             <AssignmentDialog
               {...assignmentProps}
               label="Request OSAS Head Review"
               action="escalate"
             />
           )}
-          {(head || admin) && (
+          {(head || admin) && !dismissalBlocked && (
             <>
               {pending && head ? (
                 <ArchiveApprovalPanel request={pending} />
-              ) : (
+              ) : terminal ? (
                 <ArchiveComplaintToggle
                   complaintId={id}
                   ticketNumber={c.ticketNumber}
                   isArchived={false}
                   mode={admin ? "admin" : "head"}
                 />
-              )}{" "}
-              {(c.status === "resolved" || (admin && c.status === "closed")) && (
-                <ReopenComplaintButton complaintId={id} />
-              )}
+              ) : null}{" "}
+              {(c.status === "resolved" ||
+                c.status === "dismissed" ||
+                (admin && c.status === "closed")) && <ReopenComplaintButton complaintId={id} />}
             </>
           )}
+          {officeHead && !head && !admin && c.status === "dismissed" && (
+            <ReopenComplaintButton complaintId={id} />
+          )}
+          {officeHead &&
+            !mine &&
+            !terminal &&
+            !dismissalBlocked &&
+            ["assigned", "in_progress"].includes(c.status) &&
+            !pendingResolution &&
+            !pending && <DismissalForm complaintId={id} direct />}
         </>
       )}
     </section>

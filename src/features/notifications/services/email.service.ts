@@ -7,6 +7,7 @@ import ComplaintSubmitted from "../../../../emails/ComplaintSubmitted";
 import ComplaintAssigned from "../../../../emails/ComplaintAssigned";
 import ComplaintUpdated from "../../../../emails/ComplaintUpdated";
 import ComplaintResolved from "../../../../emails/ComplaintResolved";
+import ComplaintDismissed from "../../../../emails/ComplaintDismissed";
 import SLAWarning from "../../../../emails/SLAWarning";
 import Escalation from "../../../../emails/Escalation";
 import PasswordReset from "../../../../emails/PasswordReset";
@@ -135,6 +136,25 @@ export function complaintUrlForRole(
 ) {
   const prefix = role === "student" ? "/student" : role === "office_staff" ? "/staff" : "/admin";
   return `${env.NEXT_PUBLIC_APP_URL}${prefix}/complaints/${complaintId}`;
+}
+
+export async function sendComplaintDismissedEmail(params: {
+  to: string;
+  recipientName: string;
+  ticketNumber: string;
+  complaintId: string;
+  reason: string;
+}) {
+  await sendEmail(
+    params.to,
+    `Complaint ${params.ticketNumber} dismissed`,
+    ComplaintDismissed({
+      recipientName: params.recipientName,
+      ticketNumber: params.ticketNumber,
+      complaintUrl: complaintUrlForRole(params.complaintId, "student"),
+      reason: params.reason,
+    }),
+  );
 }
 
 export async function sendComplaintSubmittedEmail(params: {

@@ -16,6 +16,8 @@ const PATH_KEYS: Record<string, string> = {
   "/admin/archive-requests": "archive",
   "/staff/resolution-requests": "resolution",
   "/admin/resolution-requests": "resolution",
+  "/staff/dismissal-requests": "dismissal",
+  "/admin/dismissal-requests": "dismissal",
   "/staff/office-return-requests": "return",
   "/admin/office-return-requests": "return",
 };

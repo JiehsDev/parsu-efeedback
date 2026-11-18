@@ -11,6 +11,7 @@ import { Office } from "@/models/Office";
 import { User } from "@/models/User";
 import { ArchiveRequest } from "@/models/ArchiveRequest";
 import { ResolutionRequest } from "@/models/ResolutionRequest";
+import { DismissalRequest } from "@/models/DismissalRequest";
 import { OfficeReturnRequest } from "@/models/OfficeReturnRequest";
 import { InformationRequest } from "@/models/InformationRequest";
 import { getAssignmentHistoryEntries } from "@/lib/assignment-history";
@@ -55,6 +56,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
     requests,
     archives,
     resolutionRequests,
+    dismissalRequests,
     returnRequests,
   ] = await Promise.all([
     ComplaintTimeline.find({ complaintRef: id })
@@ -82,6 +84,10 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
       .sort({ createdAt: -1 })
       .populate("requestedByRef reviewedByRef", "firstName lastName role")
       .lean(),
+    DismissalRequest.find({ complaintRef: id })
+      .sort({ createdAt: -1 })
+      .populate("requestedByRef reviewedByRef", "firstName lastName role")
+      .lean(),
     OfficeReturnRequest.find({ complaintRef: id })
       .sort({ requestedAt: -1 })
       .populate(
@@ -97,6 +103,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
   const forwardingHead = await canSuperviseComplaint(session, c);
   const canRequestForwarding =
     !c.isArchived &&
+    !dismissalRequests.some((request: any) => request.status === "pending") &&
     ["submitted", "assigned", "in_progress", "pending_information", "escalated"].includes(
       c.status,
     ) &&
@@ -105,6 +112,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
   const isReceivingOfficeHead = office ? await canManageOfficeAssignments(session, office) : false;
   const canRequestReturnToOsas =
     !c.isArchived &&
+    !dismissalRequests.some((request: any) => request.status === "pending") &&
     ["vpaa", "vpaf"].includes(session.user.role) &&
     c.forwardedToRole === session.user.role &&
     Boolean(c.forwardedAt) &&
@@ -154,6 +162,12 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
                 : "Not recorded"
             }
           />
+          {c.status === "dismissed" && (
+            <section className="rounded-lg border border-[var(--qa-rose)]/40 bg-[var(--qa-rose-soft)] p-5">
+              <h2 className="text-sm font-semibold">Dismissal decision</h2>
+              <p className="mt-2 text-sm break-words whitespace-pre-wrap">{c.dismissalReason}</p>
+            </section>
+          )}
           <AttachmentGallery complaintId={id} />
           <NotesSection complaintId={id} initialNotes={plain(notes)} readOnly={readOnly} />
           <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
@@ -207,6 +221,7 @@ export async function ComplaintDetail({ id, base }: { id: string; base: "admin" 
             requests={plain(requests)}
             archives={plain(archives)}
             resolutionRequests={plain(resolutionRequests)}
+            dismissalRequests={plain(dismissalRequests)}
           />
           <SlaDetails
             complaint={c}

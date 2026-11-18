@@ -59,6 +59,7 @@ export const COMPLAINT_STATUSES = [
   "resolved",
   "closed",
   "withdrawn",
+  "dismissed",
 ] as const;
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
 
@@ -79,6 +80,9 @@ export const TIMELINE_EVENT_TYPES = [
   "edited", // BR-101: student edited title/description/priority pre-pickup
   "admin_content_corrected",
   "withdrawn", // BR-101
+  "dismissal_requested",
+  "dismissal_rejected",
+  "dismissed",
   "information_requested",
   "information_submitted",
   "archive_requested",
@@ -116,6 +120,9 @@ export const NOTIFICATION_TYPES = [
   "forwarding_decision",
   "resolution_request",
   "resolution_decision",
+  "dismissal_request",
+  "dismissal_decision",
+  "complaint_dismissed",
   "office_return_request",
   "office_return_decision",
 ] as const;

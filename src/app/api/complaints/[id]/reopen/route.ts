@@ -1,5 +1,5 @@
 import { User } from "@/models/User";
-import { canSuperviseComplaint } from "@/lib/osas-operations";
+import { isOfficeHead } from "@/lib/office-head";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
@@ -10,7 +10,10 @@ import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { notifyComplaintReopened } from "@/features/notifications/services/notification.service";
 
 async function canReopen(session: any, complaint: any) {
-  return session.user.role === "administrator" || canSuperviseComplaint(session, complaint);
+  return (
+    session.user.role === "administrator" ||
+    isOfficeHead(session.user.id, complaint.assignedOfficeRef)
+  );
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -28,9 +31,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const parsed = reopenComplaintSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  if (!["resolved", "closed"].includes(complaint.status)) {
+  if (!["resolved", "closed", "dismissed"].includes(complaint.status)) {
     return NextResponse.json(
-      { error: "Only resolved or closed complaints can be reopened." },
+      { error: "Only resolved, closed, or dismissed complaints can be reopened." },
       { status: 400 },
     );
   }
@@ -62,9 +65,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .select("createdAt")
       .lean();
     complaint.firstResponseAt =
-      firstStart?.createdAt ?? complaint.resolvedAt ?? complaint.updatedAt;
+      firstStart?.createdAt ??
+      (beforeStatus === "dismissed" ? null : (complaint.resolvedAt ?? complaint.updatedAt));
   }
   complaint.status = handler ? "assigned" : "submitted";
+  if (beforeStatus === "dismissed") {
+    complaint.dismissedAt = null;
+    complaint.dismissedByRef = null;
+    complaint.dismissalReasonCode = null;
+    complaint.dismissalReason = "";
+  }
   complaint.reopenCount += 1;
   await complaint.save();
 

@@ -54,6 +54,12 @@ const PRIMARY_NAV_ITEMS = [
     requiresResolutionHead: true,
   },
   {
+    href: "/admin/dismissal-requests",
+    label: "Dismissal Requests",
+    icon: ClipboardCheck,
+    requiresResolutionHead: true,
+  },
+  {
     href: "/admin/office-return-requests",
     label: "Return to OSAS",
     icon: CornerUpLeft,
@@ -124,6 +130,7 @@ export function AdminNav({
           "/admin/complaints?archived=1",
           "/admin/reports",
           ...(canReviewResolutionRequests ? ["/admin/resolution-requests"] : []),
+          ...(canReviewResolutionRequests ? ["/admin/dismissal-requests"] : []),
         ].includes(item.href);
       if (role === "osas") return !["/admin/users", "/admin/offices"].includes(item.href);
       return true;

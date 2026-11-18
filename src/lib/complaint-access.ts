@@ -34,7 +34,7 @@ export async function canWriteInternalComplaintNotes(
   session: any,
   complaint: any,
 ): Promise<boolean> {
-  if (["closed", "withdrawn"].includes(complaint.status)) return false;
+  if (["closed", "withdrawn", "dismissed"].includes(complaint.status)) return false;
   return (
     (await canProcessComplaint(session, complaint)) ||
     (!complaint.isArchived && (await canSuperviseComplaint(session, complaint)))

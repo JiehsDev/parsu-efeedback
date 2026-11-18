@@ -3,11 +3,12 @@ import { Complaint, type ComplaintDocument } from "@/models/Complaint";
 import { Office } from "@/models/Office";
 import { Assignment } from "@/models/Assignment";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
+import { hasPendingDismissal } from "@/features/complaints/services/dismissal-guard";
 import { writeAuditLog } from "@/features/audit-log/services/audit-log.service";
 import { notifyAssignmentReleased } from "@/features/notifications/services/notification.service";
 import type { UserRole } from "@/lib/constants";
 
-const BLOCKED_STATUSES = new Set(["resolved", "closed", "withdrawn"]);
+const BLOCKED_STATUSES = new Set(["resolved", "closed", "withdrawn", "dismissed"]);
 
 export type ReleaseAssignmentResult =
   { complaint: ComplaintDocument } | { error: string; status: number };
@@ -30,12 +31,14 @@ export async function releaseAssignment(params: {
 
   const complaint = await Complaint.findById(params.complaintId);
   if (!complaint) return { error: "Complaint not found", status: 404 };
+  if (await hasPendingDismissal(complaint._id))
+    return { error: "Decide the pending dismissal request first.", status: 409 };
   if (!(await isOsasComplaint(complaint)))
     return { error: "Only OSAS assignments can be released.", status: 403 };
   if (complaint.isArchived)
     return { error: "Archived complaints cannot be released.", status: 400 };
   if (BLOCKED_STATUSES.has(complaint.status)) {
-    return { error: "Resolved, closed, and withdrawn complaints cannot be released.", status: 400 };
+    return { error: "Finished complaints cannot be released.", status: 400 };
   }
   if (!complaint.assignedStaffRef || String(complaint.assignedStaffRef) !== params.actorId) {
     return {

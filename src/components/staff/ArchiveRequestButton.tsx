@@ -7,19 +7,15 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/shared/Toast";
 
 const REASONS = [
-  ["duplicate", "Duplicate Complaint"],
-  ["invalid", "Invalid Complaint"],
-  ["irrelevant", "Irrelevant / Outside Scope"],
-  ["spam", "Spam / Nonsense Submission"],
-  ["no_action_required", "No Action Required"],
-  ["addressed_elsewhere", "Complaint Already Addressed Elsewhere"],
+  ["routine_retention", "Routine record retention"],
+  ["administrative_retention", "Administrative record retention"],
   ["other", "Other"],
 ] as const;
 
 export function ArchiveRequestButton({ complaintId }: { complaintId: string }) {
   const router = useRouter();
   const { show: showToast } = useToast();
-  const [reasonCode, setReasonCode] = useState("other");
+  const [reasonCode, setReasonCode] = useState("routine_retention");
   const [reasonText, setReasonText] = useState("");
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);

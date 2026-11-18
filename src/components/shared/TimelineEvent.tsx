@@ -30,6 +30,9 @@ const EVENT_LABELS: Record<string, string> = {
   information_submitted: "Additional information submitted",
   resolution_requested: "Resolution submitted for approval",
   resolution_rejected: "Resolution returned to staff",
+  dismissal_requested: "Dismissal requested",
+  dismissal_rejected: "Dismissal request rejected",
+  dismissed: "Complaint dismissed",
 };
 
 export function TimelineEvent({
@@ -55,6 +58,8 @@ export function TimelineEvent({
       "complaint_returned_to_osas",
       "resolution_requested",
       "resolution_rejected",
+      "dismissal_requested",
+      "dismissal_rejected",
     ].includes(event.eventType);
   const actor = event.actorRef;
   const actorName = getActorDisplayName(actor, viewerRole);
@@ -74,6 +79,7 @@ export function TimelineEvent({
       "resolved",
       "closed",
       "withdrawn",
+      "dismissed",
     ].includes(event.fromValue) ||
     [
       "submitted",
@@ -84,6 +90,7 @@ export function TimelineEvent({
       "resolved",
       "closed",
       "withdrawn",
+      "dismissed",
     ].includes(event.toValue);
   return (
     <div className="relative pb-6 pl-6 last:pb-0">

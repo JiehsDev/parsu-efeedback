@@ -60,6 +60,7 @@ const STATUS_LABELS: Record<ComplaintStatus, string> = {
   resolved: "Resolved",
   closed: "Closed",
   withdrawn: "Withdrawn",
+  dismissed: "Dismissed",
 };
 
 export default async function StudentComplaintsPage({

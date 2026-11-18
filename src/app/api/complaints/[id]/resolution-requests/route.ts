@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import { Complaint } from "@/models/Complaint";
 import { Office } from "@/models/Office";
 import { ResolutionRequest } from "@/models/ResolutionRequest";
+import { hasPendingDismissal } from "@/features/complaints/services/dismissal-guard";
 import { OfficeReturnRequest } from "@/models/OfficeReturnRequest";
 import { ComplaintTimeline } from "@/models/ComplaintTimeline";
 import { resolutionRequestSchema } from "@/features/complaints/schemas/complaint.schema";
@@ -20,6 +21,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const complaint = await Complaint.findById(id).lean();
   if (!complaint) return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
+  if (await hasPendingDismissal(complaint._id))
+    return NextResponse.json(
+      { error: "Decide the pending dismissal request first." },
+      { status: 409 },
+    );
   if (!(await canAccessInternalComplaintNotes(session, complaint)))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const requests = await ResolutionRequest.find({ complaintRef: id })
@@ -33,7 +39,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["office_staff", "osas", "vpaa", "vpaf"].includes(session.user.role))
-    return NextResponse.json({ error: "Only assigned office staff may request resolution approval." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Only assigned office staff may request resolution approval." },
+      { status: 403 },
+    );
   await connectToDatabase();
   const { id } = await params;
   const parsed = resolutionRequestSchema.safeParse(await req.json());
@@ -51,19 +60,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (complaint.isArchived)
     return NextResponse.json({ error: "Archived complaints cannot be resolved." }, { status: 403 });
   if (!(await canProcessComplaint(session, complaint)))
-    return NextResponse.json({ error: "Only the assigned handler may request resolution approval." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Only the assigned handler may request resolution approval." },
+      { status: 403 },
+    );
   if (!complaint.assignedOfficeRef || !complaint.assignedStaffRef)
-    return NextResponse.json({ error: "Assign this complaint to an office handler before requesting resolution." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Assign this complaint to an office handler before requesting resolution." },
+      { status: 400 },
+    );
   if (!isValidTransition(complaint.status, "resolved"))
-    return NextResponse.json({ error: "This complaint is not ready for a resolution request." }, { status: 400 });
+    return NextResponse.json(
+      { error: "This complaint is not ready for a resolution request." },
+      { status: 400 },
+    );
 
   const office = await Office.findById(complaint.assignedOfficeRef).select("headUserRef").lean();
   if (!office?.headUserRef)
-    return NextResponse.json({ error: "This office has no designated head to review the request." }, { status: 409 });
+    return NextResponse.json(
+      { error: "This office has no designated head to review the request." },
+      { status: 409 },
+    );
   if (await ResolutionRequest.exists({ complaintRef: id, status: "pending" }))
-    return NextResponse.json({ error: "A resolution request is already awaiting head approval." }, { status: 409 });
+    return NextResponse.json(
+      { error: "A resolution request is already awaiting head approval." },
+      { status: 409 },
+    );
   if (await OfficeReturnRequest.exists({ complaintRef: id, status: "pending" }))
-    return NextResponse.json({ error: "A return-to-OSAS request is awaiting review." }, { status: 409 });
+    return NextResponse.json(
+      { error: "A return-to-OSAS request is awaiting review." },
+      { status: 409 },
+    );
 
   let request: any;
   try {
@@ -79,7 +106,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
   } catch (error: any) {
     if (error?.code === 11000)
-      return NextResponse.json({ error: "A resolution request is already awaiting head approval." }, { status: 409 });
+      return NextResponse.json(
+        { error: "A resolution request is already awaiting head approval." },
+        { status: 409 },
+      );
     throw error;
   }
 
@@ -97,7 +127,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     action: "complaint.resolution_requested",
     entityType: "ResolutionRequest",
     entityId: request._id,
-    afterState: { complaintRef: id, status: "pending", resolutionSummary: parsed.data.resolutionSummary },
+    afterState: {
+      complaintRef: id,
+      status: "pending",
+      resolutionSummary: parsed.data.resolutionSummary,
+    },
   });
   await notifyResolutionRequest({
     userId: refId(office.headUserRef),

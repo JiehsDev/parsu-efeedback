@@ -19,6 +19,7 @@ export const ALLOWED_TRANSITIONS_CLIENT: Record<ComplaintStatus, ComplaintStatus
   resolved: [],
   closed: [],
   withdrawn: [],
+  dismissed: [],
 };
 
 export const STATUS_LABELS: Record<ComplaintStatus, string> = {
@@ -30,4 +31,5 @@ export const STATUS_LABELS: Record<ComplaintStatus, string> = {
   resolved: "Resolved",
   closed: "Closed",
   withdrawn: "Withdrawn",
+  dismissed: "Dismissed",
 };

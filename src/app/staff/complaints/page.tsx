@@ -250,7 +250,8 @@ export default async function StaffComplaintsPage({
     .populate("resolvedByRef", "firstName lastName")
     .lean();
   const active = allComplaints.filter(
-    (complaint: any) => !["resolved", "closed", "withdrawn"].includes(complaint.status),
+    (complaint: any) =>
+      !["resolved", "closed", "withdrawn", "dismissed"].includes(complaint.status),
   );
   const myAssignedCount = active.filter(
     (complaint: any) =>
@@ -500,7 +501,10 @@ export default async function StaffComplaintsPage({
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
             <div>
-              <h2 id="complaints-heading" className="text-sm font-semibold text-[var(--foreground)]">
+              <h2
+                id="complaints-heading"
+                className="text-sm font-semibold text-[var(--foreground)]"
+              >
                 Complaint list
               </h2>
               <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">

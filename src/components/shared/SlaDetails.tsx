@@ -46,7 +46,7 @@ export function SlaDetails({
   simplified = false,
 }: SlaDetailsProps) {
   const now = Date.now();
-  const active = !["resolved", "closed", "withdrawn"].includes(complaint.status);
+  const active = !["resolved", "closed", "withdrawn", "dismissed"].includes(complaint.status);
   const resolutionDue = complaint.slaResolutionDueAt
     ? new Date(complaint.slaResolutionDueAt)
     : null;
@@ -56,8 +56,9 @@ export function SlaDetails({
     waitingForResponse && complaint.slaResponseDueAt
       ? new Date(complaint.slaResponseDueAt)
       : resolutionDue;
-  const overdue =
-    Boolean(complaint.isOverdue) || Boolean(active && activeDue && activeDue.getTime() < now);
+  const overdue = Boolean(
+    active && (complaint.isOverdue || (activeDue && activeDue.getTime() < now)),
+  );
   const warningReached = Boolean(
     complaint.lastWarningNotifiedAt || complaint.lastResponseWarningNotifiedAt,
   );
@@ -66,15 +67,18 @@ export function SlaDetails({
     resolved && resolutionDue
       ? new Date(complaint.resolvedAt as string).getTime() <= resolutionDue.getTime()
       : null;
-  const state = overdue
-    ? "Overdue"
-    : warningReached
-      ? "Warning"
-      : resolved
-        ? resolutionMet
-          ? "Met"
-          : "Breached"
-        : "On Track";
+  const state =
+    complaint.status === "dismissed"
+      ? "Stopped (dismissed)"
+      : overdue
+        ? "Overdue"
+        : warningReached
+          ? "Warning"
+          : resolved
+            ? resolutionMet
+              ? "Met"
+              : "Breached"
+            : "On Track";
   const escalationEvent = events.find((event) => event.eventType === "escalated" && event.message);
   const stateTone = overdue
     ? "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"
@@ -103,7 +107,16 @@ export function SlaDetails({
           "Resolution time",
           durationLabel(complaint.submittedAt, complaint.resolvedAt, complaint.slaPolicy),
         ],
-        ["SLA compliance", resolved ? (resolutionMet ? "Met" : "Breached") : "Pending result"],
+        [
+          "SLA compliance",
+          complaint.status === "dismissed"
+            ? "Not applicable"
+            : resolved
+              ? resolutionMet
+                ? "Met"
+                : "Breached"
+              : "Pending result",
+        ],
       ];
 
   return (
@@ -126,6 +139,7 @@ export function SlaDetails({
                 Met: "Completed on time",
                 Breached: "Completed after due date",
                 "On Track": "On track",
+                "Stopped (dismissed)": "Dismissed",
               }[state] ?? state)
             : state}
         </span>
